@@ -6,9 +6,17 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
+	"github.com/descope/go-sdk/descope"
 	"github.com/descope/go-sdk/descope/api"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+)
+
+const (
+	maxRetries       = 3
+	defaultRetryWait = 10 * time.Second
+	maxRetryWait     = 120 * time.Second
 )
 
 const NoProjectID = ""
@@ -44,7 +52,9 @@ func (c *Client) Create(ctx context.Context, projectID, entity string, data map[
 	}
 
 	tflog.Info(ctx, "Starting CREATE request", map[string]any{"body": debugRequest(httpBody)})
-	httpRes, err := c.getAPIClient(projectID).DoPostRequest(ctx, "/v1/mgmt/infra", httpBody, nil, c.managementKey)
+	httpRes, err := retryOnRateLimit(ctx, func() (*api.HTTPResponse, error) {
+		return c.getAPIClient(projectID).DoPostRequest(ctx, "/v1/mgmt/infra", httpBody, nil, c.managementKey)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +75,9 @@ func (c *Client) Read(ctx context.Context, projectID, entity, entityID string) (
 	}
 
 	tflog.Info(ctx, "Starting READ request", map[string]any{"query": debugRequest(httpQuery)})
-	httpRes, err := c.getAPIClient(projectID).DoGetRequest(ctx, "/v1/mgmt/infra", &api.HTTPRequest{QueryParams: httpQuery}, c.managementKey)
+	httpRes, err := retryOnRateLimit(ctx, func() (*api.HTTPResponse, error) {
+		return c.getAPIClient(projectID).DoGetRequest(ctx, "/v1/mgmt/infra", &api.HTTPRequest{QueryParams: httpQuery}, c.managementKey)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +99,9 @@ func (c *Client) Update(ctx context.Context, projectID, entity, entityID string,
 	}
 
 	tflog.Info(ctx, "Starting UPDATE request", map[string]any{"body": debugRequest(httpBody)})
-	httpRes, err := c.getAPIClient(projectID).DoPutRequest(ctx, "/v1/mgmt/infra", httpBody, nil, c.managementKey)
+	httpRes, err := retryOnRateLimit(ctx, func() (*api.HTTPResponse, error) {
+		return c.getAPIClient(projectID).DoPutRequest(ctx, "/v1/mgmt/infra", httpBody, nil, c.managementKey)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +122,9 @@ func (c *Client) Delete(ctx context.Context, projectID, entity, entityID string)
 	}
 
 	tflog.Info(ctx, "Starting DELETE request", map[string]any{"query": debugRequest(httpQuery)})
-	httpRes, err := c.getAPIClient(projectID).DoDeleteRequest(ctx, "/v1/mgmt/infra", &api.HTTPRequest{QueryParams: httpQuery}, c.managementKey)
+	httpRes, err := retryOnRateLimit(ctx, func() (*api.HTTPResponse, error) {
+		return c.getAPIClient(projectID).DoDeleteRequest(ctx, "/v1/mgmt/infra", &api.HTTPRequest{QueryParams: httpQuery}, c.managementKey)
+	})
 	if err != nil {
 		return err
 	}
@@ -154,4 +170,40 @@ func makeUserAgent(version string) string {
 		return v
 	}
 	return fmt.Sprintf("terraform-provider-descope/%s", version)
+}
+
+func retryOnRateLimit(ctx context.Context, fn func() (*api.HTTPResponse, error)) (*api.HTTPResponse, error) {
+	for attempt := range maxRetries {
+		res, err := fn()
+		if err == nil {
+			return res, nil
+		}
+
+		de := descope.AsError(err, descope.ErrRateLimitExceeded.Code)
+		if de == nil {
+			return nil, err
+		}
+
+		wait := defaultRetryWait
+		if retryAfter, ok := de.Info[descope.ErrorInfoKeys.RateLimitExceededRetryAfter].(int); ok && retryAfter > 0 {
+			wait = time.Duration(retryAfter) * time.Second
+		}
+		if wait > maxRetryWait {
+			wait = maxRetryWait
+		}
+
+		tflog.Warn(ctx, "Rate limited by Descope API, retrying", map[string]any{
+			"attempt": attempt + 1,
+			"max":     maxRetries,
+			"wait":    wait.String(),
+		})
+
+		select {
+		case <-time.After(wait):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+
+	return fn()
 }
