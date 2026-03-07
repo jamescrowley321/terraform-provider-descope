@@ -37,7 +37,7 @@ jobs:
         run: |
           echo "Running acceptance tests"
           set +e
-          go test -v ./...
+          go test -v -p 1 ./...
           result=$?
           descope project list | grep '"name":"testacc-.*' | sed -e 's/.*"id":"\([^"]*\)".*/\1/' | xargs -I {} descope project delete {} --force
           exit $result
