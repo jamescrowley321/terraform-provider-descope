@@ -54,7 +54,6 @@ jobs:
 
       - name: Run govulncheck
         run: govulncheck ./...
-        continue-on-error: true  # Report-only until upstream Go version is bumped
 
   snyk:
     name: Snyk
