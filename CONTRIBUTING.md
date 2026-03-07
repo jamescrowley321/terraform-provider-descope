@@ -44,10 +44,14 @@ make lint          # Run linting and security checks
 
 ### Conventional Commits
 
-All commit messages must follow the Angular convention:
+All commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
 
 ```
-<type>(<scope>): <subject>
+<type>(<optional scope>): <description>
+
+<optional body>
+
+<optional footer(s)>
 ```
 
 **Types:** `feat`, `fix`, `docs`, `test`, `chore`, `refactor`, `ci`, `build`, `perf`, `style`
@@ -59,6 +63,14 @@ feat(tenant): add descope_tenant resource with full CRUD
 fix(access-key): handle missing expiration in API response
 docs: update README with new resource table
 test(user): add acceptance tests for user creation
+```
+
+**Breaking changes:** Add `!` after the type/scope and include a `BREAKING CHANGE:` footer:
+
+```
+feat(api)!: rename descope_project settings block
+
+BREAKING CHANGE: The `project_settings` block has been renamed to `settings`.
 ```
 
 ### Branch Naming
