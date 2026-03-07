@@ -31,10 +31,10 @@ This repository uses the following security tools:
 | [CodeQL](https://codeql.github.com/) | Static analysis (SAST) |
 | [gosec](https://github.com/securego/gosec) | Go-specific security analysis |
 | [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) | Go vulnerability database scanning |
-| [Snyk](https://snyk.io/) | Dependency scanning (SCA), code analysis (SAST) |
-| [SonarCloud](https://sonarcloud.io/) | Code quality and security analysis |
 | [Dependabot](https://docs.github.com/en/code-security/dependabot) | Automated dependency updates |
 | [gitleaks](https://github.com/gitleaks/gitleaks) | Secret detection |
+| [GitHub Secret Scanning](https://docs.github.com/en/code-security/secret-scanning) | Repository-level secret detection |
+| [OpenSSF Scorecard](https://securityscorecards.dev/) | Supply chain security assessment |
 
 ## Vulnerability Response SLA
 
