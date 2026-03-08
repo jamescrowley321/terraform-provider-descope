@@ -99,7 +99,7 @@ func (r *accessKeyResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	accesskey.SetModelFromResponse(&model, key, "")
+	setModelFromResponse(&model, key, "")
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 
 	tflog.Info(ctx, "Access key resource read")
