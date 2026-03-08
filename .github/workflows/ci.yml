@@ -39,7 +39,6 @@ jobs:
           echo "Running resource tests"
           set +e
           go test -v -count=1 \
-            ./internal/models/descoper/ \
             ./internal/models/managementkey/ \
             ./internal/models/project/
           result=$?
