@@ -74,7 +74,7 @@ func WriteGoSource(path string, object any, tpl *template.Template, gofmt bool) 
 		data = formatted
 	}
 
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := os.WriteFile(path, data, 0600); err != nil {
 		log.Fatalf("error writing generated source file %s: %s", path, err.Error())
 	}
 }

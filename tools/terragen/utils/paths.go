@@ -47,7 +47,7 @@ func PreparePaths() *Paths {
 	}
 	templates = filepath.Clean(templates)
 	if info, err := os.Stat(templates); os.IsNotExist(err) || !info.IsDir() {
-		log.Fatalf("expected to find templates directory at path: %s", templates)
+		log.Fatalf("expected to find templates directory at path: %s", strings.ReplaceAll(templates, "\n", "")) // nosec G706 -- build-time tool, not exposed to user input
 	}
 
 	return &Paths{
@@ -64,7 +64,7 @@ func PreparePaths() *Paths {
 func EnsurePath(path string, subdirs ...string) string {
 	for _, d := range subdirs {
 		path = filepath.Join(path, d)
-		if err := os.Mkdir(path, 0755); err != nil && !os.IsExist(err) {
+		if err := os.Mkdir(path, 0750); err != nil && !os.IsExist(err) {
 			log.Fatalf("failed to create subdirectory %s: %s", path, err.Error())
 		}
 	}

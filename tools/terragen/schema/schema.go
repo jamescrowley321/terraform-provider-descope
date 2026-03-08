@@ -54,7 +54,7 @@ func (s *Schema) parseDir(root string, dirs []string) {
 
 func (s *Schema) addFile(root string, dirs []string, filename string) {
 	path := filepath.Join(root, filepath.Join(dirs...), filename)
-	source, err := os.ReadFile(path)
+	source, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		log.Fatalf("failed to read source file at path %s: %s", path, err.Error())
 	}
