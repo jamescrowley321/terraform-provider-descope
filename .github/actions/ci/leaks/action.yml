@@ -13,6 +13,7 @@ runs:
     - name: Check Leaks
       uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
       env:
+        GITHUB_TOKEN: ${{ github.token }}
         GITLEAKS_LICENSE: ${{ inputs.gitleaks_license }}
         GITLEAKS_CONFIG: .github/actions/ci/leaks/gitleaks.toml
         GITLEAKS_ENABLE_SUMMARY: "false"

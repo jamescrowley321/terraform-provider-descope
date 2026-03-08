@@ -102,9 +102,13 @@ func (p *descopeProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	client := infra.NewClient(p.version, managementKey, baseURL)
-	resp.DataSourceData = client
-	resp.ResourceData = client
+	providerData, err := infra.NewProviderData(p.version, managementKey, baseURL)
+	if err != nil {
+		resp.Diagnostics.AddError("Error creating Descope client", err.Error())
+		return
+	}
+	resp.DataSourceData = providerData
+	resp.ResourceData = providerData
 
 	tflog.Info(ctx, "Configured Descope provider")
 }
@@ -118,5 +122,6 @@ func (p *descopeProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewProjectResource,
 		resources.NewDescoperResource,
 		resources.NewManagementKeyResource,
+		resources.NewAccessKeyResource,
 	}
 }

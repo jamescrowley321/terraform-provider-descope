@@ -30,8 +30,8 @@ type descoperResource struct {
 }
 
 func (r *descoperResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
-	if client, ok := req.ProviderData.(*infra.Client); ok {
-		r.client = client
+	if data, ok := req.ProviderData.(*infra.ProviderData); ok {
+		r.client = data.Client
 	}
 }
 
@@ -89,6 +89,10 @@ func (r *descoperResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	res, err := r.client.Read(ctx, infra.NoProjectID, descoperEntity, id)
 	if err != nil {
+		if infra.IsNotFoundError(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Error reading descoper", err.Error())
 		return
 	}
@@ -144,6 +148,9 @@ func (r *descoperResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	err := r.client.Delete(ctx, infra.NoProjectID, descoperEntity, id)
 	if err != nil {
+		if infra.IsNotFoundError(err) {
+			return // already deleted
+		}
 		resp.Diagnostics.AddError("Error deleting descoper", err.Error())
 		return
 	}

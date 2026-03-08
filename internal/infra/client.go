@@ -19,7 +19,10 @@ const (
 	maxRetryWait     = 60 * time.Second
 )
 
-const NoProjectID = ""
+const (
+	NoProjectID  = ""
+	infraAPIPath = "/v1/mgmt/infra"
+)
 
 type Response struct {
 	Entity string         `json:"entity"`
@@ -53,7 +56,7 @@ func (c *Client) Create(ctx context.Context, projectID, entity string, data map[
 
 	tflog.Info(ctx, "Starting CREATE request", map[string]any{"body": debugRequest(httpBody)})
 	httpRes, err := retryOnRateLimit(ctx, func() (*api.HTTPResponse, error) {
-		return c.getAPIClient(projectID).DoPostRequest(ctx, "/v1/mgmt/infra", httpBody, nil, c.managementKey)
+		return c.getAPIClient(projectID).DoPostRequest(ctx, infraAPIPath, httpBody, nil, c.managementKey)
 	})
 	if err != nil {
 		return nil, err
@@ -76,7 +79,7 @@ func (c *Client) Read(ctx context.Context, projectID, entity, entityID string) (
 
 	tflog.Info(ctx, "Starting READ request", map[string]any{"query": debugRequest(httpQuery)})
 	httpRes, err := retryOnRateLimit(ctx, func() (*api.HTTPResponse, error) {
-		return c.getAPIClient(projectID).DoGetRequest(ctx, "/v1/mgmt/infra", &api.HTTPRequest{QueryParams: httpQuery}, c.managementKey)
+		return c.getAPIClient(projectID).DoGetRequest(ctx, infraAPIPath, &api.HTTPRequest{QueryParams: httpQuery}, c.managementKey)
 	})
 	if err != nil {
 		return nil, err
@@ -100,7 +103,7 @@ func (c *Client) Update(ctx context.Context, projectID, entity, entityID string,
 
 	tflog.Info(ctx, "Starting UPDATE request", map[string]any{"body": debugRequest(httpBody)})
 	httpRes, err := retryOnRateLimit(ctx, func() (*api.HTTPResponse, error) {
-		return c.getAPIClient(projectID).DoPutRequest(ctx, "/v1/mgmt/infra", httpBody, nil, c.managementKey)
+		return c.getAPIClient(projectID).DoPutRequest(ctx, infraAPIPath, httpBody, nil, c.managementKey)
 	})
 	if err != nil {
 		return nil, err
@@ -123,7 +126,7 @@ func (c *Client) Delete(ctx context.Context, projectID, entity, entityID string)
 
 	tflog.Info(ctx, "Starting DELETE request", map[string]any{"query": debugRequest(httpQuery)})
 	httpRes, err := retryOnRateLimit(ctx, func() (*api.HTTPResponse, error) {
-		return c.getAPIClient(projectID).DoDeleteRequest(ctx, "/v1/mgmt/infra", &api.HTTPRequest{QueryParams: httpQuery}, c.managementKey)
+		return c.getAPIClient(projectID).DoDeleteRequest(ctx, infraAPIPath, &api.HTTPRequest{QueryParams: httpQuery}, c.managementKey)
 	})
 	if err != nil {
 		return err

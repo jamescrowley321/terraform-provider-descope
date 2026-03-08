@@ -31,8 +31,8 @@ type projectResource struct {
 }
 
 func (r *projectResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
-	if client, ok := req.ProviderData.(*infra.Client); ok {
-		r.client = client
+	if data, ok := req.ProviderData.(*infra.ProviderData); ok {
+		r.client = data.Client
 	}
 }
 
@@ -101,6 +101,10 @@ func (r *projectResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 	res, err := r.client.Read(ctx, projectID, projectEntity, projectID)
 	if err != nil {
+		if infra.IsNotFoundError(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Error reading project", err.Error())
 		return
 	}
@@ -156,6 +160,9 @@ func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 	err := r.client.Delete(ctx, projectID, projectEntity, projectID)
 	if err != nil {
+		if infra.IsNotFoundError(err) {
+			return // already deleted
+		}
 		resp.Diagnostics.AddError("Error deleting project", err.Error())
 		return
 	}
