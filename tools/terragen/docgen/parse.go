@@ -22,7 +22,7 @@ func MergeDocs(root string, sc *schema.Schema) {
 		path := filepath.Join(root, filepath.Join(file.Dirs...), file.Name+".md")
 		utils.Debug(len(file.Dirs), "+ %s.md:", file.Name)
 
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(filepath.Clean(path))
 		if err != nil {
 			if os.IsNotExist(err) {
 				if !file.SkipDocs() {
@@ -92,7 +92,7 @@ func expectFieldNotes(path string, s *bufio.Scanner) {
 		case strings.HasPrefix(line, "- "):
 			state = "munch"
 		default:
-			log.Fatalf("unexpected line when parsing field in documentation file at path %s: `%s`", path, line)
+			log.Fatalf("unexpected line when parsing field in documentation file at path %s: `%s`", path, strings.ReplaceAll(line, "\n", "")) // nosec G706 -- build-time tool, not exposed to user input
 		}
 	}
 	log.Fatalf("unexpected end of file when when parsing field in documentation file at path %s", path)
@@ -145,7 +145,7 @@ func scanUntilBreak(path string, s *bufio.Scanner) []string {
 		lines = append(lines, line)
 	}
 	if err := s.Err(); err != nil {
-		log.Fatalf("failed to read line from documentation file at path %s: %s", path, err.Error())
+		log.Fatalf("failed to read line from documentation file at path %s: %s", path, strings.ReplaceAll(err.Error(), "\n", "")) // nosec G706 -- build-time tool, not exposed to user input
 	}
 	return trimBlankLines(lines)
 }
