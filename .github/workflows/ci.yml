@@ -37,13 +37,15 @@ jobs:
           TF_ACC: 1
         run: |
           echo "Running resource tests"
-          set +e
-          go test -v -count=1 \
-            ./internal/models/managementkey/ \
-            ./internal/models/project/
-          result=$?
+          overall=0
+          for pkg in ./internal/models/managementkey/ ./internal/models/project/; do
+            echo "==> Testing $pkg"
+            go test -v -count=1 "$pkg" || overall=1
+            echo "==> Cooling down for rate limit..."
+            sleep 30
+          done
           descope project list | grep '"name":"testacc-.*' | sed -e 's/.*"id":"\([^"]*\)".*/\1/' | xargs -I {} descope project delete {} --force
-          exit $result
+          exit $overall
 
   acc_test:
     name: Acceptance Tests
