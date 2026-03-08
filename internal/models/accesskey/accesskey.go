@@ -9,8 +9,8 @@ import (
 	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 )
@@ -40,19 +40,19 @@ var AccessKeyAttributes = map[string]schema.Attribute{
 }
 
 type AccessKeyModel struct {
-	ID           stringattr.Type                `tfsdk:"id"`
-	Name         stringattr.Type                `tfsdk:"name"`
-	Description  stringattr.Type                `tfsdk:"description"`
-	Status       stringattr.Type                `tfsdk:"status"`
-	ExpireTime   intattr.Type                   `tfsdk:"expire_time"`
-	RoleNames    strsetattr.Type                `tfsdk:"role_names"`
-	KeyTenants   listattr.Type[TenantModel]     `tfsdk:"key_tenants"`
-	PermittedIPs strlistattr.Type               `tfsdk:"permitted_ips"`
-	UserID       stringattr.Type                `tfsdk:"user_id"`
-	Cleartext    stringattr.Type                `tfsdk:"cleartext"`
-	ClientID     stringattr.Type                `tfsdk:"client_id"`
-	CreatedTime  intattr.Type                   `tfsdk:"created_time"`
-	CreatedBy    stringattr.Type                `tfsdk:"created_by"`
+	ID           stringattr.Type            `tfsdk:"id"`
+	Name         stringattr.Type            `tfsdk:"name"`
+	Description  stringattr.Type            `tfsdk:"description"`
+	Status       stringattr.Type            `tfsdk:"status"`
+	ExpireTime   intattr.Type               `tfsdk:"expire_time"`
+	RoleNames    strsetattr.Type            `tfsdk:"role_names"`
+	KeyTenants   listattr.Type[TenantModel] `tfsdk:"key_tenants"`
+	PermittedIPs strlistattr.Type           `tfsdk:"permitted_ips"`
+	UserID       stringattr.Type            `tfsdk:"user_id"`
+	Cleartext    stringattr.Type            `tfsdk:"cleartext"`
+	ClientID     stringattr.Type            `tfsdk:"client_id"`
+	CreatedTime  intattr.Type               `tfsdk:"created_time"`
+	CreatedBy    stringattr.Type            `tfsdk:"created_by"`
 }
 
 func (m *AccessKeyModel) Values(h *helpers.Handler) map[string]any {

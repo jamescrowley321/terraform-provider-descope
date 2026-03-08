@@ -14,25 +14,25 @@ import (
 )
 
 func Project(t *testing.T) *Resource {
-	return newResource(t, "project", "test")
+	return newResource(t, "project")
 }
 
 func Descoper(t *testing.T) *Resource {
-	return newResource(t, "descoper", "test")
+	return newResource(t, "descoper")
 }
 
 func ManagementKey(t *testing.T) *Resource {
-	return newResource(t, "management_key", "test")
+	return newResource(t, "management_key")
 }
 
 func AccessKey(t *testing.T) *Resource {
-	return newResource(t, "access_key", "test")
+	return newResource(t, "access_key")
 }
 
-func newResource(t *testing.T, typ, id string) *Resource {
+func newResource(t *testing.T, typ string) *Resource {
 	return &Resource{
 		Type: typ,
-		ID:   id,
+		ID:   "test",
 		Name: GenerateAlias(t),
 	}
 }

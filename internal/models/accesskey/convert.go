@@ -12,7 +12,7 @@ import (
 )
 
 // StringSetToSlice converts a Terraform string set to a Go string slice.
-func StringSetToSlice(ctx context.Context, s strsetattr.Type, diagnostics *diag.Diagnostics) []string {
+func StringSetToSlice(_ context.Context, s strsetattr.Type, _ *diag.Diagnostics) []string {
 	if s.IsNull() || s.IsUnknown() {
 		return nil
 	}
@@ -27,7 +27,7 @@ func StringSetToSlice(ctx context.Context, s strsetattr.Type, diagnostics *diag.
 }
 
 // StringListToSlice converts a Terraform string list to a Go string slice.
-func StringListToSlice(ctx context.Context, l strlistattr.Type, diagnostics *diag.Diagnostics) []string {
+func StringListToSlice(_ context.Context, l strlistattr.Type, _ *diag.Diagnostics) []string {
 	if l.IsNull() || l.IsUnknown() {
 		return nil
 	}
@@ -64,6 +64,8 @@ func TenantsToSDK(ctx context.Context, tenants listattr.Type[TenantModel], diagn
 }
 
 // SetModelFromResponse populates the Terraform model from an SDK AccessKeyResponse.
+//
+//nolint:contextcheck // Value helpers use context.Background() by design
 func SetModelFromResponse(model *AccessKeyModel, key *descope.AccessKeyResponse, cleartext string) {
 	model.ID = types.StringValue(key.ID)
 	model.Name = types.StringValue(key.Name)
