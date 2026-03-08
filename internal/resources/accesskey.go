@@ -74,7 +74,24 @@ func (r *accessKeyResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
+	// Preserve planned values for fields the API may not echo back
+	plannedRoles := model.RoleNames
+	plannedTenants := model.KeyTenants
+	plannedIPs := model.PermittedIPs
+
 	accesskey.SetModelFromResponse(&model, key, cleartext)
+
+	// Restore planned values if the API returned empty
+	if len(key.RoleNames) == 0 {
+		model.RoleNames = plannedRoles
+	}
+	if key.KeyTenants == nil {
+		model.KeyTenants = plannedTenants
+	}
+	if len(key.PermittedIPs) == 0 {
+		model.PermittedIPs = plannedIPs
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 
 	tflog.Info(ctx, "Access key resource created")
@@ -150,7 +167,24 @@ func (r *accessKeyResource) Update(ctx context.Context, req resource.UpdateReque
 		}
 	}
 
+	// Preserve planned values for fields the API may not echo back
+	plannedRoles := plan.RoleNames
+	plannedTenants := plan.KeyTenants
+	plannedIPs := plan.PermittedIPs
+
 	accesskey.SetModelFromResponse(&plan, key, "")
+
+	// Restore planned values if the API returned empty
+	if len(key.RoleNames) == 0 {
+		plan.RoleNames = plannedRoles
+	}
+	if key.KeyTenants == nil {
+		plan.KeyTenants = plannedTenants
+	}
+	if len(key.PermittedIPs) == 0 {
+		plan.PermittedIPs = plannedIPs
+	}
+
 	// Preserve cleartext from state (only available on create)
 	plan.Cleartext = state.Cleartext
 	// Override status with the desired value since SetModelFromResponse uses the
