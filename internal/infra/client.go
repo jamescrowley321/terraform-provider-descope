@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	maxRetries       = 3
-	defaultRetryWait = 10 * time.Second
+	maxRetries       = 5
+	defaultRetryWait = 30 * time.Second
 	maxRetryWait     = 120 * time.Second
 )
 
