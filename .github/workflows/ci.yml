@@ -37,7 +37,7 @@ jobs:
         run: |
           echo "Running acceptance tests"
           overall=0
-          for pkg in $(go list ./... | xargs go list -f '{{if .TestGoFiles}}{{.ImportPath}}{{end}}'); do
+          for pkg in $(go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./...); do
             echo "==> Testing $pkg"
             go test -v -count=1 "$pkg" || overall=1
             echo "==> Cooling down for rate limit..."
