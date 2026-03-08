@@ -18,6 +18,13 @@ func TestAccessKey(t *testing.T) {
 			`),
 			ExpectError: regexp.MustCompile(`Cannot set status`),
 		},
+		// Test expire_time exceeding int32 max fails validation
+		resource.TestStep{
+			Config: a.Config(`
+				expire_time = 9999999999
+			`),
+			ExpectError: regexp.MustCompile(`must be at most`),
+		},
 		// Test basic creation with company-level roles
 		resource.TestStep{
 			Config: a.Config(`
@@ -49,17 +56,22 @@ func TestAccessKey(t *testing.T) {
 			ResourceName: a.Path(),
 			ImportState:  true,
 		},
-		// Test with description and permitted_ips
+		// Test with description, permitted_ips, and custom_claims
 		resource.TestStep{
 			Config: a.Config(`
 				description = "Test access key"
 				permitted_ips = ["192.168.1.0/24"]
 				role_names = ["Tenant Admin"]
+				custom_claims = {
+					"claim1" = "value1"
+				}
 			`),
 			Check: a.Check(map[string]any{
-				"description":     "Test access key",
-				"permitted_ips.#": "1",
-				"permitted_ips.0": "192.168.1.0/24",
+				"description":          "Test access key",
+				"permitted_ips.#":      "1",
+				"permitted_ips.0":      "192.168.1.0/24",
+				"custom_claims.%":      "1",
+				"custom_claims.claim1": "value1",
 			}),
 		},
 		// Destroy resource

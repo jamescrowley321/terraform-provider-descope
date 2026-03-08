@@ -12,3 +12,11 @@ func AsValidationError(err error) (failure string, ok bool) {
 	}
 	return
 }
+
+// IsNotFoundError returns true if the error is a Descope not-found error.
+func IsNotFoundError(err error) bool {
+	if de := descope.AsError(err); de != nil {
+		return de.IsNotFound()
+	}
+	return false
+}

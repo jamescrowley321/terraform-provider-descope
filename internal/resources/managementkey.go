@@ -89,6 +89,10 @@ func (r *managementKeyResource) Read(ctx context.Context, req resource.ReadReque
 
 	res, err := r.client.Read(ctx, infra.NoProjectID, managementKeyEntity, id)
 	if err != nil {
+		if infra.IsNotFoundError(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Error reading management key", err.Error())
 		return
 	}
@@ -144,6 +148,9 @@ func (r *managementKeyResource) Delete(ctx context.Context, req resource.DeleteR
 
 	err := r.client.Delete(ctx, infra.NoProjectID, managementKeyEntity, id)
 	if err != nil {
+		if infra.IsNotFoundError(err) {
+			return // already deleted
+		}
 		resp.Diagnostics.AddError("Error deleting management key", err.Error())
 		return
 	}

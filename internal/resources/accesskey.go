@@ -64,17 +64,27 @@ func (r *accessKeyResource) Create(ctx context.Context, req resource.CreateReque
 	tenants := accesskey.TenantsToSDK(ctx, model.KeyTenants, &resp.Diagnostics)
 	userID := model.UserID.ValueString()
 	permittedIPs := accesskey.StringListToSlice(ctx, model.PermittedIPs, &resp.Diagnostics)
+	customClaims := accesskey.StringMapToAnyMap(model.CustomClaims)
+	customAttributes := accesskey.StringMapToAnyMap(model.CustomAttributes)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	cleartext, key, err := r.management.AccessKey().Create(ctx, name, description, expireTime, roles, tenants, userID, nil, permittedIPs, nil)
+	type createResult struct {
+		cleartext string
+		key       *descope.AccessKeyResponse
+	}
+
+	result, err := infra.RetryOnRateLimit(ctx, func() (createResult, error) {
+		cleartext, key, err := r.management.AccessKey().Create(ctx, name, description, expireTime, roles, tenants, userID, customClaims, permittedIPs, customAttributes)
+		return createResult{cleartext, key}, err
+	})
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating access key", err.Error())
 		return
 	}
 
-	setModelFromResponse(&model, key, cleartext)
+	setModelFromResponse(&model, result.key, result.cleartext)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 
 	tflog.Info(ctx, "Access key resource created")
@@ -89,9 +99,11 @@ func (r *accessKeyResource) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 
 	id := model.ID.ValueString()
-	key, err := r.management.AccessKey().Load(ctx, id)
+	key, err := infra.RetryOnRateLimit(ctx, func() (*descope.AccessKeyResponse, error) {
+		return r.management.AccessKey().Load(ctx, id)
+	})
 	if err != nil {
-		if de := descope.AsError(err); de != nil && de.IsNotFound() {
+		if infra.IsNotFoundError(err) {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -118,17 +130,21 @@ func (r *accessKeyResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	id := plan.ID.ValueString()
+	id := state.ID.ValueString()
 	name := plan.Name.ValueString()
 	description := plan.Description.ValueString()
 	roles := accesskey.StringSetToSlice(ctx, plan.RoleNames, &resp.Diagnostics)
 	tenants := accesskey.TenantsToSDK(ctx, plan.KeyTenants, &resp.Diagnostics)
 	permittedIPs := accesskey.StringListToSlice(ctx, plan.PermittedIPs, &resp.Diagnostics)
+	customClaims := accesskey.StringMapToAnyMap(plan.CustomClaims)
+	customAttributes := accesskey.StringMapToAnyMap(plan.CustomAttributes)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	key, err := r.management.AccessKey().Update(ctx, id, name, &description, roles, tenants, nil, permittedIPs, nil)
+	key, err := infra.RetryOnRateLimit(ctx, func() (*descope.AccessKeyResponse, error) {
+		return r.management.AccessKey().Update(ctx, id, name, &description, roles, tenants, customClaims, permittedIPs, customAttributes)
+	})
 	if err != nil {
 		resp.Diagnostics.AddError("Error updating access key", err.Error())
 		return
@@ -159,7 +175,13 @@ func (r *accessKeyResource) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	if err := r.management.AccessKey().Delete(ctx, model.ID.ValueString()); err != nil {
+	err := infra.RetryOnRateLimitNoResult(ctx, func() error {
+		return r.management.AccessKey().Delete(ctx, model.ID.ValueString())
+	})
+	if err != nil {
+		if infra.IsNotFoundError(err) {
+			return // already deleted
+		}
 		resp.Diagnostics.AddError("Error deleting access key", err.Error())
 		return
 	}
@@ -173,10 +195,12 @@ func (r *accessKeyResource) ImportState(ctx context.Context, req resource.Import
 }
 
 func (r *accessKeyResource) setAccessKeyStatus(ctx context.Context, id, status string) error {
-	if status == "inactive" {
-		return r.management.AccessKey().Deactivate(ctx, id)
-	}
-	return r.management.AccessKey().Activate(ctx, id)
+	return infra.RetryOnRateLimitNoResult(ctx, func() error {
+		if status == "inactive" {
+			return r.management.AccessKey().Deactivate(ctx, id)
+		}
+		return r.management.AccessKey().Activate(ctx, id)
+	})
 }
 
 // setModelFromResponse populates the model from an API response, preserving
@@ -185,16 +209,24 @@ func setModelFromResponse(model *accesskey.AccessKeyModel, key *descope.AccessKe
 	plannedRoles := model.RoleNames
 	plannedTenants := model.KeyTenants
 	plannedIPs := model.PermittedIPs
+	plannedClaims := model.CustomClaims
+	plannedAttrs := model.CustomAttributes
 
 	accesskey.SetModelFromResponse(model, key, cleartext)
 
 	if len(key.RoleNames) == 0 {
 		model.RoleNames = plannedRoles
 	}
-	if key.KeyTenants == nil {
+	if len(key.KeyTenants) == 0 {
 		model.KeyTenants = plannedTenants
 	}
 	if len(key.PermittedIPs) == 0 {
 		model.PermittedIPs = plannedIPs
+	}
+	if len(key.CustomClaims) == 0 {
+		model.CustomClaims = plannedClaims
+	}
+	if len(key.CustomAttributes) == 0 {
+		model.CustomAttributes = plannedAttrs
 	}
 }
