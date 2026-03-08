@@ -74,24 +74,7 @@ func (r *accessKeyResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	// Preserve planned values for fields the API may not echo back
-	plannedRoles := model.RoleNames
-	plannedTenants := model.KeyTenants
-	plannedIPs := model.PermittedIPs
-
-	accesskey.SetModelFromResponse(&model, key, cleartext)
-
-	// Restore planned values if the API returned empty
-	if len(key.RoleNames) == 0 {
-		model.RoleNames = plannedRoles
-	}
-	if key.KeyTenants == nil {
-		model.KeyTenants = plannedTenants
-	}
-	if len(key.PermittedIPs) == 0 {
-		model.PermittedIPs = plannedIPs
-	}
-
+	setModelFromResponse(&model, key, cleartext)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 
 	tflog.Info(ctx, "Access key resource created")
@@ -154,41 +137,14 @@ func (r *accessKeyResource) Update(ctx context.Context, req resource.UpdateReque
 	// Handle status change (activate/deactivate)
 	desiredStatus := plan.Status.ValueString()
 	if desiredStatus != state.Status.ValueString() {
-		if desiredStatus == "inactive" {
-			if err := r.management.AccessKey().Deactivate(ctx, id); err != nil {
-				resp.Diagnostics.AddError("Error deactivating access key", err.Error())
-				return
-			}
-		} else {
-			if err := r.management.AccessKey().Activate(ctx, id); err != nil {
-				resp.Diagnostics.AddError("Error activating access key", err.Error())
-				return
-			}
+		if err := r.setAccessKeyStatus(ctx, id, desiredStatus); err != nil {
+			resp.Diagnostics.AddError("Error changing access key status", err.Error())
+			return
 		}
 	}
 
-	// Preserve planned values for fields the API may not echo back
-	plannedRoles := plan.RoleNames
-	plannedTenants := plan.KeyTenants
-	plannedIPs := plan.PermittedIPs
-
-	accesskey.SetModelFromResponse(&plan, key, "")
-
-	// Restore planned values if the API returned empty
-	if len(key.RoleNames) == 0 {
-		plan.RoleNames = plannedRoles
-	}
-	if key.KeyTenants == nil {
-		plan.KeyTenants = plannedTenants
-	}
-	if len(key.PermittedIPs) == 0 {
-		plan.PermittedIPs = plannedIPs
-	}
-
-	// Preserve cleartext from state (only available on create)
+	setModelFromResponse(&plan, key, "")
 	plan.Cleartext = state.Cleartext
-	// Override status with the desired value since SetModelFromResponse uses the
-	// Update API response which doesn't reflect Activate/Deactivate calls.
 	plan.Status = types.StringValue(desiredStatus)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 
@@ -214,4 +170,31 @@ func (r *accessKeyResource) Delete(ctx context.Context, req resource.DeleteReque
 func (r *accessKeyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	tflog.Info(ctx, "Importing access key resource")
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func (r *accessKeyResource) setAccessKeyStatus(ctx context.Context, id, status string) error {
+	if status == "inactive" {
+		return r.management.AccessKey().Deactivate(ctx, id)
+	}
+	return r.management.AccessKey().Activate(ctx, id)
+}
+
+// setModelFromResponse populates the model from an API response, preserving
+// planned values for fields the API may not echo back.
+func setModelFromResponse(model *accesskey.AccessKeyModel, key *descope.AccessKeyResponse, cleartext string) {
+	plannedRoles := model.RoleNames
+	plannedTenants := model.KeyTenants
+	plannedIPs := model.PermittedIPs
+
+	accesskey.SetModelFromResponse(model, key, cleartext)
+
+	if len(key.RoleNames) == 0 {
+		model.RoleNames = plannedRoles
+	}
+	if key.KeyTenants == nil {
+		model.KeyTenants = plannedTenants
+	}
+	if len(key.PermittedIPs) == 0 {
+		model.PermittedIPs = plannedIPs
+	}
 }
