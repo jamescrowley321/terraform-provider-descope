@@ -41,7 +41,7 @@ jobs:
             echo "==> Testing $pkg"
             go test -v -count=1 "$pkg" || overall=1
             echo "==> Cooling down for rate limit..."
-            sleep 10
+            sleep 30
           done
           descope project list | grep '"name":"testacc-.*' | sed -e 's/.*"id":"\([^"]*\)".*/\1/' | xargs -I {} descope project delete {} --force
           exit $overall
