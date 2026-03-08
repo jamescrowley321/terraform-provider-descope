@@ -30,8 +30,8 @@ type descoperResource struct {
 }
 
 func (r *descoperResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
-	if client, ok := req.ProviderData.(*infra.Client); ok {
-		r.client = client
+	if data, ok := req.ProviderData.(*infra.ProviderData); ok {
+		r.client = data.Client
 	}
 }
 

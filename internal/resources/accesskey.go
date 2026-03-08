@@ -3,16 +3,15 @@ package resources
 import (
 	"context"
 
-	"github.com/descope/terraform-provider-descope/internal/entities"
+	"github.com/descope/go-sdk/descope"
+	"github.com/descope/go-sdk/descope/sdk"
 	"github.com/descope/terraform-provider-descope/internal/infra"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
+	"github.com/descope/terraform-provider-descope/internal/models/accesskey"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-)
-
-const (
-	accessKeyEntity = "access_key"
 )
 
 var (
@@ -26,75 +25,82 @@ func NewAccessKeyResource() resource.Resource {
 }
 
 type accessKeyResource struct {
-	client *infra.Client
+	management sdk.Management
 }
 
 func (r *accessKeyResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
-	if client, ok := req.ProviderData.(*infra.Client); ok {
-		r.client = client
+	if data, ok := req.ProviderData.(*infra.ProviderData); ok {
+		r.management = data.Management
 	}
 }
 
 func (r *accessKeyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_" + accessKeyEntity
+	resp.TypeName = req.ProviderTypeName + "_access_key"
 }
 
 func (r *accessKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = entities.AccessKeySchema
+	resp.Schema = schema.Schema{
+		Attributes: accesskey.AccessKeyAttributes,
+	}
 }
 
 func (r *accessKeyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	tflog.Info(ctx, "Creating access key resource")
 
-	entity := entities.NewAccessKeyEntity(ctx, req.Plan, &resp.Diagnostics)
-	if entity.Diagnostics.HasError() {
+	var model accesskey.AccessKeyModel
+	if resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
 
-	values := entity.Values(ctx)
-	if entity.Diagnostics.HasError() {
+	if model.Status.ValueString() == "inactive" {
+		resp.Diagnostics.AddError("Invalid access key configuration", "Cannot set status to inactive when creating a new access key")
 		return
 	}
 
-	res, err := r.client.Create(ctx, infra.NoProjectID, accessKeyEntity, values)
-	if failure, ok := infra.AsValidationError(err); ok {
-		resp.Diagnostics.AddError("Invalid access key configuration", failure)
+	name := model.Name.ValueString()
+	description := model.Description.ValueString()
+	expireTime := model.ExpireTime.ValueInt64()
+	roles := accesskey.StringSetToSlice(ctx, model.RoleNames, &resp.Diagnostics)
+	tenants := accesskey.TenantsToSDK(ctx, model.KeyTenants, &resp.Diagnostics)
+	userID := model.UserID.ValueString()
+	permittedIPs := accesskey.StringListToSlice(ctx, model.PermittedIPs, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	cleartext, key, err := r.management.AccessKey().Create(ctx, name, description, expireTime, roles, tenants, userID, nil, permittedIPs, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating access key", err.Error())
 		return
 	}
 
-	entity.SetID(ctx, res.ID)
-	entity.SetValues(ctx, res.Data)
-	entity.Save(ctx, &resp.State)
+	accesskey.SetModelFromResponse(&model, key, cleartext)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 
 	tflog.Info(ctx, "Access key resource created")
 }
 
 func (r *accessKeyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Info(ctx, "Reading access key resource")
-	ctx = helpers.ContextWithImportState(ctx, req, resp)
 
-	entity := entities.NewAccessKeyEntity(ctx, req.State, &resp.Diagnostics)
-	if entity.Diagnostics.HasError() {
+	var model accesskey.AccessKeyModel
+	if resp.Diagnostics.Append(req.State.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
 
-	id := entity.ID(ctx)
-	if entity.Diagnostics.HasError() {
-		return
-	}
-
-	res, err := r.client.Read(ctx, infra.NoProjectID, accessKeyEntity, id)
+	id := model.ID.ValueString()
+	key, err := r.management.AccessKey().Load(ctx, id)
 	if err != nil {
+		if de := descope.AsError(err); de != nil && de.IsNotFound() {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Error reading access key", err.Error())
 		return
 	}
 
-	entity.SetValues(ctx, res.Data)
-	entity.Save(ctx, &resp.State)
+	accesskey.SetModelFromResponse(&model, key, "")
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 
 	tflog.Info(ctx, "Access key resource read")
 }
@@ -102,29 +108,55 @@ func (r *accessKeyResource) Read(ctx context.Context, req resource.ReadRequest, 
 func (r *accessKeyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	tflog.Info(ctx, "Updating access key resource")
 
-	entity := entities.NewAccessKeyEntity(ctx, req.Plan, &resp.Diagnostics)
-	if entity.Diagnostics.HasError() {
+	var plan accesskey.AccessKeyModel
+	if resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...); resp.Diagnostics.HasError() {
 		return
 	}
 
-	values := entity.Values(ctx)
-	id := entity.ID(ctx)
-	if entity.Diagnostics.HasError() {
+	var state accesskey.AccessKeyModel
+	if resp.Diagnostics.Append(req.State.Get(ctx, &state)...); resp.Diagnostics.HasError() {
 		return
 	}
 
-	res, err := r.client.Update(ctx, infra.NoProjectID, accessKeyEntity, id, values)
-	if failure, ok := infra.AsValidationError(err); ok {
-		resp.Diagnostics.AddError("Invalid access key configuration", failure)
+	id := plan.ID.ValueString()
+	name := plan.Name.ValueString()
+	description := plan.Description.ValueString()
+	roles := accesskey.StringSetToSlice(ctx, plan.RoleNames, &resp.Diagnostics)
+	tenants := accesskey.TenantsToSDK(ctx, plan.KeyTenants, &resp.Diagnostics)
+	permittedIPs := accesskey.StringListToSlice(ctx, plan.PermittedIPs, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	key, err := r.management.AccessKey().Update(ctx, id, name, &description, roles, tenants, nil, permittedIPs, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Error updating access key", err.Error())
 		return
 	}
 
-	entity.SetValues(ctx, res.Data)
-	entity.Save(ctx, &resp.State)
+	// Handle status change (activate/deactivate)
+	desiredStatus := plan.Status.ValueString()
+	if desiredStatus != state.Status.ValueString() {
+		if desiredStatus == "inactive" {
+			if err := r.management.AccessKey().Deactivate(ctx, id); err != nil {
+				resp.Diagnostics.AddError("Error deactivating access key", err.Error())
+				return
+			}
+		} else {
+			if err := r.management.AccessKey().Activate(ctx, id); err != nil {
+				resp.Diagnostics.AddError("Error activating access key", err.Error())
+				return
+			}
+		}
+	}
+
+	accesskey.SetModelFromResponse(&plan, key, "")
+	// Preserve cleartext from state (only available on create)
+	plan.Cleartext = state.Cleartext
+	// Override status with the desired value since SetModelFromResponse uses the
+	// Update API response which doesn't reflect Activate/Deactivate calls.
+	plan.Status = types.StringValue(desiredStatus)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 
 	tflog.Info(ctx, "Access key resource updated")
 }
@@ -132,18 +164,12 @@ func (r *accessKeyResource) Update(ctx context.Context, req resource.UpdateReque
 func (r *accessKeyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	tflog.Info(ctx, "Deleting access key resource")
 
-	entity := entities.NewAccessKeyEntity(ctx, req.State, &resp.Diagnostics)
-	if entity.Diagnostics.HasError() {
+	var model accesskey.AccessKeyModel
+	if resp.Diagnostics.Append(req.State.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
 
-	id := entity.ID(ctx)
-	if entity.Diagnostics.HasError() {
-		return
-	}
-
-	err := r.client.Delete(ctx, infra.NoProjectID, accessKeyEntity, id)
-	if err != nil {
+	if err := r.management.AccessKey().Delete(ctx, model.ID.ValueString()); err != nil {
 		resp.Diagnostics.AddError("Error deleting access key", err.Error())
 		return
 	}
@@ -153,6 +179,5 @@ func (r *accessKeyResource) Delete(ctx context.Context, req resource.DeleteReque
 
 func (r *accessKeyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	tflog.Info(ctx, "Importing access key resource")
-	helpers.MarkImportState(ctx, resp)
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

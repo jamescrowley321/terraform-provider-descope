@@ -30,10 +30,13 @@ var AccessKeyAttributes = map[string]schema.Attribute{
 		Default:       stringdefault.StaticString(""),
 		PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 	},
-	"cleartext":     stringattr.SecretComputed(),
-	"client_id":     stringattr.Identifier(),
-	"created_time":  intattr.Default(0, int64planmodifier.UseStateForUnknown()),
-	"created_by":    stringattr.Identifier(),
+	"cleartext": stringattr.SecretComputed(),
+	"client_id": stringattr.Identifier(),
+	"created_time": schema.Int64Attribute{
+		Computed:      true,
+		PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+	},
+	"created_by": stringattr.Identifier(),
 }
 
 type AccessKeyModel struct {
