@@ -17,39 +17,8 @@ jobs:
       - name: Build
         uses: ./.github/actions/ci/build
 
-  unit_test:
-    name: Resource Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Setup Repo
-        uses: ./.github/actions/ci/setup
-      - name: Install Descope CLI
-        uses: descope/descopecli/.github/actions/install@592ff44d007a616aa5ceb7cbdc471f02e648ea5f # v0.8.13
-      - name: Run Resource Tests
-        shell: bash
-        env:
-          DESCOPE_MANAGEMENT_KEY: ${{ secrets.DESCOPE_MANAGEMENT_KEY }}
-          DESCOPE_PROJECT_ID: ${{ secrets.DESCOPE_PROJECT_ID }}
-          DESCOPE_BASE_URL: https://api.descope.com
-          DESCOPE_USER_AGENT: ${{ secrets.DESCOPE_USER_AGENT }}
-          TF_ACC: 1
-        run: |
-          echo "Running resource tests"
-          overall=0
-          for pkg in ./internal/models/managementkey/ ./internal/models/project/; do
-            echo "==> Testing $pkg"
-            go test -v -count=1 "$pkg" || overall=1
-            echo "==> Cooling down for rate limit..."
-            sleep 30
-          done
-          descope project list | grep '"name":"testacc-.*' | sed -e 's/.*"id":"\([^"]*\)".*/\1/' | xargs -I {} descope project delete {} --force
-          exit $overall
-
   acc_test:
     name: Acceptance Tests
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -68,15 +37,11 @@ jobs:
           TF_ACC: 1
         run: |
           echo "Running acceptance tests"
-          overall=0
-          for pkg in $(go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./...); do
-            echo "==> Testing $pkg"
-            go test -v -count=1 "$pkg" || overall=1
-            echo "==> Cooling down for rate limit..."
-            sleep 30
-          done
+          set +e
+          go test -v -p 1 ./...
+          result=$?
           descope project list | grep '"name":"testacc-.*' | sed -e 's/.*"id":"\([^"]*\)".*/\1/' | xargs -I {} descope project delete {} --force
-          exit $overall
+          exit $result
 
   lint:
     name: Run Linter
