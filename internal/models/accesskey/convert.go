@@ -2,6 +2,7 @@ package accesskey
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/descope/go-sdk/descope"
@@ -14,31 +15,37 @@ import (
 )
 
 // StringSetToSlice converts a Terraform string set to a Go string slice.
-func StringSetToSlice(_ context.Context, s strsetattr.Type, _ *diag.Diagnostics) []string {
+func StringSetToSlice(_ context.Context, s strsetattr.Type, diagnostics *diag.Diagnostics) []string {
 	if s.IsNull() || s.IsUnknown() {
 		return nil
 	}
 	elems := s.Elements()
 	result := make([]string, 0, len(elems))
 	for _, v := range elems {
-		if str, ok := v.(types.String); ok {
-			result = append(result, str.ValueString())
+		str, ok := v.(types.String)
+		if !ok {
+			diagnostics.AddError("Invalid set element", fmt.Sprintf("expected string element, got %T", v))
+			return nil
 		}
+		result = append(result, str.ValueString())
 	}
 	return result
 }
 
 // StringListToSlice converts a Terraform string list to a Go string slice.
-func StringListToSlice(_ context.Context, l strlistattr.Type, _ *diag.Diagnostics) []string {
+func StringListToSlice(_ context.Context, l strlistattr.Type, diagnostics *diag.Diagnostics) []string {
 	if l.IsNull() || l.IsUnknown() {
 		return nil
 	}
 	elems := l.Elements()
 	result := make([]string, 0, len(elems))
 	for _, v := range elems {
-		if str, ok := v.(types.String); ok {
-			result = append(result, str.ValueString())
+		str, ok := v.(types.String)
+		if !ok {
+			diagnostics.AddError("Invalid list element", fmt.Sprintf("expected string element, got %T", v))
+			return nil
 		}
+		result = append(result, str.ValueString())
 	}
 	return result
 }
@@ -68,7 +75,12 @@ func anyMapToStringMap(m map[string]any) map[string]string {
 	}
 	result := make(map[string]string, len(m))
 	for k, v := range m {
-		result[k] = fmt.Sprintf("%v", v)
+		if s, ok := v.(string); ok {
+			result[k] = s
+		} else {
+			b, _ := json.Marshal(v)
+			result[k] = string(b)
+		}
 	}
 	return result
 }
@@ -125,14 +137,10 @@ func SetModelFromResponse(model *AccessKeyModel, key *descope.AccessKeyResponse,
 	model.PermittedIPs = strlistattr.Value(key.PermittedIPs)
 
 	// Set custom_claims
-	if len(key.CustomClaims) > 0 {
-		model.CustomClaims = strmapattr.Value(anyMapToStringMap(key.CustomClaims))
-	}
+	model.CustomClaims = strmapattr.Value(anyMapToStringMap(key.CustomClaims))
 
 	// Set custom_attributes
-	if len(key.CustomAttributes) > 0 {
-		model.CustomAttributes = strmapattr.Value(anyMapToStringMap(key.CustomAttributes))
-	}
+	model.CustomAttributes = strmapattr.Value(anyMapToStringMap(key.CustomAttributes))
 
 	// Set key_tenants
 	if key.KeyTenants != nil {

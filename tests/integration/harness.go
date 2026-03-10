@@ -49,7 +49,7 @@ func NewHarness(t *testing.T) *Harness {
 	binDir := filepath.Dir(binaryPath)
 	terraformrc := filepath.Join(workDir, ".terraformrc")
 	content := fmt.Sprintf("provider_installation {\n  dev_overrides {\n    \"descope/descope\" = %q\n  }\n  direct {}\n}\n", binDir)
-	require.NoError(t, os.WriteFile(terraformrc, []byte(content), 0644))
+	require.NoError(t, os.WriteFile(terraformrc, []byte(content), 0600))
 
 	env := append(os.Environ(), "TF_CLI_CONFIG_FILE="+terraformrc)
 
@@ -215,7 +215,7 @@ func (h *Harness) copyTestdata(src, dst string) {
 	h.t.Helper()
 	data, err := os.ReadFile(testdataPath(src))
 	require.NoError(h.t, err, "reading testdata/%s", src)
-	require.NoError(h.t, os.WriteFile(filepath.Join(h.workDir, dst), data, 0644))
+	require.NoError(h.t, os.WriteFile(filepath.Join(h.workDir, dst), data, 0600))
 }
 
 func requireEnvVars(t *testing.T) {

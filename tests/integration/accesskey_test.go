@@ -38,9 +38,9 @@ func TestAccessKeyCRUD(t *testing.T) {
 	assert.Equal(t, "Updated via integration test", attrs["description"])
 	assert.Equal(t, id, fmt.Sprintf("%v", attrs["id"]))
 
-	// Import (remove from state, then import by ID)
+	// Import (remove from state, then import by ID using update fixture to match current state)
 	h.StateRM("descope_access_key.test")
-	h.LoadFixture("access_key/create.tf")
+	h.LoadFixture("access_key/update.tf")
 	h.Import("descope_access_key.test", id, nameVar)
 
 	attrs = h.StateResource("descope_access_key.test")

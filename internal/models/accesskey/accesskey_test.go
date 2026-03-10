@@ -53,8 +53,10 @@ func TestAccessKey(t *testing.T) {
 		},
 		// Test import
 		resource.TestStep{
-			ResourceName: a.Path(),
-			ImportState:  true,
+			ResourceName:            a.Path(),
+			ImportState:             true,
+			ImportStateVerify:       true,
+			ImportStateVerifyIgnore: []string{"cleartext"},
 		},
 		// Test with description, permitted_ips, and custom_claims
 		resource.TestStep{
@@ -73,13 +75,6 @@ func TestAccessKey(t *testing.T) {
 				"custom_claims.%":      "1",
 				"custom_claims.claim1": "value1",
 			}),
-		},
-		// Destroy resource
-		resource.TestStep{
-			Config: a.Config(`
-				role_names = ["Tenant Admin"]
-			`),
-			Destroy: true,
 		},
 	)
 }
