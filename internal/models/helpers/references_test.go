@@ -51,7 +51,7 @@ func TestModelReference_ProviderValue(t *testing.T) {
 }
 
 func TestReferencesMap_Add_Get(t *testing.T) {
-	t.Run("adds and retrieves reference", func(t *testing.T) {
+	t.Run("stores reference and retrieves by key and name", func(t *testing.T) {
 		refs := ReferencesMap{}
 		refs.Add(ConnectorReferenceKey, "http", "id-123", "MyConnector")
 
@@ -75,7 +75,7 @@ func TestReferencesMap_Add_Get(t *testing.T) {
 		}
 	})
 
-	t.Run("descope connector special case", func(t *testing.T) {
+	t.Run("returns synthetic reference for DescopeConnector without Add", func(t *testing.T) {
 		refs := ReferencesMap{}
 		ref := refs.Get(ConnectorReferenceKey, DescopeConnector)
 		if ref == nil {
@@ -86,7 +86,7 @@ func TestReferencesMap_Add_Get(t *testing.T) {
 		}
 	})
 
-	t.Run("generates key when ID is empty", func(t *testing.T) {
+	t.Run("auto-generates key when added with empty ID", func(t *testing.T) {
 		refs := ReferencesMap{}
 		refs.Add(RoleReferenceKey, "role", "", "MyRole")
 
@@ -104,7 +104,7 @@ func TestReferencesMap_Add_Get(t *testing.T) {
 }
 
 func TestReferencesMap_Name(t *testing.T) {
-	t.Run("finds name by ID", func(t *testing.T) {
+	t.Run("reverse-looks up name from reference ID", func(t *testing.T) {
 		refs := ReferencesMap{}
 		refs.Add(ConnectorReferenceKey, "http", "id-123", "MyConnector")
 

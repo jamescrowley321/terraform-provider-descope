@@ -9,6 +9,9 @@ import (
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/strlistattr"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/strmapattr"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
+	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/listtype"
+	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/valuelisttype"
+	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/valuesettype"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -18,21 +21,31 @@ func TestStringSetToSlice(t *testing.T) {
 
 	t.Run("returns nil for null set", func(t *testing.T) {
 		var diags diag.Diagnostics
-		s := strsetattr.Empty()
-		// Create a null set by using the zero value workaround
+		s := valuesettype.NewNullValue[types.String](ctx)
 		result := StringSetToSlice(ctx, s, &diags)
 		if diags.HasError() {
 			t.Fatalf("unexpected error: %v", diags.Errors())
 		}
-		// Empty set returns empty slice, not nil
-		if len(result) != 0 {
-			t.Fatalf("expected empty slice, got %v", result)
+		if result != nil {
+			t.Fatalf("expected nil for null set, got %v", result)
 		}
 	})
 
-	t.Run("converts string set to slice", func(t *testing.T) {
+	t.Run("returns nil for unknown set", func(t *testing.T) {
 		var diags diag.Diagnostics
-		s := strsetattr.Value([]string{"admin", "user"})
+		s := valuesettype.NewUnknownValue[types.String](ctx)
+		result := StringSetToSlice(ctx, s, &diags)
+		if diags.HasError() {
+			t.Fatalf("unexpected error: %v", diags.Errors())
+		}
+		if result != nil {
+			t.Fatalf("expected nil for unknown set, got %v", result)
+		}
+	})
+
+	t.Run("extracts all string values preserving content", func(t *testing.T) {
+		var diags diag.Diagnostics
+		s := strsetattr.Value([]string{"admin", "user"}) //nolint:contextcheck // Value uses context.Background() by design
 		result := StringSetToSlice(ctx, s, &diags)
 		if diags.HasError() {
 			t.Fatalf("unexpected error: %v", diags.Errors())
@@ -49,9 +62,9 @@ func TestStringSetToSlice(t *testing.T) {
 		}
 	})
 
-	t.Run("handles empty set", func(t *testing.T) {
+	t.Run("returns empty slice for empty set", func(t *testing.T) {
 		var diags diag.Diagnostics
-		s := strsetattr.Value([]string{})
+		s := strsetattr.Empty() //nolint:contextcheck // Empty uses context.Background() by design
 		result := StringSetToSlice(ctx, s, &diags)
 		if diags.HasError() {
 			t.Fatalf("unexpected error: %v", diags.Errors())
@@ -65,9 +78,33 @@ func TestStringSetToSlice(t *testing.T) {
 func TestStringListToSlice(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("converts string list to slice", func(t *testing.T) {
+	t.Run("returns nil for null list", func(t *testing.T) {
 		var diags diag.Diagnostics
-		l := strlistattr.Value([]string{"10.0.0.1", "10.0.0.2"})
+		l := valuelisttype.NewNullValue[types.String](ctx)
+		result := StringListToSlice(ctx, l, &diags)
+		if diags.HasError() {
+			t.Fatalf("unexpected error: %v", diags.Errors())
+		}
+		if result != nil {
+			t.Fatalf("expected nil for null list, got %v", result)
+		}
+	})
+
+	t.Run("returns nil for unknown list", func(t *testing.T) {
+		var diags diag.Diagnostics
+		l := valuelisttype.NewUnknownValue[types.String](ctx)
+		result := StringListToSlice(ctx, l, &diags)
+		if diags.HasError() {
+			t.Fatalf("unexpected error: %v", diags.Errors())
+		}
+		if result != nil {
+			t.Fatalf("expected nil for unknown list, got %v", result)
+		}
+	})
+
+	t.Run("preserves element order from list", func(t *testing.T) {
+		var diags diag.Diagnostics
+		l := strlistattr.Value([]string{"10.0.0.1", "10.0.0.2"}) //nolint:contextcheck // Value uses context.Background() by design
 		result := StringListToSlice(ctx, l, &diags)
 		if diags.HasError() {
 			t.Fatalf("unexpected error: %v", diags.Errors())
@@ -80,9 +117,9 @@ func TestStringListToSlice(t *testing.T) {
 		}
 	})
 
-	t.Run("handles empty list", func(t *testing.T) {
+	t.Run("returns empty slice for empty list", func(t *testing.T) {
 		var diags diag.Diagnostics
-		l := strlistattr.Value([]string{})
+		l := strlistattr.Value([]string{}) //nolint:contextcheck // Value uses context.Background() by design
 		result := StringListToSlice(ctx, l, &diags)
 		if diags.HasError() {
 			t.Fatalf("unexpected error: %v", diags.Errors())
@@ -94,8 +131,8 @@ func TestStringListToSlice(t *testing.T) {
 }
 
 func TestStringMapToAnyMap(t *testing.T) {
-	t.Run("returns nil for null map", func(t *testing.T) {
-		m := strmapattr.Empty()
+	t.Run("returns nil for empty map", func(t *testing.T) {
+		m := strmapattr.Empty() //nolint:contextcheck // Empty uses context.Background() by design
 		result := StringMapToAnyMap(m)
 		// Empty map returns nil because len(elems) == 0
 		if result != nil {
@@ -103,8 +140,8 @@ func TestStringMapToAnyMap(t *testing.T) {
 		}
 	})
 
-	t.Run("converts string map to any map", func(t *testing.T) {
-		m := strmapattr.Value(map[string]string{"key1": "val1", "key2": "val2"})
+	t.Run("converts string map values to any interface values", func(t *testing.T) {
+		m := strmapattr.Value(map[string]string{"key1": "val1", "key2": "val2"}) //nolint:contextcheck // Value uses context.Background() by design
 		result := StringMapToAnyMap(m)
 		if len(result) != 2 {
 			t.Fatalf("expected 2 elements, got %d", len(result))
@@ -123,7 +160,7 @@ func TestAnyMapToStringMap(t *testing.T) {
 		}
 	})
 
-	t.Run("converts string values directly", func(t *testing.T) {
+	t.Run("passes through string values without JSON encoding", func(t *testing.T) {
 		m := map[string]any{"key1": "val1", "key2": "val2"}
 		result := anyMapToStringMap(m)
 		if result["key1"] != "val1" || result["key2"] != "val2" {
@@ -142,17 +179,25 @@ func TestAnyMapToStringMap(t *testing.T) {
 		}
 	})
 
-	t.Run("handles empty map", func(t *testing.T) {
+	t.Run("returns empty map for empty input", func(t *testing.T) {
 		m := map[string]any{}
 		result := anyMapToStringMap(m)
 		if len(result) != 0 {
 			t.Fatalf("expected empty map, got %v", result)
 		}
 	})
+
+	t.Run("produces empty string for unmarshalable value", func(t *testing.T) {
+		m := map[string]any{"bad": make(chan int)}
+		result := anyMapToStringMap(m)
+		if result["bad"] != "" {
+			t.Fatalf("expected empty string for unmarshalable value, got %q", result["bad"])
+		}
+	})
 }
 
 func TestSetModelFromResponse(t *testing.T) {
-	t.Run("populates all fields from response", func(t *testing.T) {
+	t.Run("maps all SDK response fields to model attributes", func(t *testing.T) {
 		model := &AccessKeyModel{}
 		resp := &descope.AccessKeyResponse{
 			ID:               "key-123",
@@ -187,6 +232,33 @@ func TestSetModelFromResponse(t *testing.T) {
 		if model.ExpireTime.ValueInt64() != 1800000000 {
 			t.Fatalf("expected ExpireTime 1800000000, got %d", model.ExpireTime.ValueInt64())
 		}
+
+		// Verify RoleNames values
+		roleElems := model.RoleNames.Elements()
+		if len(roleElems) != 1 {
+			t.Fatalf("expected 1 role, got %d", len(roleElems))
+		}
+		if str, ok := roleElems[0].(types.String); !ok || str.ValueString() != "admin" {
+			t.Fatalf("expected role 'admin', got %v", roleElems[0])
+		}
+
+		// Verify PermittedIPs values
+		ipElems := model.PermittedIPs.Elements()
+		if len(ipElems) != 1 {
+			t.Fatalf("expected 1 IP, got %d", len(ipElems))
+		}
+		if str, ok := ipElems[0].(types.String); !ok || str.ValueString() != "10.0.0.1" {
+			t.Fatalf("expected IP '10.0.0.1', got %v", ipElems[0])
+		}
+
+		// Verify CustomClaims values
+		claimElems := model.CustomClaims.Elements()
+		if len(claimElems) != 1 {
+			t.Fatalf("expected 1 claim, got %d", len(claimElems))
+		}
+		if str, ok := claimElems["claim1"].(types.String); !ok || str.ValueString() != "value1" {
+			t.Fatalf("expected claim1='value1', got %v", claimElems["claim1"])
+		}
 	})
 
 	t.Run("defaults status to active when empty", func(t *testing.T) {
@@ -196,7 +268,7 @@ func TestSetModelFromResponse(t *testing.T) {
 		assertEqual(t, "Status", model.Status.ValueString(), "active")
 	})
 
-	t.Run("does not set cleartext when empty", func(t *testing.T) {
+	t.Run("leaves cleartext null when not provided", func(t *testing.T) {
 		model := &AccessKeyModel{}
 		resp := &descope.AccessKeyResponse{}
 		SetModelFromResponse(model, resp, "")
@@ -205,7 +277,7 @@ func TestSetModelFromResponse(t *testing.T) {
 		}
 	})
 
-	t.Run("maps key tenants from response", func(t *testing.T) {
+	t.Run("converts SDK tenants with roles to model list", func(t *testing.T) {
 		model := &AccessKeyModel{}
 		resp := &descope.AccessKeyResponse{
 			KeyTenants: []*descope.AssociatedTenant{
@@ -221,7 +293,7 @@ func TestSetModelFromResponse(t *testing.T) {
 		}
 	})
 
-	t.Run("sets empty tenants list when nil", func(t *testing.T) {
+	t.Run("produces empty model list when SDK tenants is nil", func(t *testing.T) {
 		model := &AccessKeyModel{}
 		resp := &descope.AccessKeyResponse{KeyTenants: nil}
 		SetModelFromResponse(model, resp, "")
@@ -232,7 +304,7 @@ func TestSetModelFromResponse(t *testing.T) {
 		}
 	})
 
-	t.Run("handles nil custom claims and attributes", func(t *testing.T) {
+	t.Run("sets non-unknown map attrs when SDK claims and attributes are nil", func(t *testing.T) {
 		model := &AccessKeyModel{}
 		resp := &descope.AccessKeyResponse{
 			CustomClaims:     nil,
@@ -260,8 +332,9 @@ func assertEqual(t *testing.T, field string, got, want string) {
 func TestTenantsToSDK(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("converts tenant models to SDK structs", func(t *testing.T) {
+	t.Run("converts model tenants with roles to SDK AssociatedTenant structs", func(t *testing.T) {
 		var diags diag.Diagnostics
+		//nolint:contextcheck // Value helpers use context.Background() by design
 		tenants := listattr.Value([]*TenantModel{
 			{
 				TenantID: types.StringValue("t1"),
@@ -288,15 +361,39 @@ func TestTenantsToSDK(t *testing.T) {
 		}
 	})
 
-	t.Run("returns nil for empty tenant list", func(t *testing.T) {
+	t.Run("returns empty slice for empty tenant list", func(t *testing.T) {
 		var diags diag.Diagnostics
-		tenants := listattr.Empty[TenantModel]()
+		tenants := listattr.Empty[TenantModel]() //nolint:contextcheck // Empty uses context.Background() by design
 		result := TenantsToSDK(ctx, tenants, &diags)
 		if diags.HasError() {
 			t.Fatalf("unexpected error: %v", diags.Errors())
 		}
 		if len(result) != 0 {
 			t.Fatalf("expected empty slice, got %v", result)
+		}
+	})
+
+	t.Run("returns nil for null tenant list", func(t *testing.T) {
+		var diags diag.Diagnostics
+		tenants := listtype.NewNullValue[TenantModel](ctx)
+		result := TenantsToSDK(ctx, tenants, &diags)
+		if diags.HasError() {
+			t.Fatalf("unexpected error: %v", diags.Errors())
+		}
+		if result != nil {
+			t.Fatalf("expected nil for null tenants, got %v", result)
+		}
+	})
+
+	t.Run("returns nil for unknown tenant list", func(t *testing.T) {
+		var diags diag.Diagnostics
+		tenants := listtype.NewUnknownValue[TenantModel](ctx)
+		result := TenantsToSDK(ctx, tenants, &diags)
+		if diags.HasError() {
+			t.Fatalf("unexpected error: %v", diags.Errors())
+		}
+		if result != nil {
+			t.Fatalf("expected nil for unknown tenants, got %v", result)
 		}
 	})
 }

@@ -18,28 +18,28 @@ func Require[T any](v T, diags diag.Diagnostics) T {
 	return v
 }
 
-// Checks if any of the provided values are in an Unknown state.
+// Checks if any of the provided values are in an Unknown state,
+// including unknown elements within maps, lists, and objects.
 func HasUnknownValues(values ...any) bool {
 	for _, v := range values {
-		switch v := v.(type) {
-		case interface{ IsUnknown() bool }:
-			if v.IsUnknown() {
-				return true
-			}
-		case interface{ Elements() map[string]attr.Value }:
-			for _, elem := range v.Elements() {
+		if u, ok := v.(interface{ IsUnknown() bool }); ok && u.IsUnknown() {
+			return true
+		}
+		if m, ok := v.(interface{ Elements() map[string]attr.Value }); ok {
+			for _, elem := range m.Elements() {
 				if elem.IsUnknown() {
 					return true
 				}
 			}
-		case interface{ Elements() []attr.Value }:
-			for _, elem := range v.Elements() {
+		} else if l, ok := v.(interface{ Elements() []attr.Value }); ok {
+			for _, elem := range l.Elements() {
 				if elem.IsUnknown() {
 					return true
 				}
 			}
-		case interface{ Attributes() map[string]attr.Value }:
-			for _, elem := range v.Attributes() {
+		}
+		if o, ok := v.(interface{ Attributes() map[string]attr.Value }); ok {
+			for _, elem := range o.Attributes() {
 				if elem.IsUnknown() {
 					return true
 				}

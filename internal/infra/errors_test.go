@@ -8,7 +8,7 @@ import (
 )
 
 func TestAsValidationError(t *testing.T) {
-	t.Run("returns message for validation error", func(t *testing.T) {
+	t.Run("extracts message from descope validation error", func(t *testing.T) {
 		err := &descope.Error{
 			Code:    errCodeValidationError,
 			Message: "name is required",
@@ -22,7 +22,7 @@ func TestAsValidationError(t *testing.T) {
 		}
 	})
 
-	t.Run("returns false for non-validation error code", func(t *testing.T) {
+	t.Run("rejects descope errors with non-validation error codes", func(t *testing.T) {
 		err := &descope.Error{
 			Code:    "E999999",
 			Message: "something else",
@@ -48,7 +48,7 @@ func TestAsValidationError(t *testing.T) {
 		}
 	})
 
-	t.Run("returns false for validation error with empty message", func(t *testing.T) {
+	t.Run("rejects validation error when message is empty", func(t *testing.T) {
 		err := &descope.Error{
 			Code:    errCodeValidationError,
 			Message: "",
@@ -61,7 +61,7 @@ func TestAsValidationError(t *testing.T) {
 }
 
 func TestIsNotFoundError(t *testing.T) {
-	t.Run("returns true for not-found error", func(t *testing.T) {
+	t.Run("detects 404 status code via SDK IsNotFound", func(t *testing.T) {
 		// The SDK's IsNotFound() checks the HTTP status code in Info
 		err := &descope.Error{
 			Code: "E000000",
@@ -74,7 +74,7 @@ func TestIsNotFoundError(t *testing.T) {
 		}
 	})
 
-	t.Run("returns false for other descope error", func(t *testing.T) {
+	t.Run("rejects non-404 descope errors", func(t *testing.T) {
 		err := &descope.Error{
 			Code: "E999999",
 			Info: map[string]any{

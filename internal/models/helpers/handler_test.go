@@ -65,10 +65,10 @@ func TestHandler_Invalid(t *testing.T) {
 		t.Fatalf("unexpected summary: %q", diags.Errors()[0].Summary())
 	}
 
-	// Second call should not add another error
+	// Second Invalid is suppressed because diagnostics already has an error
 	h.Invalid("another error")
 	if len(diags.Errors()) != 1 {
-		t.Fatalf("expected 1 error (suppressed duplicate), got %d", len(diags.Errors()))
+		t.Fatalf("expected 1 error (second suppressed by HasError guard), got %d", len(diags.Errors()))
 	}
 }
 
@@ -84,10 +84,10 @@ func TestHandler_Missing(t *testing.T) {
 		t.Fatalf("unexpected summary: %q", diags.Errors()[0].Summary())
 	}
 
-	// Second call should not add another error
+	// Second Missing is suppressed because diagnostics already has an error
 	h.Missing("another missing")
 	if len(diags.Errors()) != 1 {
-		t.Fatalf("expected 1 error (suppressed duplicate), got %d", len(diags.Errors()))
+		t.Fatalf("expected 1 error (second suppressed by HasError guard), got %d", len(diags.Errors()))
 	}
 }
 
@@ -102,4 +102,68 @@ func TestHandler_Conflict(t *testing.T) {
 	if diags.Errors()[0].Summary() != "Conflicting Attribute Values" {
 		t.Fatalf("unexpected summary: %q", diags.Errors()[0].Summary())
 	}
+
+	// Second call should be suppressed
+	h.Conflict("another conflict")
+	if len(diags.Errors()) != 1 {
+		t.Fatalf("expected 1 error (suppressed duplicate), got %d", len(diags.Errors()))
+	}
+}
+
+func TestHandler_CrossTypeSuppression(t *testing.T) {
+	t.Run("Error suppresses subsequent Invalid", func(t *testing.T) {
+		var diags diag.Diagnostics
+		h := NewHandler(context.Background(), &diags)
+
+		h.Error("first error", "detail")
+		h.Invalid("should be suppressed")
+		if len(diags.Errors()) != 1 {
+			t.Fatalf("expected 1 error, got %d", len(diags.Errors()))
+		}
+		if diags.Errors()[0].Summary() != "first error" {
+			t.Fatalf("expected first error to remain, got %q", diags.Errors()[0].Summary())
+		}
+	})
+
+	t.Run("Invalid suppresses subsequent Missing", func(t *testing.T) {
+		var diags diag.Diagnostics
+		h := NewHandler(context.Background(), &diags)
+
+		h.Invalid("invalid field")
+		h.Missing("should be suppressed")
+		if len(diags.Errors()) != 1 {
+			t.Fatalf("expected 1 error, got %d", len(diags.Errors()))
+		}
+		if diags.Errors()[0].Summary() != "Invalid Attribute Value" {
+			t.Fatalf("expected Invalid error to remain, got %q", diags.Errors()[0].Summary())
+		}
+	})
+
+	t.Run("Missing suppresses subsequent Conflict", func(t *testing.T) {
+		var diags diag.Diagnostics
+		h := NewHandler(context.Background(), &diags)
+
+		h.Missing("missing field")
+		h.Conflict("should be suppressed")
+		if len(diags.Errors()) != 1 {
+			t.Fatalf("expected 1 error, got %d", len(diags.Errors()))
+		}
+		if diags.Errors()[0].Summary() != "Missing Attribute Value" {
+			t.Fatalf("expected Missing error to remain, got %q", diags.Errors()[0].Summary())
+		}
+	})
+
+	t.Run("Error does not suppress warnings", func(t *testing.T) {
+		var diags diag.Diagnostics
+		h := NewHandler(context.Background(), &diags)
+
+		h.Error("an error", "detail")
+		h.Warn("a warning", "detail")
+		if len(diags.Errors()) != 1 {
+			t.Fatalf("expected 1 error, got %d", len(diags.Errors()))
+		}
+		if len(diags.Warnings()) != 1 {
+			t.Fatalf("expected 1 warning, got %d", len(diags.Warnings()))
+		}
+	})
 }
