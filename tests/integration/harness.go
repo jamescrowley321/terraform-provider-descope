@@ -91,16 +91,6 @@ func (h *Harness) Apply(vars ...string) string {
 	return h.terraform(args...)
 }
 
-// TryApply runs terraform apply and returns stdout and any error instead of
-// failing the test. Useful for detecting auth failures that should skip a test.
-func (h *Harness) TryApply(vars ...string) (string, error) {
-	h.t.Helper()
-	h.lastVars = vars
-	args := []string{"apply", "-auto-approve", "-no-color", "-input=false"}
-	args = append(args, varArgs(vars)...)
-	return h.terraformMayFail(args...)
-}
-
 // Plan runs terraform plan and returns stdout.
 func (h *Harness) Plan(vars ...string) string {
 	h.t.Helper()
@@ -219,18 +209,6 @@ func (h *Harness) terraform(args ...string) string {
 			strings.Join(args, " "), stdout.String(), stderr.String(), err)
 	}
 	return stdout.String()
-}
-
-func (h *Harness) terraformMayFail(args ...string) (string, error) {
-	h.t.Helper()
-	cmd := exec.Command("terraform", args...)
-	cmd.Dir = h.workDir
-	cmd.Env = h.env
-	var combined bytes.Buffer
-	cmd.Stdout = &combined
-	cmd.Stderr = &combined
-	err := cmd.Run()
-	return combined.String(), err
 }
 
 func (h *Harness) copyTestdata(src, dst string) {

@@ -4,7 +4,6 @@ package integration
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,14 +15,9 @@ func TestAccessKeyCRUD(t *testing.T) {
 	name := GenerateName(t)
 	nameVar := "name=" + name
 
-	// Create — the access key resource uses the Descope SDK which requires a
-	// management key with bearer token auth. Skip if the key doesn't work.
+	// Create
 	h.LoadFixture("access_key/create.tf")
-	out, err := h.TryApply(nameVar)
-	if err != nil && strings.Contains(out, "missing a valid bearer token") {
-		t.Skip("skipping: DESCOPE_MANAGEMENT_KEY does not support SDK bearer auth (access key tests require a company-level management key)")
-	}
-	require.NoError(t, err, "terraform apply failed:\n%s", out)
+	out := h.Apply(nameVar)
 	assert.Contains(t, out, "Apply complete!")
 
 	attrs := h.StateResource("descope_access_key.test")
