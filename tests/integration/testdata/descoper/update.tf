@@ -11,7 +11,7 @@ resource "descope_descoper" "test" {
   name  = var.name
   phone = "+15551234567"
 
-  rbac {
+  rbac = {
     is_company_admin = true
   }
 }

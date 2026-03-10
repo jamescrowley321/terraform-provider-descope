@@ -10,7 +10,7 @@ resource "descope_descoper" "test" {
   email = var.email
   name  = var.name
 
-  rbac {
+  rbac = {
     is_company_admin = true
   }
 }

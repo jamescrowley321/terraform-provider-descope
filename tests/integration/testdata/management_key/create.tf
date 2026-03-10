@@ -5,7 +5,7 @@ variable "name" {
 resource "descope_management_key" "test" {
   name = var.name
 
-  rebac {
+  rebac = {
     company_roles = ["Company Admin"]
   }
 }
