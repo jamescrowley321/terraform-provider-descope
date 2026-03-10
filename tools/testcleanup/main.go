@@ -14,10 +14,14 @@ import (
 
 	"github.com/descope/go-sdk/descope"
 	descopeclient "github.com/descope/go-sdk/descope/client"
-	"github.com/descope/go-sdk/descope/sdk"
 )
 
 const testPrefix = "testacc-"
+
+type resource struct {
+	name string
+	id   string
+}
 
 func main() {
 	managementKey := os.Getenv("DESCOPE_MANAGEMENT_KEY")
@@ -43,21 +47,78 @@ func main() {
 	mgmt := client.Management
 	var totalDeleted, totalFailed int
 
-	d, f := cleanupAccessKeys(ctx, mgmt)
-	totalDeleted += d
-	totalFailed += f
+	cleanups := []struct {
+		name   string
+		listFn func() ([]resource, error)
+		delFn  func(resource) error
+	}{
+		{
+			name: "access key",
+			listFn: func() ([]resource, error) {
+				keys, err := mgmt.AccessKey().SearchAll(ctx, &descope.AccessKeysSearchOptions{})
+				if err != nil {
+					return nil, err
+				}
+				return collectResources(keys, func(k *descope.AccessKeyResponse) (string, string) { return k.Name, k.ID }), nil
+			},
+			delFn: func(r resource) error { return mgmt.AccessKey().Delete(ctx, r.id) },
+		},
+		{
+			name: "management key",
+			listFn: func() ([]resource, error) {
+				keys, err := mgmt.ManagementKey().Search(ctx, &descope.MgmtKeySearchOptions{})
+				if err != nil {
+					return nil, err
+				}
+				return collectResources(keys, func(k *descope.MgmtKey) (string, string) { return k.Name, k.ID }), nil
+			},
+			delFn: func(r resource) error { _, err := mgmt.ManagementKey().Delete(ctx, []string{r.id}); return err },
+		},
+		{
+			name: "descoper",
+			listFn: func() ([]resource, error) {
+				descopers, _, err := mgmt.Descoper().List(ctx, &descope.DescoperLoadOptions{})
+				if err != nil {
+					return nil, err
+				}
+				return collectResources(descopers, func(d *descope.Descoper) (string, string) {
+					name := ""
+					if d.Attributes != nil {
+						name = d.Attributes.DisplayName
+					}
+					return name, d.ID
+				}), nil
+			},
+			delFn: func(r resource) error { return mgmt.Descoper().Delete(ctx, r.id) },
+		},
+		{
+			name: "project",
+			listFn: func() ([]resource, error) {
+				projects, err := mgmt.Project().ListProjects(ctx)
+				if err != nil {
+					return nil, err
+				}
+				return collectResources(projects, func(p *descope.Project) (string, string) { return p.Name, p.ID }), nil
+			},
+			delFn: func(r resource) error {
+				projectClient, err := descopeclient.NewWithConfig(&descopeclient.Config{
+					ManagementKey:  managementKey,
+					DescopeBaseURL: baseURL,
+					ProjectID:      r.id,
+				})
+				if err != nil {
+					return err
+				}
+				return projectClient.Management.Project().Delete(ctx)
+			},
+		},
+	}
 
-	d, f = cleanupManagementKeys(ctx, mgmt)
-	totalDeleted += d
-	totalFailed += f
-
-	d, f = cleanupDescopers(ctx, mgmt)
-	totalDeleted += d
-	totalFailed += f
-
-	d, f = cleanupProjects(ctx, mgmt, managementKey, baseURL)
-	totalDeleted += d
-	totalFailed += f
+	for _, c := range cleanups {
+		d, f := runCleanup(c.name, c.listFn, c.delFn)
+		totalDeleted += d
+		totalFailed += f
+	}
 
 	fmt.Printf("\ntotal: %d deleted, %d failed\n", totalDeleted, totalFailed)
 	if totalFailed > 0 {
@@ -65,45 +126,27 @@ func main() {
 	}
 }
 
-func cleanupAccessKeys(ctx context.Context, mgmt sdk.Management) (deleted, failed int) {
-	keys, err := mgmt.AccessKey().SearchAll(ctx, &descope.AccessKeysSearchOptions{})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to search access keys: %v\n", err)
-		return 0, 1
-	}
-
-	for _, k := range keys {
-		if !strings.HasPrefix(k.Name, testPrefix) {
-			continue
+func collectResources[T any](items []T, extract func(T) (name, id string)) []resource {
+	var result []resource
+	for _, item := range items {
+		name, id := extract(item)
+		if strings.HasPrefix(name, testPrefix) {
+			result = append(result, resource{name: name, id: id})
 		}
-		fmt.Printf("deleting access key %s (%s)...\n", k.Name, k.ID)
-		if err := mgmt.AccessKey().Delete(ctx, k.ID); err != nil {
-			fmt.Fprintf(os.Stderr, "  failed: %v\n", err)
-			failed++
-			continue
-		}
-		deleted++
 	}
-
-	if deleted > 0 || failed > 0 {
-		fmt.Printf("access keys: %d deleted, %d failed\n", deleted, failed)
-	}
-	return
+	return result
 }
 
-func cleanupManagementKeys(ctx context.Context, mgmt sdk.Management) (deleted, failed int) {
-	keys, err := mgmt.ManagementKey().Search(ctx, &descope.MgmtKeySearchOptions{})
+func runCleanup(typeName string, listFn func() ([]resource, error), delFn func(resource) error) (deleted, failed int) {
+	resources, err := listFn()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to search management keys: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to list %ss: %v\n", typeName, err)
 		return 0, 1
 	}
 
-	for _, k := range keys {
-		if !strings.HasPrefix(k.Name, testPrefix) {
-			continue
-		}
-		fmt.Printf("deleting management key %s (%s)...\n", k.Name, k.ID)
-		if _, err := mgmt.ManagementKey().Delete(ctx, []string{k.ID}); err != nil {
+	for _, r := range resources {
+		fmt.Printf("deleting %s %s (%s)...\n", typeName, r.name, r.id)
+		if err := delFn(r); err != nil {
 			fmt.Fprintf(os.Stderr, "  failed: %v\n", err)
 			failed++
 			continue
@@ -112,76 +155,7 @@ func cleanupManagementKeys(ctx context.Context, mgmt sdk.Management) (deleted, f
 	}
 
 	if deleted > 0 || failed > 0 {
-		fmt.Printf("management keys: %d deleted, %d failed\n", deleted, failed)
-	}
-	return
-}
-
-func cleanupDescopers(ctx context.Context, mgmt sdk.Management) (deleted, failed int) {
-	descopers, _, err := mgmt.Descoper().List(ctx, &descope.DescoperLoadOptions{})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to list descopers: %v\n", err)
-		return 0, 1
-	}
-
-	for _, d := range descopers {
-		name := ""
-		if d.Attributes != nil {
-			name = d.Attributes.DisplayName
-		}
-		if !strings.HasPrefix(name, testPrefix) {
-			continue
-		}
-		fmt.Printf("deleting descoper %s (%s)...\n", name, d.ID)
-		if err := mgmt.Descoper().Delete(ctx, d.ID); err != nil {
-			fmt.Fprintf(os.Stderr, "  failed: %v\n", err)
-			failed++
-			continue
-		}
-		deleted++
-	}
-
-	if deleted > 0 || failed > 0 {
-		fmt.Printf("descopers: %d deleted, %d failed\n", deleted, failed)
-	}
-	return
-}
-
-func cleanupProjects(ctx context.Context, mgmt sdk.Management, managementKey, baseURL string) (deleted, failed int) {
-	projects, err := mgmt.Project().ListProjects(ctx)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to list projects: %v\n", err)
-		return 0, 1
-	}
-
-	for _, p := range projects {
-		if !strings.HasPrefix(p.Name, testPrefix) {
-			continue
-		}
-		fmt.Printf("deleting project %s (%s)...\n", p.Name, p.ID)
-
-		// Project.Delete requires a project-scoped client
-		projectClient, err := descopeclient.NewWithConfig(&descopeclient.Config{
-			ManagementKey:  managementKey,
-			DescopeBaseURL: baseURL,
-			ProjectID:      p.ID,
-		})
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "  failed to create project client: %v\n", err)
-			failed++
-			continue
-		}
-
-		if err := projectClient.Management.Project().Delete(ctx); err != nil {
-			fmt.Fprintf(os.Stderr, "  failed: %v\n", err)
-			failed++
-			continue
-		}
-		deleted++
-	}
-
-	if deleted > 0 || failed > 0 {
-		fmt.Printf("projects: %d deleted, %d failed\n", deleted, failed)
+		fmt.Printf("%ss: %d deleted, %d failed\n", typeName, deleted, failed)
 	}
 	return
 }

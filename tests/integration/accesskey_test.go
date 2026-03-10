@@ -3,7 +3,6 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,37 +13,26 @@ func TestAccessKeyCRUD(t *testing.T) {
 	h := NewHarness(t)
 	name := GenerateName(t)
 	nameVar := "name=" + name
+	address := "descope_access_key.test"
 
 	// Create
-	h.LoadFixture("access_key/create.tf")
-	out := h.Apply(nameVar)
-	assert.Contains(t, out, "Apply complete!")
-
-	attrs := h.StateResource("descope_access_key.test")
+	attrs := h.ApplyFixture("access_key/create.tf", address, nameVar)
 	assert.Equal(t, name, attrs["name"])
 	assert.Equal(t, "active", attrs["status"])
 	require.NotEmpty(t, attrs["id"])
 	require.NotEmpty(t, attrs["cleartext"])
 
-	id := fmt.Sprintf("%v", attrs["id"])
+	id := StringAttr(attrs, "id")
 
 	// Update (set status to inactive, add description)
-	h.LoadFixture("access_key/update.tf")
-	out = h.Apply(nameVar)
-	assert.Contains(t, out, "Apply complete!")
-
-	attrs = h.StateResource("descope_access_key.test")
+	attrs = h.ApplyFixture("access_key/update.tf", address, nameVar)
 	assert.Equal(t, "inactive", attrs["status"])
 	assert.Equal(t, "Updated via integration test", attrs["description"])
-	assert.Equal(t, id, fmt.Sprintf("%v", attrs["id"]))
+	assert.Equal(t, id, StringAttr(attrs, "id"))
 
-	// Import (remove from state, then import by ID using update fixture to match current state)
-	h.StateRM("descope_access_key.test")
-	h.LoadFixture("access_key/update.tf")
-	h.Import("descope_access_key.test", id, nameVar)
-
-	attrs = h.StateResource("descope_access_key.test")
-	assert.Equal(t, id, fmt.Sprintf("%v", attrs["id"]))
+	// Import
+	attrs = h.ReimportResource("access_key/update.tf", address, id, nameVar)
+	assert.Equal(t, id, StringAttr(attrs, "id"))
 	assert.Equal(t, name, attrs["name"])
 
 	// Destroy

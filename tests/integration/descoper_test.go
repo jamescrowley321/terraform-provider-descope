@@ -16,35 +16,24 @@ func TestDescoperCRUD(t *testing.T) {
 	email := fmt.Sprintf("%s@test.descope.com", name)
 	nameVar := "name=" + name
 	emailVar := "email=" + email
+	address := "descope_descoper.test"
 
 	// Create
-	h.LoadFixture("descoper/create.tf")
-	out := h.Apply(nameVar, emailVar)
-	assert.Contains(t, out, "Apply complete!")
-
-	attrs := h.StateResource("descope_descoper.test")
+	attrs := h.ApplyFixture("descoper/create.tf", address, nameVar, emailVar)
 	assert.Equal(t, email, attrs["email"])
 	assert.Equal(t, name, attrs["name"])
 	require.NotEmpty(t, attrs["id"])
 
-	id := fmt.Sprintf("%v", attrs["id"])
+	id := StringAttr(attrs, "id")
 
 	// Update (add phone number)
-	h.LoadFixture("descoper/update.tf")
-	out = h.Apply(nameVar, emailVar)
-	assert.Contains(t, out, "Apply complete!")
-
-	attrs = h.StateResource("descope_descoper.test")
+	attrs = h.ApplyFixture("descoper/update.tf", address, nameVar, emailVar)
 	assert.Equal(t, "+15551234567", attrs["phone"])
-	assert.Equal(t, id, fmt.Sprintf("%v", attrs["id"]))
+	assert.Equal(t, id, StringAttr(attrs, "id"))
 
-	// Import (remove from state, then import by ID)
-	h.StateRM("descope_descoper.test")
-	h.LoadFixture("descoper/create.tf")
-	h.Import("descope_descoper.test", id, nameVar, emailVar)
-
-	attrs = h.StateResource("descope_descoper.test")
-	assert.Equal(t, id, fmt.Sprintf("%v", attrs["id"]))
+	// Import
+	attrs = h.ReimportResource("descoper/create.tf", address, id, nameVar, emailVar)
+	assert.Equal(t, id, StringAttr(attrs, "id"))
 
 	// Destroy
 	h.Destroy(nameVar, emailVar)

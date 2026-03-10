@@ -66,7 +66,7 @@ func NewHarness(t *testing.T) *Harness {
 	t.Cleanup(func() {
 		args := []string{"destroy", "-auto-approve", "-no-color", "-input=false"}
 		args = append(args, varArgs(h.lastVars)...)
-		cmd := exec.Command("terraform", args...)
+		cmd := exec.Command("terraform", args...) // #nosec G204 -- test harness with controlled inputs
 		cmd.Dir = h.workDir
 		cmd.Env = h.env
 		_ = cmd.Run()
@@ -175,7 +175,7 @@ func (h *Harness) HasState() bool {
 // Returns the combined stdout+stderr output.
 func (h *Harness) TerraformExpectFailure(args ...string) string {
 	h.t.Helper()
-	cmd := exec.Command("terraform", args...)
+	cmd := exec.Command("terraform", args...) // #nosec G204 -- test harness with controlled inputs
 	cmd.Dir = h.workDir
 	cmd.Env = h.env
 	var buf bytes.Buffer
@@ -184,6 +184,28 @@ func (h *Harness) TerraformExpectFailure(args ...string) string {
 	err := cmd.Run()
 	require.Error(h.t, err, "expected terraform to fail but it succeeded")
 	return buf.String()
+}
+
+// ApplyFixture loads a fixture and runs apply, returning the state attributes for the given resource address.
+func (h *Harness) ApplyFixture(fixture, address string, vars ...string) map[string]any {
+	h.t.Helper()
+	h.LoadFixture(fixture)
+	h.Apply(vars...)
+	return h.StateResource(address)
+}
+
+// ReimportResource removes a resource from state, loads a fixture, and imports it back.
+func (h *Harness) ReimportResource(fixture, address, id string, vars ...string) map[string]any {
+	h.t.Helper()
+	h.StateRM(address)
+	h.LoadFixture(fixture)
+	h.Import(address, id, vars...)
+	return h.StateResource(address)
+}
+
+// StringAttr returns the string representation of a state attribute value.
+func StringAttr(attrs map[string]any, key string) string {
+	return fmt.Sprintf("%v", attrs[key])
 }
 
 // GenerateName creates a unique resource name for testing.
@@ -198,7 +220,7 @@ func GenerateName(t *testing.T) string {
 
 func (h *Harness) terraform(args ...string) string {
 	h.t.Helper()
-	cmd := exec.Command("terraform", args...)
+	cmd := exec.Command("terraform", args...) // #nosec G204 -- test harness with controlled inputs
 	cmd.Dir = h.workDir
 	cmd.Env = h.env
 	var stdout, stderr bytes.Buffer
@@ -244,7 +266,7 @@ func buildProvider(t *testing.T) {
 			name += ".exe"
 		}
 		binaryPath = filepath.Join(tmpDir, name)
-		cmd := exec.Command("go", "build", "-o", binaryPath, ".")
+		cmd := exec.Command("go", "build", "-o", binaryPath, ".") // #nosec G204 -- test harness with controlled inputs
 		cmd.Dir = projectRoot()
 		var stderr bytes.Buffer
 		cmd.Stderr = &stderr
