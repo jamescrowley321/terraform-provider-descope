@@ -160,7 +160,7 @@ func TestAnyMapToStringMap(t *testing.T) {
 		}
 	})
 
-	t.Run("passes through string values without JSON encoding", func(t *testing.T) {
+	t.Run("formats string values using Sprintf", func(t *testing.T) {
 		m := map[string]any{"key1": "val1", "key2": "val2"}
 		result := anyMapToStringMap(m)
 		if result["key1"] != "val1" || result["key2"] != "val2" {
@@ -168,7 +168,7 @@ func TestAnyMapToStringMap(t *testing.T) {
 		}
 	})
 
-	t.Run("marshals non-string values to JSON", func(t *testing.T) {
+	t.Run("formats non-string values using Sprintf", func(t *testing.T) {
 		m := map[string]any{"num": 42, "bool": true}
 		result := anyMapToStringMap(m)
 		if result["num"] != "42" {
@@ -184,14 +184,6 @@ func TestAnyMapToStringMap(t *testing.T) {
 		result := anyMapToStringMap(m)
 		if len(result) != 0 {
 			t.Fatalf("expected empty map, got %v", result)
-		}
-	})
-
-	t.Run("produces empty string for unmarshalable value", func(t *testing.T) {
-		m := map[string]any{"bad": make(chan int)}
-		result := anyMapToStringMap(m)
-		if result["bad"] != "" {
-			t.Fatalf("expected empty string for unmarshalable value, got %q", result["bad"])
 		}
 	})
 }
@@ -304,7 +296,7 @@ func TestSetModelFromResponse(t *testing.T) {
 		}
 	})
 
-	t.Run("sets non-unknown map attrs when SDK claims and attributes are nil", func(t *testing.T) {
+	t.Run("does not overwrite model claims when SDK returns nil", func(t *testing.T) {
 		model := &AccessKeyModel{}
 		resp := &descope.AccessKeyResponse{
 			CustomClaims:     nil,
@@ -312,7 +304,8 @@ func TestSetModelFromResponse(t *testing.T) {
 		}
 		SetModelFromResponse(model, resp, "")
 
-		// nil maps produce null/empty strmapattr values
+		// nil maps should not set model fields (len check guards in SetModelFromResponse)
+		// Model fields remain at their zero value (null)
 		if model.CustomClaims.IsUnknown() {
 			t.Fatal("expected CustomClaims to not be unknown")
 		}

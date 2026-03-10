@@ -204,10 +204,7 @@ func (r *accessKeyResource) setAccessKeyStatus(ctx context.Context, id, status s
 }
 
 // setModelFromResponse populates the model from an API response, preserving
-// planned values for collection fields the API may omit or return as empty.
-// The Descope API does not consistently echo back role_names, key_tenants,
-// permitted_ips, custom_claims, or custom_attributes in responses, so we
-// fall back to the planned/previous values to avoid perpetual diffs.
+// planned values for fields the API may not echo back.
 func setModelFromResponse(model *accesskey.AccessKeyModel, key *descope.AccessKeyResponse, cleartext string) {
 	plannedRoles := model.RoleNames
 	plannedTenants := model.KeyTenants
