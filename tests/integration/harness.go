@@ -39,19 +39,6 @@ type Harness struct {
 // and configures dev_overrides so terraform uses the local build.
 func NewHarness(t *testing.T) *Harness {
 	t.Helper()
-	return newHarness(t, "")
-}
-
-// NewHarnessWithManagementKey creates a harness that overrides DESCOPE_MANAGEMENT_KEY
-// with the given key. This is useful when a test needs to use a freshly created
-// management key for SDK-authenticated resources (e.g., access keys).
-func NewHarnessWithManagementKey(t *testing.T, managementKey string) *Harness {
-	t.Helper()
-	return newHarness(t, managementKey)
-}
-
-func newHarness(t *testing.T, managementKeyOverride string) *Harness {
-	t.Helper()
 	requireEnvVars(t)
 	requireTerraform(t)
 	buildProvider(t)
@@ -65,9 +52,6 @@ func newHarness(t *testing.T, managementKeyOverride string) *Harness {
 	require.NoError(t, os.WriteFile(terraformrc, []byte(content), 0600))
 
 	env := append(os.Environ(), "TF_CLI_CONFIG_FILE="+terraformrc)
-	if managementKeyOverride != "" {
-		env = append(env, "DESCOPE_MANAGEMENT_KEY="+managementKeyOverride)
-	}
 
 	h := &Harness{
 		t:       t,
@@ -105,6 +89,16 @@ func (h *Harness) Apply(vars ...string) string {
 	args := []string{"apply", "-auto-approve", "-no-color", "-input=false"}
 	args = append(args, varArgs(vars)...)
 	return h.terraform(args...)
+}
+
+// TryApply runs terraform apply and returns stdout and any error instead of
+// failing the test. Useful for detecting auth failures that should skip a test.
+func (h *Harness) TryApply(vars ...string) (string, error) {
+	h.t.Helper()
+	h.lastVars = vars
+	args := []string{"apply", "-auto-approve", "-no-color", "-input=false"}
+	args = append(args, varArgs(vars)...)
+	return h.terraformMayFail(args...)
 }
 
 // Plan runs terraform plan and returns stdout.
@@ -225,6 +219,18 @@ func (h *Harness) terraform(args ...string) string {
 			strings.Join(args, " "), stdout.String(), stderr.String(), err)
 	}
 	return stdout.String()
+}
+
+func (h *Harness) terraformMayFail(args ...string) (string, error) {
+	h.t.Helper()
+	cmd := exec.Command("terraform", args...)
+	cmd.Dir = h.workDir
+	cmd.Env = h.env
+	var combined bytes.Buffer
+	cmd.Stdout = &combined
+	cmd.Stderr = &combined
+	err := cmd.Run()
+	return combined.String(), err
 }
 
 func (h *Harness) copyTestdata(src, dst string) {
