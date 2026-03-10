@@ -17,6 +17,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+// RFC 5737 TEST-NET-1 addresses (192.0.2.0/24) reserved for documentation and testing.
+const (
+	testIPv4First  = "192.0.2.1"
+	testIPv4Second = "192.0.2.2"
+)
+
 func TestStringSetToSlice(t *testing.T) {
 	ctx := context.Background()
 
@@ -105,7 +111,8 @@ func TestStringListToSlice(t *testing.T) {
 
 	t.Run("preserves element order from list", func(t *testing.T) {
 		var diags diag.Diagnostics
-		l := strlistattr.Value([]string{"10.0.0.1", "10.0.0.2"}) //nolint:contextcheck // Value uses context.Background() by design
+		ips := []string{testIPv4First, testIPv4Second}
+		l := strlistattr.Value(ips) //nolint:contextcheck // Value uses context.Background() by design
 		result := StringListToSlice(ctx, l, &diags)
 		if diags.HasError() {
 			t.Fatalf("unexpected error: %v", diags.Errors())
@@ -113,8 +120,8 @@ func TestStringListToSlice(t *testing.T) {
 		if len(result) != 2 {
 			t.Fatalf("expected 2 elements, got %d", len(result))
 		}
-		if result[0] != "10.0.0.1" || result[1] != "10.0.0.2" {
-			t.Fatalf("expected [10.0.0.1, 10.0.0.2], got %v", result)
+		if result[0] != ips[0] || result[1] != ips[1] {
+			t.Fatalf("expected %v, got %v", ips, result)
 		}
 	})
 
@@ -220,7 +227,7 @@ func TestSetModelFromResponse(t *testing.T) {
 			UserID:           "user-abc",
 			Status:           "active",
 			RoleNames:        []string{"admin"},
-			PermittedIPs:     []string{"10.0.0.1"},
+			PermittedIPs:     []string{testIPv4First},
 			CustomClaims:     map[string]any{"claim1": "value1"},
 			CustomAttributes: map[string]any{"attr1": "value1"},
 		}
@@ -257,8 +264,8 @@ func TestSetModelFromResponse(t *testing.T) {
 		if len(ipElems) != 1 {
 			t.Fatalf("expected 1 IP, got %d", len(ipElems))
 		}
-		if str, ok := ipElems[0].(types.String); !ok || str.ValueString() != "10.0.0.1" {
-			t.Fatalf("expected IP '10.0.0.1', got %v", ipElems[0])
+		if str, ok := ipElems[0].(types.String); !ok || str.ValueString() != testIPv4First {
+			t.Fatalf("expected IP %q, got %v", testIPv4First, ipElems[0])
 		}
 
 		// Verify CustomClaims values

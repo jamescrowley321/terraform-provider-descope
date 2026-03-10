@@ -20,9 +20,11 @@ import (
 )
 
 var (
-	buildOnce  sync.Once
-	binaryPath string
-	buildErr   error
+	buildOnce     sync.Once
+	binaryPath    string
+	buildErr      error
+	terraformPath string
+	goPath        string
 )
 
 // Harness manages a terraform workspace for integration testing.
@@ -66,7 +68,7 @@ func NewHarness(t *testing.T) *Harness {
 	t.Cleanup(func() {
 		args := []string{"destroy", "-auto-approve", "-no-color", "-input=false"}
 		args = append(args, varArgs(h.lastVars)...)
-		cmd := exec.Command("terraform", args...) // #nosec G204 -- test harness with controlled inputs
+		cmd := exec.Command(terraformPath, args...)
 		cmd.Dir = h.workDir
 		cmd.Env = h.env
 		_ = cmd.Run()
@@ -175,7 +177,7 @@ func (h *Harness) HasState() bool {
 // Returns the combined stdout+stderr output.
 func (h *Harness) TerraformExpectFailure(args ...string) string {
 	h.t.Helper()
-	cmd := exec.Command("terraform", args...) // #nosec G204 -- test harness with controlled inputs
+	cmd := exec.Command(terraformPath, args...)
 	cmd.Dir = h.workDir
 	cmd.Env = h.env
 	var buf bytes.Buffer
@@ -220,7 +222,7 @@ func GenerateName(t *testing.T) string {
 
 func (h *Harness) terraform(args ...string) string {
 	h.t.Helper()
-	cmd := exec.Command("terraform", args...) // #nosec G204 -- test harness with controlled inputs
+	cmd := exec.Command(terraformPath, args...)
 	cmd.Dir = h.workDir
 	cmd.Env = h.env
 	var stdout, stderr bytes.Buffer
@@ -249,8 +251,11 @@ func requireEnvVars(t *testing.T) {
 
 func requireTerraform(t *testing.T) {
 	t.Helper()
-	_, err := exec.LookPath("terraform")
+	var err error
+	terraformPath, err = exec.LookPath("terraform")
 	require.NoError(t, err, "terraform CLI must be installed and in PATH")
+	goPath, err = exec.LookPath("go")
+	require.NoError(t, err, "go CLI must be installed and in PATH")
 }
 
 func buildProvider(t *testing.T) {
@@ -266,7 +271,7 @@ func buildProvider(t *testing.T) {
 			name += ".exe"
 		}
 		binaryPath = filepath.Join(tmpDir, name)
-		cmd := exec.Command("go", "build", "-o", binaryPath, ".") // #nosec G204 -- test harness with controlled inputs
+		cmd := exec.Command(goPath, "build", "-o", binaryPath, ".")
 		cmd.Dir = projectRoot()
 		var stderr bytes.Buffer
 		cmd.Stderr = &stderr
