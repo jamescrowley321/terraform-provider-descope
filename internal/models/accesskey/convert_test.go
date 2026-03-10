@@ -11,6 +11,7 @@ import (
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/listtype"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/valuelisttype"
+	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/valuemaptype"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/valuesettype"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -131,10 +132,27 @@ func TestStringListToSlice(t *testing.T) {
 }
 
 func TestStringMapToAnyMap(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("returns nil for null map", func(t *testing.T) {
+		m := valuemaptype.NewMapValue[types.String](ctx)
+		result := StringMapToAnyMap(m)
+		if result != nil {
+			t.Fatalf("expected nil for null map, got %v", result)
+		}
+	})
+
+	t.Run("returns nil for unknown map", func(t *testing.T) {
+		m := valuemaptype.NewUnknownValue[types.String](ctx)
+		result := StringMapToAnyMap(m)
+		if result != nil {
+			t.Fatalf("expected nil for unknown map, got %v", result)
+		}
+	})
+
 	t.Run("returns nil for empty map", func(t *testing.T) {
 		m := strmapattr.Empty() //nolint:contextcheck // Empty uses context.Background() by design
 		result := StringMapToAnyMap(m)
-		// Empty map returns nil because len(elems) == 0
 		if result != nil {
 			t.Fatalf("expected nil, got %v", result)
 		}
@@ -270,6 +288,7 @@ func TestSetModelFromResponse(t *testing.T) {
 	})
 
 	t.Run("converts SDK tenants with roles to model list", func(t *testing.T) {
+		ctx := context.Background()
 		model := &AccessKeyModel{}
 		resp := &descope.AccessKeyResponse{
 			KeyTenants: []*descope.AssociatedTenant{
@@ -279,9 +298,34 @@ func TestSetModelFromResponse(t *testing.T) {
 		}
 		SetModelFromResponse(model, resp, "")
 
-		elems := model.KeyTenants.Elements()
-		if len(elems) != 2 {
-			t.Fatalf("expected 2 tenants, got %d", len(elems))
+		var diags diag.Diagnostics
+		tenants, d := model.KeyTenants.ToSlice(ctx)
+		diags.Append(d...)
+		if diags.HasError() {
+			t.Fatalf("unexpected error: %v", diags.Errors())
+		}
+		if len(tenants) != 2 {
+			t.Fatalf("expected 2 tenants, got %d", len(tenants))
+		}
+
+		// Verify first tenant
+		if tenants[0].TenantID.ValueString() != "t1" {
+			t.Fatalf("expected tenant ID 't1', got %q", tenants[0].TenantID.ValueString())
+		}
+		if tenants[0].TenantName.ValueString() != "Tenant One" {
+			t.Fatalf("expected tenant name 'Tenant One', got %q", tenants[0].TenantName.ValueString())
+		}
+		roles0 := tenants[0].Roles.Elements()
+		if len(roles0) != 2 {
+			t.Fatalf("expected 2 roles for tenant t1, got %d", len(roles0))
+		}
+
+		// Verify second tenant
+		if tenants[1].TenantID.ValueString() != "t2" {
+			t.Fatalf("expected tenant ID 't2', got %q", tenants[1].TenantID.ValueString())
+		}
+		if tenants[1].TenantName.ValueString() != "Tenant Two" {
+			t.Fatalf("expected tenant name 'Tenant Two', got %q", tenants[1].TenantName.ValueString())
 		}
 	})
 
@@ -306,11 +350,11 @@ func TestSetModelFromResponse(t *testing.T) {
 
 		// nil maps should not set model fields (len check guards in SetModelFromResponse)
 		// Model fields remain at their zero value (null)
-		if model.CustomClaims.IsUnknown() {
-			t.Fatal("expected CustomClaims to not be unknown")
+		if !model.CustomClaims.IsNull() {
+			t.Fatal("expected CustomClaims to be null (untouched)")
 		}
-		if model.CustomAttributes.IsUnknown() {
-			t.Fatal("expected CustomAttributes to not be unknown")
+		if !model.CustomAttributes.IsNull() {
+			t.Fatal("expected CustomAttributes to be null (untouched)")
 		}
 	})
 }
