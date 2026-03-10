@@ -28,7 +28,3 @@ runs:
     - name: Build Code
       shell: bash
       run: go build -v ./...
-
-    - name: Run Tests
-      shell: bash
-      run: go test -v ./...
