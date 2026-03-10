@@ -8,7 +8,7 @@ resource "descope_management_key" "test" {
   description = "Updated via integration test"
 
   rebac = {
-    company_roles = ["Company Admin"]
+    company_roles = ["company-full-access"]
   }
 }
 

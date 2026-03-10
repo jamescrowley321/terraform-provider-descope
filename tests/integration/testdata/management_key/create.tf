@@ -6,7 +6,7 @@ resource "descope_management_key" "test" {
   name = var.name
 
   rebac = {
-    company_roles = ["Company Admin"]
+    company_roles = ["company-full-access"]
   }
 }
 
