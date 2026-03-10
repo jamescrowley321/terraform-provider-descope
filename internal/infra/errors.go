@@ -7,8 +7,8 @@ const (
 )
 
 func AsValidationError(err error) (failure string, ok bool) {
-	if err, ok := err.(*descope.Error); ok && err.Code == errCodeValidationError && err.Message != "" {
-		return err.Message, true
+	if de := descope.AsError(err, errCodeValidationError); de != nil && de.Message != "" {
+		return de.Message, true
 	}
 	return
 }

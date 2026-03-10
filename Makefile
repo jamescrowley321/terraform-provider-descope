@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
-.PHONY:  help dev install test testacc testcoverage testcleanup terragen docs terraformrc lint ensure-linter ensure-gitleaks ensure-descope ensure-courtney ensure-brew ensure-go
-.SILENT: help dev install test testacc testcoverage testcleanup terragen docs terraformrc lint ensure-linter ensure-gitleaks ensure-descope ensure-courtney ensure-brew ensure-go
+.PHONY:  help dev install test testintegration testacc testcoverage testcleanup terragen docs terraformrc lint ensure-linter ensure-gitleaks ensure-descope ensure-courtney ensure-brew ensure-go
+.SILENT: help dev install test testintegration testacc testcoverage testcleanup terragen docs terraformrc lint ensure-linter ensure-gitleaks ensure-descope ensure-courtney ensure-brew ensure-go
 
 ifneq ($(tests),)
   flags := $(flags) -count 1 -run '$(tests)'
@@ -33,6 +33,9 @@ install: ensure-go ## installs terraform-provider-descope to $GOPATH/bin
 test: ensure-go ## runs unit tests
 	go test -v -timeout 30m $(flags) ./...
 
+testintegration: ## runs integration tests
+	go test -v -count=1 -tags=integration -p 1 -timeout 30m $(flags) ./tests/integration/
+
 testacc: ensure-go ## runs acceptance and unit tests
 	TF_ACC=1 go test -v -timeout 120m $(flags) ./...
 
@@ -44,8 +47,8 @@ testcoverage: ensure-go ensure-courtney ## runs all tests and computes test cove
 	go tool cover -func coverage.out | grep total | awk '{print $$3}'
 	go tool cover -html=coverage.out -o coverage.html
 
-testcleanup: ensure-descope ## cleans up redundant projects after running tests
-	descope project list | grep '"name":"testacc-.*' | sed -e 's/.*"id":"\([^"]*\)".*/\1/' | xargs -I {} descope project delete {} --force
+testcleanup: ## cleans up redundant testacc- projects after running tests
+	go run ./tools/testcleanup
 
 terragen: ensure-go ## runs the terragen tool to generate code and model documentation
 	go run tools/terragen/main.go $(flags)

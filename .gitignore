@@ -27,6 +27,8 @@ website/node_modules
 *.env
 /coverage.*
 .history
+/terraform-provider-descope
+/testcleanup
 
 website/vendor
 /vendor
