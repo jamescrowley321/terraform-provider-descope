@@ -39,6 +39,19 @@ type Harness struct {
 // and configures dev_overrides so terraform uses the local build.
 func NewHarness(t *testing.T) *Harness {
 	t.Helper()
+	return newHarness(t, "")
+}
+
+// NewHarnessWithManagementKey creates a harness that overrides DESCOPE_MANAGEMENT_KEY
+// with the given key. This is useful when a test needs to use a freshly created
+// management key for SDK-authenticated resources (e.g., access keys).
+func NewHarnessWithManagementKey(t *testing.T, managementKey string) *Harness {
+	t.Helper()
+	return newHarness(t, managementKey)
+}
+
+func newHarness(t *testing.T, managementKeyOverride string) *Harness {
+	t.Helper()
 	requireEnvVars(t)
 	requireTerraform(t)
 	buildProvider(t)
@@ -52,6 +65,9 @@ func NewHarness(t *testing.T) *Harness {
 	require.NoError(t, os.WriteFile(terraformrc, []byte(content), 0600))
 
 	env := append(os.Environ(), "TF_CLI_CONFIG_FILE="+terraformrc)
+	if managementKeyOverride != "" {
+		env = append(env, "DESCOPE_MANAGEMENT_KEY="+managementKeyOverride)
+	}
 
 	h := &Harness{
 		t:       t,

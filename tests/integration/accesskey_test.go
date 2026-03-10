@@ -11,7 +11,18 @@ import (
 )
 
 func TestAccessKeyCRUD(t *testing.T) {
-	h := NewHarness(t)
+	// Bootstrap: create a management key to use as the SDK bearer token,
+	// since the access key resource authenticates via the Descope SDK which
+	// requires a valid management key (the infra API key may not suffice).
+	bootstrap := NewHarness(t)
+	bootstrapName := GenerateName(t) + "-bootstrap"
+	bootstrap.LoadFixture("access_key/bootstrap.tf")
+	bootstrap.Apply("name=" + bootstrapName)
+	mgmtKey := bootstrap.Output("cleartext")
+	require.NotEmpty(t, mgmtKey, "bootstrap management key cleartext must not be empty")
+
+	// Create a harness that uses the bootstrapped management key
+	h := NewHarnessWithManagementKey(t, mgmtKey)
 	name := GenerateName(t)
 	nameVar := "name=" + name
 
