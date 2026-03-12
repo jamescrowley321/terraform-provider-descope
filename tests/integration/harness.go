@@ -220,6 +220,30 @@ func StringAttr(attrs map[string]any, key string) string {
 	return fmt.Sprintf("%v", attrs[key])
 }
 
+// RequireMap extracts a map attribute and fails if it is not a map.
+func RequireMap(t *testing.T, attrs map[string]any, key string) map[string]any {
+	t.Helper()
+	m, ok := attrs[key].(map[string]any)
+	require.True(t, ok, "%s should be a map", key)
+	return m
+}
+
+// RequireList extracts a list attribute and fails if it is not a list.
+func RequireList(t *testing.T, attrs map[string]any, key string) []any {
+	t.Helper()
+	l, ok := attrs[key].([]any)
+	require.True(t, ok, "%s should be a list", key)
+	return l
+}
+
+// RequireListLen extracts a list attribute and asserts its length.
+func RequireListLen(t *testing.T, attrs map[string]any, key string, length int) []any {
+	t.Helper()
+	l := RequireList(t, attrs, key)
+	require.Len(t, l, length, "%s should have %d elements", key, length)
+	return l
+}
+
 // GenerateName creates a unique resource name for testing.
 func GenerateName(t *testing.T) string {
 	t.Helper()

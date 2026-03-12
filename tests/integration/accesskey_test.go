@@ -47,30 +47,20 @@ func TestAccessKeyWithOptions(t *testing.T) {
 	nameVar := "name=" + name
 	address := "descope_access_key.test"
 
-	// Create with description, permitted_ips, custom_claims
 	attrs := h.ApplyFixture("access_key/with_options.tf", address, nameVar)
 	assert.Equal(t, name, attrs["name"])
 	assert.Equal(t, "active", attrs["status"])
 	assert.Equal(t, "Test access key", attrs["description"])
 
-	// Verify permitted_ips
-	ips, ok := attrs["permitted_ips"].([]any)
-	require.True(t, ok, "permitted_ips should be a list")
-	require.Len(t, ips, 1)
+	ips := RequireListLen(t, attrs, "permitted_ips", 1)
 	assert.Equal(t, "192.168.1.0/24", ips[0])
 
-	// Verify custom_claims
-	claims, ok := attrs["custom_claims"].(map[string]any)
-	require.True(t, ok, "custom_claims should be a map")
+	claims := RequireMap(t, attrs, "custom_claims")
 	assert.Equal(t, "value1", claims["claim1"])
 
-	// Verify role_names
-	roles, ok := attrs["role_names"].([]any)
-	require.True(t, ok, "role_names should be a list")
-	require.Len(t, roles, 1)
+	roles := RequireListLen(t, attrs, "role_names", 1)
 	assert.Equal(t, "Tenant Admin", roles[0])
 
-	// Destroy
 	h.Destroy(nameVar)
 	assert.False(t, h.HasState())
 }
