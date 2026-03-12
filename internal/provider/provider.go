@@ -46,8 +46,8 @@ func (p *descopeProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
-				Optional:           true,
-				DeprecationMessage: "The project_id attribute in the 'descope' provider block is no longer required and can be safely removed",
+				Optional:    true,
+				Description: "The Descope project ID. Required for managing access keys without a descope_project resource. Can also be set via DESCOPE_PROJECT_ID environment variable.",
 			},
 			"management_key": schema.StringAttribute{
 				Optional:    true,
@@ -81,8 +81,9 @@ func (p *descopeProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	if v := os.Getenv("DESCOPE_PROJECT_ID"); v != "" {
-		resp.Diagnostics.AddWarning("Redudant Descope Project ID", "The Descope provider no longer requires the DESCOPE_PROJECT_ID environment variable to be set and the value '"+v+"' will be ignored")
+	projectID := os.Getenv("DESCOPE_PROJECT_ID")
+	if !config.ProjectID.IsNull() {
+		projectID = config.ProjectID.ValueString()
 	}
 
 	managementKey := os.Getenv("DESCOPE_MANAGEMENT_KEY")
@@ -102,7 +103,7 @@ func (p *descopeProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	providerData, err := infra.NewProviderData(p.version, managementKey, baseURL)
+	providerData, err := infra.NewProviderData(p.version, managementKey, baseURL, projectID)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating Descope client", err.Error())
 		return

@@ -15,10 +15,11 @@ type ProviderData struct {
 	Management sdk.Management
 }
 
-func NewProviderData(version, managementKey, baseURL string) (*ProviderData, error) {
+func NewProviderData(version, managementKey, baseURL, projectID string) (*ProviderData, error) {
 	client := NewClient(version, managementKey, baseURL)
 
 	descopeClient, err := descopeclient.NewWithConfig(&descopeclient.Config{
+		ProjectID:           projectID,
 		ManagementKey:       managementKey,
 		DescopeBaseURL:      baseURL,
 		AllowEmptyProjectID: true,
