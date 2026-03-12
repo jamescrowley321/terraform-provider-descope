@@ -4,6 +4,7 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	descopeclient "github.com/descope/go-sdk/descope/client"
 	"github.com/hashicorp/go-uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -193,7 +195,15 @@ func (h *Harness) ApplyFixture(fixture, address string, vars ...string) map[stri
 	h.t.Helper()
 	h.LoadFixture(fixture)
 	h.Apply(vars...)
-	return h.StateResource(address)
+	attrs := h.StateResource(address)
+	// Delete default SSO applications from newly created projects to stay
+	// within the free plan's SSO application limit.
+	if strings.HasPrefix(address, "descope_project.") {
+		if id, ok := attrs["id"].(string); ok && id != "" {
+			deleteDefaultSSOApps(h.t, id)
+		}
+	}
+	return attrs
 }
 
 // ReimportResource removes a resource from state, loads a fixture, and imports it back.
@@ -218,6 +228,36 @@ func GenerateName(t *testing.T) string {
 	rand, err := uuid.GenerateUUID()
 	require.NoError(t, err)
 	return fmt.Sprintf("testacc-%s-%s-%s", test, ts, rand[len(rand)-8:])
+}
+
+// deleteDefaultSSOApps removes all SSO applications from a project using the
+// Descope SDK. This prevents test projects from consuming SSO application quota
+// on the free plan, where each new project gets a default OIDC application.
+func deleteDefaultSSOApps(t *testing.T, projectID string) {
+	t.Helper()
+	client, err := descopeclient.NewWithConfig(&descopeclient.Config{
+		ManagementKey:  os.Getenv("DESCOPE_MANAGEMENT_KEY"),
+		DescopeBaseURL: os.Getenv("DESCOPE_BASE_URL"),
+		ProjectID:      projectID,
+	})
+	if err != nil {
+		t.Logf("warning: failed to create Descope client for SSO app cleanup: %v", err)
+		return
+	}
+	ctx := context.Background()
+	apps, err := client.Management.SSOApplication().LoadAll(ctx)
+	if err != nil {
+		t.Logf("warning: failed to list SSO applications in project %s: %v", projectID, err)
+		return
+	}
+	for _, app := range apps {
+		if strings.HasPrefix(app.ID, "descope-default-") {
+			continue
+		}
+		if err := client.Management.SSOApplication().Delete(ctx, app.ID); err != nil {
+			t.Logf("warning: failed to delete SSO application %s (%s): %v", app.Name, app.ID, err)
+		}
+	}
 }
 
 func (h *Harness) terraform(args ...string) string {
