@@ -45,6 +45,8 @@ jobs:
         uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
           terraform_wrapper: false
+      - name: Install Descope CLI
+        uses: descope/descopecli/.github/actions/install@0b0424bac0d766f9e7d5f919e85fe60f17066691 # v0.8.14
       - name: Run Integration Tests
         env:
           DESCOPE_MANAGEMENT_KEY: ${{ secrets.DESCOPE_MANAGEMENT_KEY }}
