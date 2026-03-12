@@ -28,16 +28,12 @@ This fork aims to close that gap by adding standalone resources for the full Man
 | Roles & permissions (nested in project) | Yes | Yes |
 | Applications (nested in project) | Yes | Yes |
 | **Tenants** (standalone CRUD) | No | Planned |
-| **Users** (standalone CRUD) | No | Planned |
 | **Access Keys** (M2M) | No | Planned |
 | **SSO Configuration** (per-tenant) | No | Planned |
 | **SSO Applications** (standalone) | No | Planned |
-| **Groups** (SCIM) | No | Planned |
 | **Fine-Grained Authorization** (FGA) | No | Planned |
 | **Third-Party Applications** | No | Planned |
 | **Outbound Applications** | No | Planned |
-| **Audit** (data source) | No | Planned |
-| **Analytics** (data source) | No | Planned |
 | **Password Settings** (standalone) | No | Planned |
 | **Standalone Roles & Permissions** | No | Planned |
 | **Standalone Flows** | No | Planned |
@@ -55,7 +51,9 @@ Use this Terraform provider to manage your [Descope](https://www.descope.com) pr
 * Create connectors, roles, permissions, applications and other entities.
 * Use custom themes and flows created in the Descope console.
 * Ensure dependencies between entities are satisfied.
-* **Manage tenants, users, access keys, SSO, and more as standalone resources** (coming soon).
+* **Manage tenants, access keys, SSO, and more as standalone resources** (coming soon).
+
+> **Note:** Users are intentionally excluded from this provider. Users are runtime entities created through authentication flows, not infrastructure — managing them via Terraform would cause perpetual state drift and is an anti-pattern. Use the [Descope SDK](https://docs.descope.com) or console for user management.
 
 <br/>
 
