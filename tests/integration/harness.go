@@ -4,6 +4,7 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	descopeclient "github.com/descope/go-sdk/descope/client"
 	"github.com/hashicorp/go-uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -31,10 +33,11 @@ var (
 // It builds the provider binary, configures dev_overrides, and provides
 // helpers for running terraform commands and inspecting state.
 type Harness struct {
-	t        *testing.T
-	workDir  string
-	env      []string
-	lastVars []string
+	t          *testing.T
+	workDir    string
+	env        []string
+	lastVars   []string
+	projectIDs []string // project IDs created during the test
 }
 
 // NewHarness builds the provider binary (once), creates a temp workspace,
@@ -103,12 +106,19 @@ func (h *Harness) Plan(vars ...string) string {
 }
 
 // Destroy runs terraform destroy -auto-approve and returns stdout.
+// If the harness created any projects, it waits for Descope to finish
+// deleting them asynchronously before returning.
 func (h *Harness) Destroy(vars ...string) string {
 	h.t.Helper()
 	h.lastVars = vars
 	args := []string{"destroy", "-auto-approve", "-no-color", "-input=false"}
 	args = append(args, varArgs(vars)...)
-	return h.terraform(args...)
+	out := h.terraform(args...)
+	if len(h.projectIDs) > 0 {
+		h.waitForProjectDeletion()
+		h.projectIDs = nil
+	}
+	return out
 }
 
 // Import runs terraform import for the given resource address and ID.
@@ -193,7 +203,17 @@ func (h *Harness) ApplyFixture(fixture, address string, vars ...string) map[stri
 	h.t.Helper()
 	h.LoadFixture(fixture)
 	h.Apply(vars...)
-	return h.StateResource(address)
+	attrs := h.StateResource(address)
+	// Delete default SSO applications from newly created projects to stay
+	// within the free plan's SSO application limit, and track the project ID
+	// so we can wait for async deletion to complete after destroy.
+	if strings.HasPrefix(address, "descope_project.") {
+		if id, ok := attrs["id"].(string); ok && id != "" {
+			deleteDefaultSSOApps(h.t, id)
+			h.projectIDs = append(h.projectIDs, id)
+		}
+	}
+	return attrs
 }
 
 // ReimportResource removes a resource from state, loads a fixture, and imports it back.
@@ -210,6 +230,30 @@ func StringAttr(attrs map[string]any, key string) string {
 	return fmt.Sprintf("%v", attrs[key])
 }
 
+// RequireMap extracts a map attribute and fails if it is not a map.
+func RequireMap(t *testing.T, attrs map[string]any, key string) map[string]any {
+	t.Helper()
+	m, ok := attrs[key].(map[string]any)
+	require.True(t, ok, "%s should be a map", key)
+	return m
+}
+
+// RequireList extracts a list attribute and fails if it is not a list.
+func RequireList(t *testing.T, attrs map[string]any, key string) []any {
+	t.Helper()
+	l, ok := attrs[key].([]any)
+	require.True(t, ok, "%s should be a list", key)
+	return l
+}
+
+// RequireListLen extracts a list attribute and asserts its length.
+func RequireListLen(t *testing.T, attrs map[string]any, key string, length int) []any {
+	t.Helper()
+	l := RequireList(t, attrs, key)
+	require.Len(t, l, length, "%s should have %d elements", key, length)
+	return l
+}
+
 // GenerateName creates a unique resource name for testing.
 func GenerateName(t *testing.T) string {
 	t.Helper()
@@ -218,6 +262,78 @@ func GenerateName(t *testing.T) string {
 	rand, err := uuid.GenerateUUID()
 	require.NoError(t, err)
 	return fmt.Sprintf("testacc-%s-%s-%s", test, ts, rand[len(rand)-8:])
+}
+
+// waitForProjectDeletion polls the Descope API until all projects created by
+// this harness have been fully deleted. Descope processes project deletion
+// asynchronously, so without this wait, sequential tests that create projects
+// can fail when the previous project hasn't been fully removed yet.
+func (h *Harness) waitForProjectDeletion() {
+	h.t.Helper()
+	client, err := descopeclient.NewWithConfig(&descopeclient.Config{
+		ManagementKey:       os.Getenv("DESCOPE_MANAGEMENT_KEY"),
+		DescopeBaseURL:      os.Getenv("DESCOPE_BASE_URL"),
+		AllowEmptyProjectID: true,
+	})
+	if err != nil {
+		h.t.Logf("warning: could not create client to wait for project deletion: %v", err)
+		return
+	}
+	ctx := context.Background()
+	pending := make(map[string]bool)
+	for _, id := range h.projectIDs {
+		pending[id] = true
+	}
+	for attempt := 0; attempt < 30; attempt++ {
+		projects, err := client.Management.Project().ListProjects(ctx)
+		if err != nil {
+			h.t.Logf("warning: failed to list projects while waiting for deletion: %v", err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		allGone := true
+		for _, p := range projects {
+			if pending[p.ID] {
+				allGone = false
+				break
+			}
+		}
+		if allGone {
+			return
+		}
+		time.Sleep(2 * time.Second)
+	}
+	h.t.Logf("warning: timed out waiting for project deletion after 60s")
+}
+
+// deleteDefaultSSOApps removes all SSO applications from a project using the
+// Descope SDK. This prevents test projects from consuming SSO application quota
+// on the free plan, where each new project gets a default OIDC application.
+func deleteDefaultSSOApps(t *testing.T, projectID string) {
+	t.Helper()
+	client, err := descopeclient.NewWithConfig(&descopeclient.Config{
+		ManagementKey:  os.Getenv("DESCOPE_MANAGEMENT_KEY"),
+		DescopeBaseURL: os.Getenv("DESCOPE_BASE_URL"),
+		ProjectID:      projectID,
+	})
+	if err != nil {
+		t.Logf("warning: failed to create Descope client for SSO app cleanup: %v", err)
+		return
+	}
+	ctx := context.Background()
+	apps, err := client.Management.SSOApplication().LoadAll(ctx)
+	if err != nil {
+		t.Logf("warning: failed to list SSO applications in project %s: %v", projectID, err)
+		return
+	}
+	for _, app := range apps {
+		if strings.HasPrefix(app.ID, "descope-default-") {
+			continue
+		}
+		if err := client.Management.SSOApplication().Delete(ctx, app.ID); err != nil {
+			t.Logf("warning: failed to delete SSO application %s (%s): %v", app.Name, app.ID, err)
+		}
+	}
 }
 
 func (h *Harness) terraform(args ...string) string {
