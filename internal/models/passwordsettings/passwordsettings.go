@@ -1,6 +1,8 @@
 package passwordsettings
 
 import (
+	"math"
+
 	"github.com/descope/go-sdk/descope"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/boolattr"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/intattr"
@@ -46,18 +48,31 @@ type PasswordSettingsModel struct {
 func (m *PasswordSettingsModel) ToSDK() *descope.PasswordSettings {
 	return &descope.PasswordSettings{
 		Enabled:         m.Enabled.ValueBool(),
-		MinLength:       int32(m.MinLength.ValueInt64()),
+		MinLength:       clampInt32(m.MinLength.ValueInt64()),
 		Lowercase:       m.Lowercase.ValueBool(),
 		Uppercase:       m.Uppercase.ValueBool(),
 		Number:          m.Number.ValueBool(),
 		NonAlphanumeric: m.NonAlphanumeric.ValueBool(),
 		Expiration:      m.Expiration.ValueBool(),
-		ExpirationWeeks: int32(m.ExpirationWeeks.ValueInt64()),
+		ExpirationWeeks: clampInt32(m.ExpirationWeeks.ValueInt64()),
 		Reuse:           m.Reuse.ValueBool(),
-		ReuseAmount:     int32(m.ReuseAmount.ValueInt64()),
+		ReuseAmount:     clampInt32(m.ReuseAmount.ValueInt64()),
 		Lock:            m.Lock.ValueBool(),
-		LockAttempts:    int32(m.LockAttempts.ValueInt64()),
+		LockAttempts:    clampInt32(m.LockAttempts.ValueInt64()),
 	}
+}
+
+// clampInt32 safely converts an int64 to int32, clamping to int32 bounds.
+// Schema validators already constrain values to small ranges, but explicit
+// bounds checking satisfies static analysis tools (gosec/CodeQL).
+func clampInt32(v int64) int32 {
+	if v > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if v < math.MinInt32 {
+		return math.MinInt32
+	}
+	return int32(v)
 }
 
 // SetFromSDK populates the Terraform model from the Descope SDK PasswordSettings type.
