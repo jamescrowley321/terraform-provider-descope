@@ -6,6 +6,7 @@ import (
 	"github.com/descope/go-sdk/descope"
 	"github.com/descope/go-sdk/descope/sdk"
 	"github.com/descope/terraform-provider-descope/internal/infra"
+	"github.com/descope/terraform-provider-descope/internal/models/convert"
 	"github.com/descope/terraform-provider-descope/internal/models/tenant"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -81,23 +82,13 @@ func (r *tenantResource) Create(ctx context.Context, req resource.CreateRequest,
 		}
 	}
 
-	// Configure settings if provided
-	if model.Settings != nil {
-		settings := tenant.ModelToSettings(ctx, &model, &resp.Diagnostics)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-			return r.management.Tenant().ConfigureSettings(ctx, id, settings)
-		})
-		if err != nil {
-			resp.Diagnostics.AddError("Error configuring tenant settings", err.Error())
-			return
-		}
+	r.configureSettings(ctx, &model, id, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	// Update default roles if set
-	defaultRoles := tenant.StringSetToSlice(ctx, model.DefaultRoles, &resp.Diagnostics)
+	defaultRoles := convert.StringSetToSlice(ctx, model.DefaultRoles, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -192,27 +183,17 @@ func (r *tenantResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	// Configure settings if present in plan
-	if plan.Settings != nil {
-		settings := tenant.ModelToSettings(ctx, &plan, &resp.Diagnostics)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-			return r.management.Tenant().ConfigureSettings(ctx, id, settings)
-		})
-		if err != nil {
-			resp.Diagnostics.AddError("Error configuring tenant settings", err.Error())
-			return
-		}
-	}
-
-	// Update default roles if changed
-	planRoles := tenant.StringSetToSlice(ctx, plan.DefaultRoles, &resp.Diagnostics)
+	r.configureSettings(ctx, &plan, id, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	stateRoles := tenant.StringSetToSlice(ctx, state.DefaultRoles, &resp.Diagnostics)
+
+	// Update default roles if changed
+	planRoles := convert.StringSetToSlice(ctx, plan.DefaultRoles, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	stateRoles := convert.StringSetToSlice(ctx, state.DefaultRoles, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -272,6 +253,23 @@ func (r *tenantResource) Delete(ctx context.Context, req resource.DeleteRequest,
 func (r *tenantResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	tflog.Info(ctx, "Importing tenant resource")
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// configureSettings pushes the model's settings to the API if settings are present.
+func (r *tenantResource) configureSettings(ctx context.Context, model *tenant.TenantModel, id string, diags *diag.Diagnostics) {
+	if model.Settings == nil {
+		return
+	}
+	settings := tenant.ModelToSettings(ctx, model, diags)
+	if diags.HasError() {
+		return
+	}
+	err := infra.RetryOnRateLimitNoResult(ctx, func() error {
+		return r.management.Tenant().ConfigureSettings(ctx, id, settings)
+	})
+	if err != nil {
+		diags.AddError("Error configuring tenant settings", err.Error())
+	}
 }
 
 // refreshSettings loads tenant settings from the API if the model previously had settings.

@@ -2,31 +2,16 @@ package accesskey
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/descope/go-sdk/descope"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/listattr"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/strlistattr"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/strmapattr"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
+	"github.com/descope/terraform-provider-descope/internal/models/convert"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-// StringSetToSlice converts a Terraform string set to a Go string slice.
-func StringSetToSlice(_ context.Context, s strsetattr.Type, _ *diag.Diagnostics) []string {
-	if s.IsNull() || s.IsUnknown() {
-		return nil
-	}
-	elems := s.Elements()
-	result := make([]string, 0, len(elems))
-	for _, v := range elems {
-		if str, ok := v.(types.String); ok {
-			result = append(result, str.ValueString())
-		}
-	}
-	return result
-}
 
 // StringListToSlice converts a Terraform string list to a Go string slice.
 func StringListToSlice(_ context.Context, l strlistattr.Type, _ *diag.Diagnostics) []string {
@@ -39,36 +24,6 @@ func StringListToSlice(_ context.Context, l strlistattr.Type, _ *diag.Diagnostic
 		if str, ok := v.(types.String); ok {
 			result = append(result, str.ValueString())
 		}
-	}
-	return result
-}
-
-// StringMapToAnyMap converts a Terraform string map to a map[string]any for SDK calls.
-func StringMapToAnyMap(m strmapattr.Type) map[string]any {
-	if m.IsNull() || m.IsUnknown() {
-		return nil
-	}
-	elems := m.Elements()
-	if len(elems) == 0 {
-		return nil
-	}
-	result := make(map[string]any, len(elems))
-	for k, v := range elems {
-		if str, ok := v.(types.String); ok {
-			result[k] = str.ValueString()
-		}
-	}
-	return result
-}
-
-// anyMapToStringMap converts a map[string]any from the SDK to a map[string]string.
-func anyMapToStringMap(m map[string]any) map[string]string {
-	if m == nil {
-		return nil
-	}
-	result := make(map[string]string, len(m))
-	for k, v := range m {
-		result[k] = fmt.Sprintf("%v", v)
 	}
 	return result
 }
@@ -86,7 +41,7 @@ func TenantsToSDK(ctx context.Context, tenants listattr.Type[TenantModel], diagn
 	result := make([]*descope.AssociatedTenant, 0, len(elems))
 	for _, t := range elems {
 		tenantID := t.TenantID.ValueString()
-		roles := StringSetToSlice(ctx, t.Roles, diagnostics)
+		roles := convert.StringSetToSlice(ctx, t.Roles, diagnostics)
 		result = append(result, &descope.AssociatedTenant{
 			TenantID: tenantID,
 			Roles:    roles,
@@ -126,12 +81,12 @@ func SetModelFromResponse(model *AccessKeyModel, key *descope.AccessKeyResponse,
 
 	// Set custom_claims
 	if len(key.CustomClaims) > 0 {
-		model.CustomClaims = strmapattr.Value(anyMapToStringMap(key.CustomClaims))
+		model.CustomClaims = strmapattr.Value(convert.AnyMapToStringMap(key.CustomClaims))
 	}
 
 	// Set custom_attributes
 	if len(key.CustomAttributes) > 0 {
-		model.CustomAttributes = strmapattr.Value(anyMapToStringMap(key.CustomAttributes))
+		model.CustomAttributes = strmapattr.Value(convert.AnyMapToStringMap(key.CustomAttributes))
 	}
 
 	// Set key_tenants

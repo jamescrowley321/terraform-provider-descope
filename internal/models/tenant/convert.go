@@ -2,71 +2,26 @@ package tenant
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/descope/go-sdk/descope"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/strmapattr"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
+	"github.com/descope/terraform-provider-descope/internal/models/convert"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-// StringSetToSlice converts a Terraform string set to a Go string slice.
-func StringSetToSlice(_ context.Context, s strsetattr.Type, _ *diag.Diagnostics) []string {
-	if s.IsNull() || s.IsUnknown() {
-		return nil
-	}
-	elems := s.Elements()
-	result := make([]string, 0, len(elems))
-	for _, v := range elems {
-		if str, ok := v.(types.String); ok {
-			result = append(result, str.ValueString())
-		}
-	}
-	return result
-}
-
-// StringMapToAnyMap converts a Terraform string map to a map[string]any for SDK calls.
-func StringMapToAnyMap(m strmapattr.Type) map[string]any {
-	if m.IsNull() || m.IsUnknown() {
-		return nil
-	}
-	elems := m.Elements()
-	if len(elems) == 0 {
-		return nil
-	}
-	result := make(map[string]any, len(elems))
-	for k, v := range elems {
-		if str, ok := v.(types.String); ok {
-			result[k] = str.ValueString()
-		}
-	}
-	return result
-}
-
-// anyMapToStringMap converts a map[string]any from the SDK to a map[string]string.
-func anyMapToStringMap(m map[string]any) map[string]string {
-	if m == nil {
-		return nil
-	}
-	result := make(map[string]string, len(m))
-	for k, v := range m {
-		result[k] = fmt.Sprintf("%v", v)
-	}
-	return result
-}
 
 // ModelToRequest converts the TenantModel to an SDK TenantRequest for Create/Update.
 func ModelToRequest(ctx context.Context, model *TenantModel, diags *diag.Diagnostics) *descope.TenantRequest {
 	return &descope.TenantRequest{
 		Name:                    model.Name.ValueString(),
-		SelfProvisioningDomains: StringSetToSlice(ctx, model.SelfProvisioningDomains, diags),
-		CustomAttributes:        StringMapToAnyMap(model.CustomAttributes),
+		SelfProvisioningDomains: convert.StringSetToSlice(ctx, model.SelfProvisioningDomains, diags),
+		CustomAttributes:        convert.StringMapToAnyMap(model.CustomAttributes),
 		EnforceSSO:              model.EnforceSSO.ValueBool(),
 		Disabled:                model.Disabled.ValueBool(),
 		ParentTenantID:          model.ParentTenantID.ValueString(),
-		EnforceSSOExclusions:    StringSetToSlice(ctx, model.EnforceSSOExclusions, diags),
+		EnforceSSOExclusions:    convert.StringSetToSlice(ctx, model.EnforceSSOExclusions, diags),
 		RoleInheritance:         descope.RoleInheritance(model.RoleInheritance.ValueString()),
 	}
 }
@@ -93,7 +48,7 @@ func SetModelFromTenant(model *TenantModel, t *descope.Tenant) {
 	}
 
 	if len(t.CustomAttributes) > 0 {
-		model.CustomAttributes = strmapattr.Value(anyMapToStringMap(t.CustomAttributes))
+		model.CustomAttributes = strmapattr.Value(convert.AnyMapToStringMap(t.CustomAttributes))
 	}
 }
 
@@ -103,8 +58,8 @@ func SetModelFromTenant(model *TenantModel, t *descope.Tenant) {
 func ModelToSettings(ctx context.Context, model *TenantModel, diags *diag.Diagnostics) *descope.TenantSettings {
 	s := model.Settings
 	return &descope.TenantSettings{
-		Domains:                    StringSetToSlice(ctx, model.Domains, diags),
-		SelfProvisioningDomains:    StringSetToSlice(ctx, model.SelfProvisioningDomains, diags),
+		Domains:                    convert.StringSetToSlice(ctx, model.Domains, diags),
+		SelfProvisioningDomains:    convert.StringSetToSlice(ctx, model.SelfProvisioningDomains, diags),
 		AuthType:                   model.AuthType.ValueString(),
 		SessionSettingsEnabled:     s.SessionSettingsEnabled.ValueBool(),
 		RefreshTokenExpiration:     clampInt32(s.RefreshTokenExpiration.ValueInt64()),
