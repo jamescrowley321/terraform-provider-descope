@@ -34,7 +34,7 @@ jobs:
         run: go test -v -count=1 ./...
 
   integration_test:
-    name: Integration Tests
+    name: Integration Tests (upstream)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -53,7 +53,36 @@ jobs:
           DESCOPE_MANAGEMENT_KEY: ${{ secrets.DESCOPE_MANAGEMENT_KEY }}
           DESCOPE_PROJECT_ID: ${{ secrets.DESCOPE_PROJECT_ID }}
           DESCOPE_BASE_URL: https://api.descope.com
-        run: go test -v -count=1 -tags=integration -p 1 -timeout 30m ./tests/integration/
+        run: go test -v -count=1 -tags=integration -p 1 -timeout 30m -run 'TestProject(CRUD|Settings|Authorization)' ./tests/integration/
+      - name: Cleanup Test Resources
+        if: always()
+        env:
+          DESCOPE_MANAGEMENT_KEY: ${{ secrets.DESCOPE_MANAGEMENT_KEY }}
+          DESCOPE_PROJECT_ID: ${{ secrets.DESCOPE_PROJECT_ID }}
+          DESCOPE_BASE_URL: https://api.descope.com
+        run: go run ./tools/testcleanup
+
+  fork_test:
+    name: Integration Tests (fork)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Setup Repo
+        uses: ./.github/actions/ci/setup
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_wrapper: false
+      - name: Install Descope CLI
+        uses: descope/descopecli/.github/actions/install@76722efc17408640a42340cbdae1528c363e9dc2 # v0.8.15
+      - name: Run Fork Tests
+        shell: bash
+        env:
+          DESCOPE_MANAGEMENT_KEY: ${{ secrets.DESCOPE_MANAGEMENT_KEY }}
+          DESCOPE_PROJECT_ID: ${{ secrets.DESCOPE_PROJECT_ID }}
+          DESCOPE_BASE_URL: https://api.descope.com
+        run: go test -v -count=1 -tags=fork -p 1 -timeout 30m ./tests/integration/
       - name: Cleanup Test Resources
         if: always()
         env:
