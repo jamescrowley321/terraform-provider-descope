@@ -124,5 +124,6 @@ func (p *descopeProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewDescoperResource,
 		resources.NewManagementKeyResource,
 		resources.NewAccessKeyResource,
+		resources.NewTenantResource,
 	}
 }
