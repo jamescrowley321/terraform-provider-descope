@@ -46,8 +46,9 @@ jobs:
         with:
           terraform_wrapper: false
       - name: Install Descope CLI
-        uses: descope/descopecli/.github/actions/install@0b0424bac0d766f9e7d5f919e85fe60f17066691 # v0.8.14
+        uses: descope/descopecli/.github/actions/install@76722efc17408640a42340cbdae1528c363e9dc2 # v0.8.15
       - name: Run Integration Tests
+        shell: bash
         env:
           DESCOPE_MANAGEMENT_KEY: ${{ secrets.DESCOPE_MANAGEMENT_KEY }}
           DESCOPE_PROJECT_ID: ${{ secrets.DESCOPE_PROJECT_ID }}
