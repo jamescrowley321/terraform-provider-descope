@@ -29,13 +29,13 @@ jobs:
           cache: false
 
       - name: Install gosec
-        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+        run: go install github.com/securego/gosec/v2/cmd/gosec@v2.24.7
 
       - name: Run gosec
         run: gosec -exclude-dir=internal/docs -fmt sarif -out gosec-results.sarif ./... || true
 
       - name: Upload gosec SARIF
-        uses: github/codeql-action/upload-sarif@820e3160e279568db735cee8ed8f8e77a6da7818 # v3.32.6
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4.32.6
         if: always()
         with:
           sarif_file: gosec-results.sarif
@@ -56,7 +56,7 @@ jobs:
           cache: false
 
       - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
 
       - name: Run govulncheck
         run: govulncheck ./...
