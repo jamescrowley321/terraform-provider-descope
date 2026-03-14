@@ -1,9 +1,5 @@
-variable "name" { type = string }
-
-resource "descope_project" "test" {
-  name = var.name
-}
+variable "project_id" { type = string }
 
 data "descope_project" "test" {
-  id = descope_project.test.id
+  id = var.project_id
 }
