@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/descope/terraform-provider-descope/internal/datasources"
 	"github.com/descope/terraform-provider-descope/internal/infra"
 	"github.com/descope/terraform-provider-descope/internal/resources"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -115,7 +116,9 @@ func (p *descopeProvider) Configure(ctx context.Context, req provider.ConfigureR
 }
 
 func (p *descopeProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{}
+	return []func() datasource.DataSource{
+		datasources.NewProjectDataSource,
+	}
 }
 
 func (p *descopeProvider) Resources(_ context.Context) []func() resource.Resource {

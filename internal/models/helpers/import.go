@@ -30,6 +30,13 @@ func ContextWithImportState(ctx context.Context, req resource.ReadRequest, resp 
 	return ctx
 }
 
+// ContextForDataSource marks the context to allow all null attribute values
+// to be overwritten. Data source reads behave like imports: all attributes
+// start as null and need to be populated from the API response.
+func ContextForDataSource(ctx context.Context) context.Context {
+	return context.WithValue(ctx, importKey, true)
+}
+
 // Checks if we're currently reading a source as part of an import operation.
 func isImportState(ctx context.Context) bool {
 	value, _ := ctx.Value(importKey).(bool)
