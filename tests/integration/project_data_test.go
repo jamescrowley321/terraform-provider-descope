@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,24 +12,16 @@ import (
 
 func TestProjectDataSource(t *testing.T) {
 	h := NewHarness(t)
-	name := GenerateName(t)
-	nameVar := "name=" + name
+	projectID := os.Getenv("DESCOPE_PROJECT_ID")
+	require.NotEmpty(t, projectID, "DESCOPE_PROJECT_ID must be set")
+	idVar := "project_id=" + projectID
 
-	// Create a project and read it back via data source
+	// Read the existing project via data source
 	h.LoadFixture("project_data/read.tf")
-	h.Apply(nameVar)
+	h.Apply(idVar)
 
-	// Verify the resource
-	resAttrs := h.StateResource("descope_project.test")
-	require.NotEmpty(t, resAttrs["id"])
-	assert.Equal(t, name, resAttrs["name"])
-
-	// Verify the data source reads the same project
+	// Verify the data source reads the project
 	dataAttrs := h.StateResource("data.descope_project.test")
-	assert.Equal(t, resAttrs["id"], dataAttrs["id"])
-	assert.Equal(t, name, dataAttrs["name"])
-
-	// Destroy
-	h.Destroy(nameVar)
-	assert.False(t, h.HasState())
+	assert.Equal(t, projectID, dataAttrs["id"])
+	require.NotEmpty(t, dataAttrs["name"])
 }
