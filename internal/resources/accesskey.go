@@ -7,6 +7,7 @@ import (
 	"github.com/descope/go-sdk/descope/sdk"
 	"github.com/descope/terraform-provider-descope/internal/infra"
 	"github.com/descope/terraform-provider-descope/internal/models/accesskey"
+	"github.com/descope/terraform-provider-descope/internal/models/convert"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -60,12 +61,12 @@ func (r *accessKeyResource) Create(ctx context.Context, req resource.CreateReque
 	name := model.Name.ValueString()
 	description := model.Description.ValueString()
 	expireTime := model.ExpireTime.ValueInt64()
-	roles := accesskey.StringSetToSlice(ctx, model.RoleNames, &resp.Diagnostics)
+	roles := convert.StringSetToSlice(ctx, model.RoleNames, &resp.Diagnostics)
 	tenants := accesskey.TenantsToSDK(ctx, model.KeyTenants, &resp.Diagnostics)
 	userID := model.UserID.ValueString()
 	permittedIPs := accesskey.StringListToSlice(ctx, model.PermittedIPs, &resp.Diagnostics)
-	customClaims := accesskey.StringMapToAnyMap(model.CustomClaims)
-	customAttributes := accesskey.StringMapToAnyMap(model.CustomAttributes)
+	customClaims := convert.StringMapToAnyMap(model.CustomClaims)
+	customAttributes := convert.StringMapToAnyMap(model.CustomAttributes)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -133,11 +134,11 @@ func (r *accessKeyResource) Update(ctx context.Context, req resource.UpdateReque
 	id := state.ID.ValueString()
 	name := plan.Name.ValueString()
 	description := plan.Description.ValueString()
-	roles := accesskey.StringSetToSlice(ctx, plan.RoleNames, &resp.Diagnostics)
+	roles := convert.StringSetToSlice(ctx, plan.RoleNames, &resp.Diagnostics)
 	tenants := accesskey.TenantsToSDK(ctx, plan.KeyTenants, &resp.Diagnostics)
 	permittedIPs := accesskey.StringListToSlice(ctx, plan.PermittedIPs, &resp.Diagnostics)
-	customClaims := accesskey.StringMapToAnyMap(plan.CustomClaims)
-	customAttributes := accesskey.StringMapToAnyMap(plan.CustomAttributes)
+	customClaims := convert.StringMapToAnyMap(plan.CustomClaims)
+	customAttributes := convert.StringMapToAnyMap(plan.CustomAttributes)
 	if resp.Diagnostics.HasError() {
 		return
 	}
