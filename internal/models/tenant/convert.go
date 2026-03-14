@@ -3,6 +3,7 @@ package tenant
 import (
 	"context"
 	"fmt"
+	"math"
 
 	"github.com/descope/go-sdk/descope"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/strmapattr"
@@ -106,17 +107,53 @@ func ModelToSettings(ctx context.Context, model *TenantModel, diags *diag.Diagno
 		SelfProvisioningDomains:    StringSetToSlice(ctx, model.SelfProvisioningDomains, diags),
 		AuthType:                   model.AuthType.ValueString(),
 		SessionSettingsEnabled:     s.SessionSettingsEnabled.ValueBool(),
-		RefreshTokenExpiration:     int32(s.RefreshTokenExpiration.ValueInt64()),
+		RefreshTokenExpiration:     clampInt32(s.RefreshTokenExpiration.ValueInt64()),
 		RefreshTokenExpirationUnit: s.RefreshTokenExpirationUnit.ValueString(),
-		SessionTokenExpiration:     int32(s.SessionTokenExpiration.ValueInt64()),
+		SessionTokenExpiration:     clampInt32(s.SessionTokenExpiration.ValueInt64()),
 		SessionTokenExpirationUnit: s.SessionTokenExpirationUnit.ValueString(),
-		StepupTokenExpiration:      int32(s.StepupTokenExpiration.ValueInt64()),
+		StepupTokenExpiration:      clampInt32(s.StepupTokenExpiration.ValueInt64()),
 		StepupTokenExpirationUnit:  s.StepupTokenExpirationUnit.ValueString(),
 		EnableInactivity:           s.EnableInactivity.ValueBool(),
-		InactivityTime:             int32(s.InactivityTime.ValueInt64()),
+		InactivityTime:             clampInt32(s.InactivityTime.ValueInt64()),
 		InactivityTimeUnit:         s.InactivityTimeUnit.ValueString(),
 		JITDisabled:                s.JITDisabled.ValueBool(),
 	}
+}
+
+// RefreshModelFromAPI updates the model with fresh data from the API while
+// preserving fields that aren't returned by Tenant.Load (TenantID, DefaultRoles,
+// CascadeDelete, ParentTenantID, and optionally CustomAttributes).
+// Returns the previously saved Settings pointer so the caller can decide whether
+// to load settings from the API.
+func RefreshModelFromAPI(model *TenantModel, t *descope.Tenant) *SettingsModel {
+	savedDefaultRoles := model.DefaultRoles
+	savedCascadeDelete := model.CascadeDelete
+	savedParentTenantID := model.ParentTenantID
+	savedTenantID := model.TenantID
+	savedCustomAttrs := model.CustomAttributes
+	savedSettings := model.Settings
+
+	SetModelFromTenant(model, t)
+	model.DefaultRoles = savedDefaultRoles
+	model.CascadeDelete = savedCascadeDelete
+	model.ParentTenantID = savedParentTenantID
+	model.TenantID = savedTenantID
+	if len(t.CustomAttributes) == 0 {
+		model.CustomAttributes = savedCustomAttrs
+	}
+
+	return savedSettings
+}
+
+// clampInt32 safely converts an int64 to int32, clamping to int32 bounds.
+func clampInt32(v int64) int32 {
+	if v > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if v < math.MinInt32 {
+		return math.MinInt32
+	}
+	return int32(v) // #nosec G115 -- bounds checked above
 }
 
 // SetSettingsFromSDK populates the SettingsModel from an SDK TenantSettings response.

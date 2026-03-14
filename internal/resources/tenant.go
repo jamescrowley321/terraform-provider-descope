@@ -7,6 +7,7 @@ import (
 	"github.com/descope/go-sdk/descope/sdk"
 	"github.com/descope/terraform-provider-descope/internal/infra"
 	"github.com/descope/terraform-provider-descope/internal/models/tenant"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -119,33 +120,11 @@ func (r *tenantResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	// Preserve plan-only fields
-	plannedDefaultRoles := model.DefaultRoles
-	plannedCascadeDelete := model.CascadeDelete
-	plannedParentTenantID := model.ParentTenantID
-	plannedCustomAttrs := model.CustomAttributes
-	plannedSettings := model.Settings
-
-	tenant.SetModelFromTenant(&model, t)
+	savedSettings := tenant.RefreshModelFromAPI(&model, t)
 	model.TenantID = types.StringValue(id)
-	model.DefaultRoles = plannedDefaultRoles
-	model.CascadeDelete = plannedCascadeDelete
-	model.ParentTenantID = plannedParentTenantID
-	if len(t.CustomAttributes) == 0 {
-		model.CustomAttributes = plannedCustomAttrs
-	}
-
-	// Load settings if present in plan
-	if plannedSettings != nil {
-		settings, err := infra.RetryOnRateLimit(ctx, func() (*descope.TenantSettings, error) {
-			return r.management.Tenant().GetSettings(ctx, id)
-		})
-		if err != nil {
-			resp.Diagnostics.AddError("Error reading tenant settings", err.Error())
-			return
-		}
-		model.Settings = &tenant.SettingsModel{}
-		tenant.SetSettingsFromSDK(model.Settings, settings)
+	r.refreshSettings(ctx, &model, id, savedSettings, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
@@ -173,34 +152,10 @@ func (r *tenantResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	// Preserve state-only fields before overwriting
-	stateDefaultRoles := model.DefaultRoles
-	stateCascadeDelete := model.CascadeDelete
-	stateParentTenantID := model.ParentTenantID
-	stateTenantID := model.TenantID
-	stateCustomAttrs := model.CustomAttributes
-	stateSettings := model.Settings
-
-	tenant.SetModelFromTenant(&model, t)
-	model.DefaultRoles = stateDefaultRoles
-	model.CascadeDelete = stateCascadeDelete
-	model.ParentTenantID = stateParentTenantID
-	model.TenantID = stateTenantID
-	if len(t.CustomAttributes) == 0 {
-		model.CustomAttributes = stateCustomAttrs
-	}
-
-	// Load settings if they were in prior state
-	if stateSettings != nil {
-		settings, err := infra.RetryOnRateLimit(ctx, func() (*descope.TenantSettings, error) {
-			return r.management.Tenant().GetSettings(ctx, id)
-		})
-		if err != nil {
-			resp.Diagnostics.AddError("Error reading tenant settings", err.Error())
-			return
-		}
-		model.Settings = &tenant.SettingsModel{}
-		tenant.SetSettingsFromSDK(model.Settings, settings)
+	savedSettings := tenant.RefreshModelFromAPI(&model, t)
+	r.refreshSettings(ctx, &model, id, savedSettings, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
@@ -280,33 +235,11 @@ func (r *tenantResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	// Preserve plan-only fields
-	plannedDefaultRoles := plan.DefaultRoles
-	plannedCascadeDelete := plan.CascadeDelete
-	plannedParentTenantID := plan.ParentTenantID
-	plannedCustomAttrs := plan.CustomAttributes
-	plannedSettings := plan.Settings
-
-	tenant.SetModelFromTenant(&plan, t)
+	savedSettings := tenant.RefreshModelFromAPI(&plan, t)
 	plan.TenantID = state.TenantID
-	plan.DefaultRoles = plannedDefaultRoles
-	plan.CascadeDelete = plannedCascadeDelete
-	plan.ParentTenantID = plannedParentTenantID
-	if len(t.CustomAttributes) == 0 {
-		plan.CustomAttributes = plannedCustomAttrs
-	}
-
-	// Load settings if present in plan
-	if plannedSettings != nil {
-		settings, err := infra.RetryOnRateLimit(ctx, func() (*descope.TenantSettings, error) {
-			return r.management.Tenant().GetSettings(ctx, id)
-		})
-		if err != nil {
-			resp.Diagnostics.AddError("Error reading tenant settings", err.Error())
-			return
-		}
-		plan.Settings = &tenant.SettingsModel{}
-		tenant.SetSettingsFromSDK(plan.Settings, settings)
+	r.refreshSettings(ctx, &plan, id, savedSettings, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -339,6 +272,22 @@ func (r *tenantResource) Delete(ctx context.Context, req resource.DeleteRequest,
 func (r *tenantResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	tflog.Info(ctx, "Importing tenant resource")
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// refreshSettings loads tenant settings from the API if the model previously had settings.
+func (r *tenantResource) refreshSettings(ctx context.Context, model *tenant.TenantModel, id string, hadSettings *tenant.SettingsModel, diags *diag.Diagnostics) {
+	if hadSettings == nil {
+		return
+	}
+	settings, err := infra.RetryOnRateLimit(ctx, func() (*descope.TenantSettings, error) {
+		return r.management.Tenant().GetSettings(ctx, id)
+	})
+	if err != nil {
+		diags.AddError("Error reading tenant settings", err.Error())
+		return
+	}
+	model.Settings = &tenant.SettingsModel{}
+	tenant.SetSettingsFromSDK(model.Settings, settings)
 }
 
 // rolesEqual checks if two string slices contain the same elements regardless of order.
