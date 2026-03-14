@@ -7,6 +7,7 @@ import (
 	"github.com/descope/go-sdk/descope/sdk"
 	"github.com/descope/terraform-provider-descope/internal/infra"
 	"github.com/descope/terraform-provider-descope/internal/models/passwordsettings"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -53,17 +54,9 @@ func (r *passwordSettingsResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	settings := model.ToSDK()
-	err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-		return r.management.Password().ConfigureSettings(ctx, "", settings)
-	})
-	if err != nil {
-		resp.Diagnostics.AddError("Error configuring password settings", err.Error())
-		return
+	if r.applySettings(ctx, &model, &resp.Diagnostics) {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	}
-
-	model.ID = types.StringValue(passwordSettingsID)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 
 	tflog.Info(ctx, "Password settings resource created")
 }
@@ -99,19 +92,27 @@ func (r *passwordSettingsResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
+	if r.applySettings(ctx, &model, &resp.Diagnostics) {
+		resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	}
+
+	tflog.Info(ctx, "Password settings resource updated")
+}
+
+// applySettings calls ConfigureSettings with the model values and sets the
+// singleton ID. It returns true on success; on failure it adds a diagnostic
+// error and returns false.
+func (r *passwordSettingsResource) applySettings(ctx context.Context, model *passwordsettings.PasswordSettingsModel, diags *diag.Diagnostics) bool {
 	settings := model.ToSDK()
 	err := infra.RetryOnRateLimitNoResult(ctx, func() error {
 		return r.management.Password().ConfigureSettings(ctx, "", settings)
 	})
 	if err != nil {
-		resp.Diagnostics.AddError("Error updating password settings", err.Error())
-		return
+		diags.AddError("Error configuring password settings", err.Error())
+		return false
 	}
-
 	model.ID = types.StringValue(passwordSettingsID)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
-
-	tflog.Info(ctx, "Password settings resource updated")
+	return true
 }
 
 func (r *passwordSettingsResource) Delete(ctx context.Context, _ resource.DeleteRequest, resp *resource.DeleteResponse) {
