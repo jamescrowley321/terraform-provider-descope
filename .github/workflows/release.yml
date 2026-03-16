@@ -30,7 +30,7 @@ jobs:
         run: curl -sSfL https://raw.githubusercontent.com/anchore/syft/75455f050ab028977a6b625165e2ad3644fcc845/install.sh | sh -s -- -b /usr/local/bin # v1.42.2
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+        uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
 
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
