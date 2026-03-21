@@ -9,9 +9,10 @@ resource "descope_sso" "test" {
   display_name = "Test OIDC SSO"
 
   oidc = {
-    name      = "Test OIDC"
-    client_id = "test-client-id"
-    auth_url  = "https://idp.example.com/authorize"
-    token_url = "https://idp.example.com/token"
+    name          = "Test OIDC"
+    client_id     = "test-client-id"
+    auth_url      = "https://idp.example.com/authorize"
+    token_url     = "https://idp.example.com/token"
+    user_data_url = "https://idp.example.com/userinfo"
   }
 }
