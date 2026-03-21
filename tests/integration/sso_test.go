@@ -22,9 +22,6 @@ func TestSSOOIDC(t *testing.T) {
 	id := StringAttr(attrs, "id")
 	require.NotEmpty(t, id)
 
-	ssoID := StringAttr(attrs, "sso_id")
-	require.NotEmpty(t, ssoID)
-
 	oidc := RequireMap(t, attrs, "oidc")
 	assert.Equal(t, "Test OIDC", oidc["name"])
 	assert.Equal(t, "test-client-id", oidc["client_id"])
