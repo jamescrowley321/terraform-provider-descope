@@ -134,5 +134,6 @@ func (p *descopeProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewPasswordSettingsResource,
 		resources.NewPermissionResource,
 		resources.NewRoleResource,
+		resources.NewSSOResource,
 	}
 }
