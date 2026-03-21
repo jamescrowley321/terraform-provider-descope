@@ -21,6 +21,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	destroyMaxRetries = 2
+	destroyRetryWait  = 5 * time.Second
+)
+
 var (
 	buildOnce     sync.Once
 	binaryPath    string
@@ -106,14 +111,15 @@ func (h *Harness) Plan(vars ...string) string {
 }
 
 // Destroy runs terraform destroy -auto-approve and returns stdout.
-// If the harness created any projects, it waits for Descope to finish
-// deleting them asynchronously before returning.
+// It retries up to destroyMaxRetries times on failure to handle transient
+// API errors. If the harness created any projects, it waits for Descope
+// to finish deleting them asynchronously before returning.
 func (h *Harness) Destroy(vars ...string) string {
 	h.t.Helper()
 	h.lastVars = vars
 	args := []string{"destroy", "-auto-approve", "-no-color", "-input=false"}
 	args = append(args, varArgs(vars)...)
-	out := h.terraform(args...)
+	out := h.terraformRetry(destroyMaxRetries, args...)
 	if len(h.projectIDs) > 0 {
 		h.waitForProjectDeletion()
 		h.projectIDs = nil
@@ -349,6 +355,29 @@ func (h *Harness) terraform(args ...string) string {
 			strings.Join(args, " "), stdout.String(), stderr.String(), err)
 	}
 	return stdout.String()
+}
+
+// terraformRetry runs a terraform command with retries on failure. It is used
+// for operations like destroy where transient API errors may cause the command
+// to fail even after provider-level retries.
+func (h *Harness) terraformRetry(maxRetries int, args ...string) string {
+	h.t.Helper()
+	for attempt := range maxRetries {
+		cmd := exec.Command(terraformPath, args...)
+		cmd.Dir = h.workDir
+		cmd.Env = h.env
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			h.t.Logf("terraform %s failed (attempt %d/%d), retrying in %v:\nstderr: %s",
+				strings.Join(args, " "), attempt+1, maxRetries+1, destroyRetryWait, stderr.String())
+			time.Sleep(destroyRetryWait)
+			continue
+		}
+		return stdout.String()
+	}
+	return h.terraform(args...)
 }
 
 func (h *Harness) copyTestdata(src, dst string) {

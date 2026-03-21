@@ -3,6 +3,7 @@ package infra
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 	"time"
 
@@ -19,6 +20,11 @@ func newRateLimitError(retryAfter ...int) *descope.Error {
 		err = err.WithInfo(descope.ErrorInfoKeys.RateLimitExceededRetryAfter, retryAfter[0])
 	}
 	return err
+}
+
+func newServerError(statusCode int) *descope.Error {
+	return (&descope.Error{Code: "E999999", Message: "server error"}).
+		WithInfo(descope.ErrorInfoKeys.HTTPResponseStatusCode, statusCode)
 }
 
 func requireNoError(t *testing.T, err error) {
@@ -186,4 +192,198 @@ func TestRetryOnRateLimitNoResult_RetriesThenSucceeds(t *testing.T) {
 	})
 	requireNoError(t, err)
 	requireCallCount(t, calls, 2)
+}
+
+// Tests for transient server error (5xx) retry behavior
+
+func TestRetryOnRateLimit_ServerError500_RetriesThenSucceeds(t *testing.T) {
+	calls := 0
+	start := time.Now()
+	result, err := RetryOnRateLimit(context.Background(), func() (string, error) {
+		calls++
+		if calls == 1 {
+			return "", newServerError(http.StatusInternalServerError)
+		}
+		return "recovered", nil
+	})
+	elapsed := time.Since(start)
+	requireNoError(t, err)
+	if result != "recovered" {
+		t.Fatalf("expected 'recovered', got %q", result)
+	}
+	requireCallCount(t, calls, 2)
+	if elapsed < transientRetryBaseWait {
+		t.Fatalf("expected at least %v of retry wait, got %v", transientRetryBaseWait, elapsed)
+	}
+}
+
+func TestRetryOnRateLimit_ServerError502_RetriesThenSucceeds(t *testing.T) {
+	calls := 0
+	result, err := RetryOnRateLimit(context.Background(), func() (string, error) {
+		calls++
+		if calls == 1 {
+			return "", newServerError(http.StatusBadGateway)
+		}
+		return "ok", nil
+	})
+	requireNoError(t, err)
+	if result != "ok" {
+		t.Fatalf("expected 'ok', got %q", result)
+	}
+	requireCallCount(t, calls, 2)
+}
+
+func TestRetryOnRateLimit_ServerError503_RetriesThenSucceeds(t *testing.T) {
+	calls := 0
+	result, err := RetryOnRateLimit(context.Background(), func() (string, error) {
+		calls++
+		if calls == 1 {
+			return "", newServerError(http.StatusServiceUnavailable)
+		}
+		return "ok", nil
+	})
+	requireNoError(t, err)
+	if result != "ok" {
+		t.Fatalf("expected 'ok', got %q", result)
+	}
+	requireCallCount(t, calls, 2)
+}
+
+func TestRetryOnRateLimit_ServerError_ExhaustsRetries(t *testing.T) {
+	calls := 0
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	_, err := RetryOnRateLimit(ctx, func() (string, error) {
+		calls++
+		return "", newServerError(http.StatusInternalServerError)
+	})
+	if err == nil {
+		t.Fatal("expected error after exhausting retries")
+	}
+	requireCallCount(t, calls, maxRetries+1)
+}
+
+func TestRetryOnRateLimit_ClientError4xx_NotRetried(t *testing.T) {
+	calls := 0
+	_, err := RetryOnRateLimit(context.Background(), func() (string, error) {
+		calls++
+		return "", newServerError(http.StatusBadRequest)
+	})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	requireCallCount(t, calls, 1)
+}
+
+func TestRetryOnRateLimit_ServerError_ExponentialBackoff(t *testing.T) {
+	calls := 0
+	start := time.Now()
+	_, err := RetryOnRateLimit(context.Background(), func() (string, error) {
+		calls++
+		if calls <= 2 {
+			return "", newServerError(http.StatusInternalServerError)
+		}
+		return "ok", nil
+	})
+	elapsed := time.Since(start)
+	requireNoError(t, err)
+	requireCallCount(t, calls, 3)
+	// First wait: 2s, second wait: 4s = 6s total minimum
+	if elapsed < 6*time.Second {
+		t.Fatalf("expected at least 6s of exponential backoff, got %v", elapsed)
+	}
+}
+
+func TestRetryOnRateLimit_ServerErrorNoResult_RetriesThenSucceeds(t *testing.T) {
+	calls := 0
+	err := RetryOnRateLimitNoResult(context.Background(), func() error {
+		calls++
+		if calls == 1 {
+			return newServerError(http.StatusInternalServerError)
+		}
+		return nil
+	})
+	requireNoError(t, err)
+	requireCallCount(t, calls, 2)
+}
+
+// Tests for isRetryableError
+
+func TestIsRetryableError_RateLimit(t *testing.T) {
+	de, ok := isRetryableError(newRateLimitError())
+	if !ok || de == nil {
+		t.Fatal("expected rate limit error to be retryable")
+	}
+}
+
+func TestIsRetryableError_ServerError(t *testing.T) {
+	de, ok := isRetryableError(newServerError(http.StatusInternalServerError))
+	if !ok || de == nil {
+		t.Fatal("expected 500 error to be retryable")
+	}
+}
+
+func TestIsRetryableError_ClientError(t *testing.T) {
+	_, ok := isRetryableError(newServerError(http.StatusBadRequest))
+	if ok {
+		t.Fatal("expected 400 error to not be retryable")
+	}
+}
+
+func TestIsRetryableError_NonDescopeError(t *testing.T) {
+	_, ok := isRetryableError(errors.New("generic error"))
+	if ok {
+		t.Fatal("expected non-descope error to not be retryable")
+	}
+}
+
+func TestIsRetryableError_DescopeErrorNoStatusCode(t *testing.T) {
+	_, ok := isRetryableError(&descope.Error{Code: "E999999", Message: "no status"})
+	if ok {
+		t.Fatal("expected descope error without status code to not be retryable")
+	}
+}
+
+// Tests for retryWaitDuration
+
+func TestRetryWaitDuration_RateLimitWithRetryAfter(t *testing.T) {
+	de := newRateLimitError(5)
+	wait := retryWaitDuration(de, 0)
+	if wait != 5*time.Second {
+		t.Fatalf("expected 5s, got %v", wait)
+	}
+}
+
+func TestRetryWaitDuration_RateLimitDefault(t *testing.T) {
+	de := newRateLimitError()
+	wait := retryWaitDuration(de, 0)
+	if wait != defaultRetryWait {
+		t.Fatalf("expected %v, got %v", defaultRetryWait, wait)
+	}
+}
+
+func TestRetryWaitDuration_ServerErrorExponential(t *testing.T) {
+	de := newServerError(http.StatusInternalServerError)
+	cases := []struct {
+		attempt uint
+		want    time.Duration
+	}{
+		{0, 2 * time.Second},
+		{1, 4 * time.Second},
+		{2, 8 * time.Second},
+	}
+	for _, tc := range cases {
+		got := retryWaitDuration(de, tc.attempt)
+		if got != tc.want {
+			t.Fatalf("attempt %d: expected %v, got %v", tc.attempt, tc.want, got)
+		}
+	}
+}
+
+func TestRetryWaitDuration_CapsAtMax(t *testing.T) {
+	de := newServerError(http.StatusInternalServerError)
+	wait := retryWaitDuration(de, 10) // 2 << 10 = 2048s, should cap
+	if wait != maxRetryWait {
+		t.Fatalf("expected %v, got %v", maxRetryWait, wait)
+	}
 }
