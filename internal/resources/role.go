@@ -98,7 +98,7 @@ func (r *roleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	refreshRoleModel(&model, found)
+	refreshRoleModel(ctx, &model, found)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	tflog.Info(ctx, "Role resource read")
 }
@@ -202,7 +202,7 @@ func parseRoleID(id string) (name, tenantID string) {
 	return id, ""
 }
 
-func refreshRoleModel(model *role.Model, r *descope.Role) {
+func refreshRoleModel(ctx context.Context, model *role.Model, r *descope.Role) {
 	model.Name = types.StringValue(r.Name)
 	model.Description = types.StringValue(r.Description)
 	if r.TenantID != "" {
@@ -214,5 +214,5 @@ func refreshRoleModel(model *role.Model, r *descope.Role) {
 	model.Private = types.BoolValue(r.Private)
 	model.ID = types.StringValue(roleID(r.Name, r.TenantID))
 
-	model.PermissionNames = strsetattr.Value(r.PermissionNames)
+	model.PermissionNames = strsetattr.ValueCtx(ctx, r.PermissionNames)
 }
