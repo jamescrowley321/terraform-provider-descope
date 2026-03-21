@@ -192,6 +192,9 @@ func roleID(name, tenantID string) string {
 }
 
 // parseRoleID splits a composite role ID back into name and tenantID.
+// Format: "name" for global roles, "tenantID/name" for tenant-scoped roles.
+// Uses the first "/" as separator since tenant IDs are UUIDs (no slashes),
+// while role names may contain slashes.
 func parseRoleID(id string) (name, tenantID string) {
 	if i := strings.Index(id, "/"); i >= 0 {
 		return id[i+1:], id[:i]
@@ -202,7 +205,11 @@ func parseRoleID(id string) (name, tenantID string) {
 func refreshRoleModel(model *role.Model, r *descope.Role) {
 	model.Name = types.StringValue(r.Name)
 	model.Description = types.StringValue(r.Description)
-	model.TenantID = types.StringValue(r.TenantID)
+	if r.TenantID != "" {
+		model.TenantID = types.StringValue(r.TenantID)
+	} else {
+		model.TenantID = types.StringNull()
+	}
 	model.DefaultRole = types.BoolValue(r.Default)
 	model.Private = types.BoolValue(r.Private)
 	model.ID = types.StringValue(roleID(r.Name, r.TenantID))
