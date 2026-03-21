@@ -74,7 +74,18 @@ func (r *roleResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	model.ID = types.StringValue(roleID(name, tenantID))
+	// Read back to populate all computed fields
+	found, err := r.findRole(ctx, name, tenantID)
+	if err != nil {
+		resp.Diagnostics.AddError("Error reading role after create", err.Error())
+		return
+	}
+	if found == nil {
+		resp.Diagnostics.AddError("Error reading role after create", "role not found after creation")
+		return
+	}
+
+	refreshRoleModel(ctx, &model, found)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	tflog.Info(ctx, "Role resource created")
 }
@@ -134,7 +145,18 @@ func (r *roleResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	plan.ID = types.StringValue(roleID(newName, tenantID))
+	// Read back to populate all computed fields
+	found, err := r.findRole(ctx, newName, tenantID)
+	if err != nil {
+		resp.Diagnostics.AddError("Error reading role after update", err.Error())
+		return
+	}
+	if found == nil {
+		resp.Diagnostics.AddError("Error reading role after update", "role not found after update")
+		return
+	}
+
+	refreshRoleModel(ctx, &plan, found)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	tflog.Info(ctx, "Role resource updated")
 }
