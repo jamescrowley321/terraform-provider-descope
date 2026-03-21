@@ -365,7 +365,7 @@ func TestRetryWaitDuration_RateLimitDefault(t *testing.T) {
 func TestRetryWaitDuration_ServerErrorExponential(t *testing.T) {
 	de := newServerError(http.StatusInternalServerError)
 	cases := []struct {
-		attempt int
+		attempt uint
 		want    time.Duration
 	}{
 		{0, 2 * time.Second},

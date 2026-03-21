@@ -20,7 +20,7 @@ const (
 // It retries up to maxRetries times when the Descope SDK returns a rate limit
 // error or a server error (5xx), using appropriate backoff for each case.
 func RetryOnRateLimit[T any](ctx context.Context, fn func() (T, error)) (T, error) {
-	for attempt := range maxRetries {
+	for attempt := range uint(maxRetries) {
 		result, err := fn()
 		if err == nil {
 			return result, nil
@@ -81,7 +81,7 @@ func isRetryableError(err error) (*descope.Error, bool) {
 // retryWaitDuration returns the appropriate wait duration for a retryable error.
 // Rate limit errors use the Retry-After header if available, falling back to
 // defaultRetryWait. Server errors use exponential backoff starting at 2 seconds.
-func retryWaitDuration(de *descope.Error, attempt int) time.Duration {
+func retryWaitDuration(de *descope.Error, attempt uint) time.Duration {
 	if de.Code == descope.ErrRateLimitExceeded.Code {
 		if retryAfter, ok := de.Info[descope.ErrorInfoKeys.RateLimitExceededRetryAfter].(int); ok && retryAfter > 0 {
 			wait := time.Duration(retryAfter) * time.Second
@@ -93,7 +93,7 @@ func retryWaitDuration(de *descope.Error, attempt int) time.Duration {
 		return defaultRetryWait
 	}
 	// Exponential backoff for server errors: 2s, 4s, 8s, ...
-	wait := transientRetryBaseWait << uint(attempt)
+	wait := transientRetryBaseWait << attempt
 	if wait > maxRetryWait {
 		return maxRetryWait
 	}
