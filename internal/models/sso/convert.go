@@ -11,7 +11,7 @@ import (
 )
 
 func ModelToOIDCSettings(ctx context.Context, m *OIDCModel, diags *diag.Diagnostics) *descope.SSOOIDCSettings {
-	return &descope.SSOOIDCSettings{
+	settings := &descope.SSOOIDCSettings{
 		Name:                 m.Name.ValueString(),
 		ClientID:             m.ClientID.ValueString(),
 		ClientSecret:         m.ClientSecret.ValueString(),
@@ -26,6 +26,10 @@ func ModelToOIDCSettings(ctx context.Context, m *OIDCModel, diags *diag.Diagnost
 		Scope:                convert.StringSetToSlice(ctx, m.Scope, diags),
 		ManageProviderTokens: m.ManageProviderTokens.ValueBool(),
 	}
+	if m.AttributeMapping != nil {
+		settings.AttributeMapping = modelToOIDCAttributeMapping(m.AttributeMapping)
+	}
+	return settings
 }
 
 func ModelToSAMLSettings(m *SAMLModel) (*descope.SSOSAMLSettings, string) {
@@ -64,6 +68,12 @@ func RefreshOIDCFromResponse(ctx context.Context, m *OIDCModel, o *descope.SSOOI
 	m.Issuer = types.StringValue(o.Issuer)
 	m.Scope = strsetattr.ValueCtx(ctx, o.Scope)
 	m.ManageProviderTokens = types.BoolValue(o.ManageProviderTokens)
+	if o.AttributeMapping != nil {
+		if m.AttributeMapping == nil {
+			m.AttributeMapping = &OIDCAttributeMappingModel{}
+		}
+		refreshOIDCAttributeMapping(m.AttributeMapping, o.AttributeMapping)
+	}
 }
 
 func RefreshSAMLFromResponse(m *SAMLModel, s *descope.SSOSAMLSettingsResponse) {
@@ -116,4 +126,34 @@ func refreshAttributeMapping(m *AttributeMappingModel, a *descope.AttributeMappi
 	m.Email = types.StringValue(a.Email)
 	m.PhoneNumber = types.StringValue(a.PhoneNumber)
 	m.Group = types.StringValue(a.Group)
+}
+
+func modelToOIDCAttributeMapping(m *OIDCAttributeMappingModel) *descope.OIDCAttributeMapping {
+	return &descope.OIDCAttributeMapping{
+		LoginID:       m.LoginID.ValueString(),
+		Name:          m.Name.ValueString(),
+		GivenName:     m.GivenName.ValueString(),
+		MiddleName:    m.MiddleName.ValueString(),
+		FamilyName:    m.FamilyName.ValueString(),
+		Email:         m.Email.ValueString(),
+		VerifiedEmail: m.VerifiedEmail.ValueString(),
+		Username:      m.Username.ValueString(),
+		PhoneNumber:   m.PhoneNumber.ValueString(),
+		VerifiedPhone: m.VerifiedPhone.ValueString(),
+		Picture:       m.Picture.ValueString(),
+	}
+}
+
+func refreshOIDCAttributeMapping(m *OIDCAttributeMappingModel, a *descope.OIDCAttributeMapping) {
+	m.LoginID = types.StringValue(a.LoginID)
+	m.Name = types.StringValue(a.Name)
+	m.GivenName = types.StringValue(a.GivenName)
+	m.MiddleName = types.StringValue(a.MiddleName)
+	m.FamilyName = types.StringValue(a.FamilyName)
+	m.Email = types.StringValue(a.Email)
+	m.VerifiedEmail = types.StringValue(a.VerifiedEmail)
+	m.Username = types.StringValue(a.Username)
+	m.PhoneNumber = types.StringValue(a.PhoneNumber)
+	m.VerifiedPhone = types.StringValue(a.VerifiedPhone)
+	m.Picture = types.StringValue(a.Picture)
 }

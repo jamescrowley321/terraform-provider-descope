@@ -14,5 +14,11 @@ resource "descope_sso" "test" {
     auth_url      = "https://idp.example.com/authorize"
     token_url     = "https://idp.example.com/token"
     user_data_url = "https://idp.example.com/userinfo"
+
+    attribute_mapping = {
+      login_id = "sub"
+      email    = "email"
+      name     = "name"
+    }
   }
 }

@@ -47,6 +47,20 @@ var Attributes = map[string]schema.Attribute{
 	},
 }
 
+var oidcAttributeMappingAttributes = map[string]schema.Attribute{
+	"login_id":       stringattr.Default(""),
+	"name":           stringattr.Default(""),
+	"given_name":     stringattr.Default(""),
+	"middle_name":    stringattr.Default(""),
+	"family_name":    stringattr.Default(""),
+	"email":          stringattr.Default(""),
+	"verified_email": stringattr.Default(""),
+	"username":       stringattr.Default(""),
+	"phone_number":   stringattr.Default(""),
+	"verified_phone": stringattr.Default(""),
+	"picture":        stringattr.Default(""),
+}
+
 var oidcAttributes = map[string]schema.Attribute{
 	"name":      stringattr.Required(),
 	"client_id": stringattr.Required(),
@@ -64,6 +78,10 @@ var oidcAttributes = map[string]schema.Attribute{
 	"issuer":                 stringattr.Default(""),
 	"scope":                  strsetattr.Default(),
 	"manage_provider_tokens": boolattr.Default(false),
+	"attribute_mapping": schema.SingleNestedAttribute{
+		Optional:   true,
+		Attributes: oidcAttributeMappingAttributes,
+	},
 }
 
 var samlAttributes = map[string]schema.Attribute{
@@ -102,19 +120,34 @@ type Model struct {
 }
 
 type OIDCModel struct {
-	Name                 stringattr.Type `tfsdk:"name"`
-	ClientID             stringattr.Type `tfsdk:"client_id"`
-	ClientSecret         stringattr.Type `tfsdk:"client_secret"`
-	RedirectURL          stringattr.Type `tfsdk:"redirect_url"`
-	AuthURL              stringattr.Type `tfsdk:"auth_url"`
-	TokenURL             stringattr.Type `tfsdk:"token_url"`
-	UserDataURL          stringattr.Type `tfsdk:"user_data_url"`
-	JWKsURL              stringattr.Type `tfsdk:"jwks_url"`
-	CallbackDomain       stringattr.Type `tfsdk:"callback_domain"`
-	GrantType            stringattr.Type `tfsdk:"grant_type"`
-	Issuer               stringattr.Type `tfsdk:"issuer"`
-	Scope                strsetattr.Type `tfsdk:"scope"`
-	ManageProviderTokens boolattr.Type   `tfsdk:"manage_provider_tokens"`
+	Name                 stringattr.Type            `tfsdk:"name"`
+	ClientID             stringattr.Type            `tfsdk:"client_id"`
+	ClientSecret         stringattr.Type            `tfsdk:"client_secret"`
+	RedirectURL          stringattr.Type            `tfsdk:"redirect_url"`
+	AuthURL              stringattr.Type            `tfsdk:"auth_url"`
+	TokenURL             stringattr.Type            `tfsdk:"token_url"`
+	UserDataURL          stringattr.Type            `tfsdk:"user_data_url"`
+	JWKsURL              stringattr.Type            `tfsdk:"jwks_url"`
+	CallbackDomain       stringattr.Type            `tfsdk:"callback_domain"`
+	GrantType            stringattr.Type            `tfsdk:"grant_type"`
+	Issuer               stringattr.Type            `tfsdk:"issuer"`
+	Scope                strsetattr.Type            `tfsdk:"scope"`
+	ManageProviderTokens boolattr.Type              `tfsdk:"manage_provider_tokens"`
+	AttributeMapping     *OIDCAttributeMappingModel `tfsdk:"attribute_mapping"`
+}
+
+type OIDCAttributeMappingModel struct {
+	LoginID       stringattr.Type `tfsdk:"login_id"`
+	Name          stringattr.Type `tfsdk:"name"`
+	GivenName     stringattr.Type `tfsdk:"given_name"`
+	MiddleName    stringattr.Type `tfsdk:"middle_name"`
+	FamilyName    stringattr.Type `tfsdk:"family_name"`
+	Email         stringattr.Type `tfsdk:"email"`
+	VerifiedEmail stringattr.Type `tfsdk:"verified_email"`
+	Username      stringattr.Type `tfsdk:"username"`
+	PhoneNumber   stringattr.Type `tfsdk:"phone_number"`
+	VerifiedPhone stringattr.Type `tfsdk:"verified_phone"`
+	Picture       stringattr.Type `tfsdk:"picture"`
 }
 
 type SAMLModel struct {
