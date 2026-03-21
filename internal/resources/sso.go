@@ -80,7 +80,10 @@ func (r *ssoResource) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 
 	// Read back to populate computed fields
-	r.refreshModel(ctx, &model, tenantID, ssoID, &resp.Diagnostics)
+	if found := r.refreshModel(ctx, &model, tenantID, ssoID, &resp.Diagnostics); !found && !resp.Diagnostics.HasError() {
+		resp.Diagnostics.AddError("Error reading SSO after create", "SSO configuration not found after creation")
+		return
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -99,8 +102,12 @@ func (r *ssoResource) Read(ctx context.Context, req resource.ReadRequest, resp *
 
 	tenantID, ssoID := parseSSOCompositeID(model.ID.ValueString())
 
-	r.refreshModel(ctx, &model, tenantID, ssoID, &resp.Diagnostics)
+	found := r.refreshModel(ctx, &model, tenantID, ssoID, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !found {
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
@@ -123,7 +130,10 @@ func (r *ssoResource) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	r.refreshModel(ctx, &plan, tenantID, ssoID, &resp.Diagnostics)
+	if found := r.refreshModel(ctx, &plan, tenantID, ssoID, &resp.Diagnostics); !found && !resp.Diagnostics.HasError() {
+		resp.Diagnostics.AddError("Error reading SSO after update", "SSO configuration not found after update")
+		return
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -197,32 +207,44 @@ func (r *ssoResource) configureSSOType(ctx context.Context, model *sso.Model, te
 	}
 }
 
-func (r *ssoResource) refreshModel(ctx context.Context, model *sso.Model, tenantID, ssoID string, diags *diag.Diagnostics) {
+// refreshModel loads SSO settings from the API and updates the model.
+// Returns false if the SSO configuration was not found.
+func (r *ssoResource) refreshModel(ctx context.Context, model *sso.Model, tenantID, ssoID string, diags *diag.Diagnostics) bool {
 	result, err := infra.RetryOnRateLimit(ctx, func() (*descope.SSOTenantSettingsResponse, error) {
 		return r.management.SSO().LoadSettings(ctx, tenantID, ssoID)
 	})
 	if err != nil {
 		if infra.IsNotFoundError(err) {
-			diags.AddError("SSO configuration not found", "The SSO configuration was not found after creation")
-			return
+			return false
 		}
 		diags.AddError("Error reading SSO configuration", err.Error())
-		return
+		return false
 	}
 
 	model.TenantID = types.StringValue(tenantID)
 	model.SSOID = types.StringValue(result.SSOID)
 	model.ID = types.StringValue(ssoCompositeID(tenantID, result.SSOID))
 
-	if result.Oidc != nil && model.OIDC != nil {
+	// Auto-initialize type blocks from API response (needed for import)
+	if result.Oidc != nil {
+		if model.OIDC == nil {
+			model.OIDC = &sso.OIDCModel{}
+		}
 		sso.RefreshOIDCFromResponse(ctx, model.OIDC, result.Oidc)
 	}
-	if result.Saml != nil && model.SAML != nil {
-		sso.RefreshSAMLFromResponse(model.SAML, result.Saml)
+	if result.Saml != nil {
+		if model.SAML == nil && model.SAMLMetadata == nil {
+			model.SAML = &sso.SAMLModel{}
+		}
+		if model.SAML != nil {
+			sso.RefreshSAMLFromResponse(model.SAML, result.Saml)
+		}
+		if model.SAMLMetadata != nil {
+			sso.RefreshSAMLMetaFromResponse(model.SAMLMetadata, result.Saml)
+		}
 	}
-	if result.Saml != nil && model.SAMLMetadata != nil {
-		sso.RefreshSAMLMetaFromResponse(model.SAMLMetadata, result.Saml)
-	}
+
+	return true
 }
 
 func ssoCompositeID(tenantID, ssoID string) string {
