@@ -225,22 +225,24 @@ func (r *ssoResource) refreshModel(ctx context.Context, model *sso.Model, tenant
 	model.SSOID = types.StringValue(result.SSOID)
 	model.ID = types.StringValue(ssoCompositeID(tenantID, result.SSOID))
 
-	// Auto-initialize type blocks from API response (needed for import)
-	if result.Oidc != nil {
+	// Determine if this is an import (no type blocks set yet)
+	isImport := model.OIDC == nil && model.SAML == nil && model.SAMLMetadata == nil
+
+	// Refresh existing type blocks, or auto-initialize during import
+	if result.Oidc != nil && (model.OIDC != nil || isImport) {
 		if model.OIDC == nil {
 			model.OIDC = &sso.OIDCModel{}
 		}
 		sso.RefreshOIDCFromResponse(ctx, model.OIDC, result.Oidc)
 	}
 	if result.Saml != nil {
-		if model.SAML == nil && model.SAMLMetadata == nil {
-			model.SAML = &sso.SAMLModel{}
-		}
 		if model.SAML != nil {
 			sso.RefreshSAMLFromResponse(model.SAML, result.Saml)
-		}
-		if model.SAMLMetadata != nil {
+		} else if model.SAMLMetadata != nil {
 			sso.RefreshSAMLMetaFromResponse(model.SAMLMetadata, result.Saml)
+		} else if isImport {
+			model.SAML = &sso.SAMLModel{}
+			sso.RefreshSAMLFromResponse(model.SAML, result.Saml)
 		}
 	}
 
