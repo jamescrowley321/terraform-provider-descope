@@ -31,7 +31,7 @@ func AccessKey(t *testing.T) *Resource {
 }
 
 func InboundApp(t *testing.T) *Resource {
-	return newResource(t, "inbound_app")
+	return newResource(t, "inbound_application")
 }
 
 func newResource(t *testing.T, typ string) *Resource {
