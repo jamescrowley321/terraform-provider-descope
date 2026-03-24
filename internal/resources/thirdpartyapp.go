@@ -111,7 +111,9 @@ func (r *thirdPartyAppResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
+	clientSecret := model.ClientSecret
 	thirdpartyapp.RefreshModelFromResponse(ctx, &model, app)
+	model.ClientSecret = clientSecret
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	tflog.Info(ctx, "Third-party application resource read")
 }
