@@ -122,19 +122,9 @@ func (r *fgaSchemaResource) saveSchema(ctx context.Context, model *fga.SchemaMod
 }
 
 func (r *fgaSchemaResource) Delete(ctx context.Context, _ resource.DeleteRequest, resp *resource.DeleteResponse) {
-	tflog.Info(ctx, "Deleting FGA schema resource")
-
-	// Clear the schema by saving an empty one
-	err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-		return r.management.FGA().SaveSchema(ctx, &descope.FGASchema{Schema: ""})
-	})
-	if err != nil {
-		if !infra.IsNotFoundError(err) {
-			resp.Diagnostics.AddError("Error clearing FGA schema", err.Error())
-			return
-		}
-	}
-
+	tflog.Info(ctx, "Removing FGA schema resource from state")
+	// FGA schema is a singleton that cannot be deleted via the API.
+	// Removing from state is sufficient; the schema remains on the project.
 	resp.State.RemoveResource(ctx)
-	tflog.Info(ctx, "FGA schema resource deleted")
+	tflog.Info(ctx, "FGA schema resource removed from state")
 }
