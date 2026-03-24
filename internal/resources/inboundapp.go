@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	inboundAppEntity = "inbound_app"
+	inboundAppEntity = "inbound_application"
 )
 
 var (
@@ -31,8 +31,8 @@ type inboundAppResource struct {
 }
 
 func (r *inboundAppResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
-	if client, ok := req.ProviderData.(*infra.Client); ok {
-		r.client = client
+	if data, ok := req.ProviderData.(*infra.ProviderData); ok {
+		r.client = data.Client
 	}
 }
 
