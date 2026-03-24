@@ -22,7 +22,8 @@ func TestFGASchemaCRUD(t *testing.T) {
 	require.NotEmpty(t, id)
 
 	schema := StringAttr(attrs, "schema")
-	assert.Contains(t, schema, name)
+	assert.Contains(t, schema, "document")
+	assert.Contains(t, schema, "owner")
 
 	// Destroy
 	h.Destroy(nameVar)
