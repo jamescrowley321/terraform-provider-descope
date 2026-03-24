@@ -1,15 +1,12 @@
 variable "name" { type = string }
 
 resource "descope_fga_schema" "test" {
-  schema = jsonencode({
-    types = {
-      (var.name) = {
-        relations = {
-          owner = {
-            this = {}
-          }
-        }
-      }
-    }
-  })
+  schema = <<-EOT
+    model
+      schema 1.1
+    type user
+    type ${var.name}
+      relations
+        define owner: [user]
+  EOT
 }

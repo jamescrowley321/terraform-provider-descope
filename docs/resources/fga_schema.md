@@ -15,17 +15,16 @@ This is a singleton resource — only one FGA schema exists per project. Creatin
 
 ```terraform
 resource "descope_fga_schema" "main" {
-  schema = jsonencode({
-    types = {
-      document = {
-        relations = {
-          owner  = { this = {} }
-          editor = { union = [{ this = {} }, { computedUserset = { relation = "owner" } }] }
-          viewer = { union = [{ this = {} }, { computedUserset = { relation = "editor" } }] }
-        }
-      }
-    }
-  })
+  schema = <<-EOT
+    model
+      schema 1.1
+    type user
+    type document
+      relations
+        define owner: [user]
+        define editor: [user] or owner
+        define viewer: [user] or editor
+  EOT
 }
 ```
 
@@ -33,7 +32,7 @@ resource "descope_fga_schema" "main" {
 
 ### Required
 
-- `schema` (String) The FGA schema as a JSON string. Use `jsonencode()` to define the schema in HCL. The schema defines object types and their relations.
+- `schema` (String) The FGA authorization model in [OpenFGA DSL](https://openfga.dev/docs/configuration-language) format. Use a heredoc (`<<-EOT`) to define multi-line schemas inline.
 
 ### Read-Only
 
