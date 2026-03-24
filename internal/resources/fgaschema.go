@@ -73,7 +73,16 @@ func (r *fgaSchemaResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return r.management.FGA().LoadSchema(ctx)
 	})
 	if err != nil {
+		if infra.IsNotFoundError(err) {
+			resp.State.RemoveResource(ctx)
+			return
+		}
 		resp.Diagnostics.AddError("Error reading FGA schema", err.Error())
+		return
+	}
+
+	if fgaSchema == nil {
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
