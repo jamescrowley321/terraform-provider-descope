@@ -120,6 +120,7 @@ func (p *descopeProvider) DataSources(_ context.Context) []func() datasource.Dat
 	return []func() datasource.DataSource{
 		datasources.NewProjectDataSource,
 		datasources.NewPasswordSettingsDataSource,
+		datasources.NewProjectExportDataSource,
 	}
 }
 
