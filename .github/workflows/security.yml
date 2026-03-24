@@ -61,3 +61,35 @@ jobs:
       - name: Run govulncheck
         run: govulncheck ./...
 
+  snyk:
+    name: Snyk Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Snyk Open Source (SCA)
+        if: env.SNYK_TOKEN != ''
+        run: snyk test --severity-threshold=high
+
+      - name: Snyk Code (SAST)
+        if: env.SNYK_TOKEN != ''
+        run: snyk code test --severity-threshold=high
+
+      - name: Snyk Monitor
+        if: env.SNYK_TOKEN != '' && github.ref == 'refs/heads/main'
+        run: snyk monitor
+
