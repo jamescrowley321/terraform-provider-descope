@@ -7,7 +7,7 @@ description: |-
 
 # descope_fga_schema (Resource)
 
-Manages the Fine-Grained Authorization (FGA) schema for a Descope project. The schema defines object types and their relations for relationship-based access control (ReBAC), similar to Google Zanzibar.
+Manages the Fine-Grained Authorization (FGA) schema for a Descope project. The schema defines object types, relations, and permissions for relationship-based access control (ReBAC).
 
 This is a singleton resource — only one FGA schema exists per project. Creating the resource saves the schema; destroying it clears the schema from the project.
 
@@ -16,15 +16,16 @@ This is a singleton resource — only one FGA schema exists per project. Creatin
 ```terraform
 resource "descope_fga_schema" "main" {
   schema = <<-EOT
-    model
-      schema 1.1
-    type user
-    type document
-      relations
-        define owner: [user]
-        define editor: [user] or owner
-        define viewer: [user] or editor
-  EOT
+model AuthZ 1.0
+
+type user
+
+type document
+  relation owner: user
+  relation editor: user
+  permission can_edit: editor | owner
+  permission can_view: editor | owner
+EOT
 }
 ```
 
@@ -32,7 +33,7 @@ resource "descope_fga_schema" "main" {
 
 ### Required
 
-- `schema` (String) The FGA authorization model in [OpenFGA DSL](https://openfga.dev/docs/configuration-language) format. Use a heredoc (`<<-EOT`) to define multi-line schemas inline.
+- `schema` (String) The FGA authorization model in [Descope AuthZ DSL](https://docs.descope.com/authorization/rebac/define-schema) format. Use a heredoc (`<<-EOT`) to define multi-line schemas inline. The DSL must start with `model AuthZ 1.0`.
 
 ### Read-Only
 
