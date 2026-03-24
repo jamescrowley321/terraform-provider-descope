@@ -11,7 +11,7 @@ var Attributes = map[string]schema.Attribute{
 	"name":                   stringattr.Required(),
 	"description":            stringattr.Default(""),
 	"logo":                   stringattr.Default(""),
-	"login_page_url":         stringattr.Default(""),
+	"login_page_url":         stringattr.Optional(),
 	"client_id":              stringattr.Identifier(),
 	"client_secret":          stringattr.SecretComputed(),
 	"approved_callback_urls": strsetattr.Default(),
