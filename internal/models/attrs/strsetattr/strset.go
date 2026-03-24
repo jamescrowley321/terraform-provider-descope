@@ -25,6 +25,12 @@ func Value(value []string) Type {
 	return valueOf(context.Background(), value)
 }
 
+// ValueCtx creates a set value using the provided context, satisfying
+// contextcheck when the caller already has a context available.
+func ValueCtx(ctx context.Context, value []string) Type {
+	return valueOf(ctx, value)
+}
+
 func Empty() Type {
 	return valueOf(context.Background(), []string{})
 }
