@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	destroyMaxRetries = 2
-	destroyRetryWait  = 5 * time.Second
+	commandMaxRetries = 2
+	commandRetryWait  = 5 * time.Second
 )
 
 var (
@@ -93,12 +93,14 @@ func (h *Harness) LoadFixture(path string) {
 }
 
 // Apply runs terraform apply -auto-approve and returns stdout.
+// It retries up to commandMaxRetries times on failure to handle transient
+// API errors during resource creation.
 func (h *Harness) Apply(vars ...string) string {
 	h.t.Helper()
 	h.lastVars = vars
 	args := []string{"apply", "-auto-approve", "-no-color", "-input=false"}
 	args = append(args, varArgs(vars)...)
-	return h.terraform(args...)
+	return h.terraformRetry(commandMaxRetries, args...)
 }
 
 // Plan runs terraform plan and returns stdout.
@@ -111,7 +113,7 @@ func (h *Harness) Plan(vars ...string) string {
 }
 
 // Destroy runs terraform destroy -auto-approve and returns stdout.
-// It retries up to destroyMaxRetries times on failure to handle transient
+// It retries up to commandMaxRetries times on failure to handle transient
 // API errors. If the harness created any projects, it waits for Descope
 // to finish deleting them asynchronously before returning.
 func (h *Harness) Destroy(vars ...string) string {
@@ -119,7 +121,7 @@ func (h *Harness) Destroy(vars ...string) string {
 	h.lastVars = vars
 	args := []string{"destroy", "-auto-approve", "-no-color", "-input=false"}
 	args = append(args, varArgs(vars)...)
-	out := h.terraformRetry(destroyMaxRetries, args...)
+	out := h.terraformRetry(commandMaxRetries, args...)
 	if len(h.projectIDs) > 0 {
 		h.waitForProjectDeletion()
 		h.projectIDs = nil
@@ -371,8 +373,8 @@ func (h *Harness) terraformRetry(maxRetries int, args ...string) string {
 		cmd.Stderr = &stderr
 		if err := cmd.Run(); err != nil {
 			h.t.Logf("terraform %s failed (attempt %d/%d), retrying in %v:\nstderr: %s",
-				strings.Join(args, " "), attempt+1, maxRetries+1, destroyRetryWait, stderr.String())
-			time.Sleep(destroyRetryWait)
+				strings.Join(args, " "), attempt+1, maxRetries+1, commandRetryWait, stderr.String())
+			time.Sleep(commandRetryWait)
 			continue
 		}
 		return stdout.String()
