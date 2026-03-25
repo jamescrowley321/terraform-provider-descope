@@ -16,7 +16,7 @@ func TestOutboundAppCRUD(t *testing.T) {
 	address := "descope_outbound_application.test"
 
 	// Create
-	attrs := h.ApplyFixture("outboundapp/create.tf", address, nameVar)
+	attrs := h.ApplyFixture("outbound_application/create.tf", address, nameVar)
 	assert.Equal(t, name, attrs["name"])
 	assert.Equal(t, "Test outbound application", attrs["description"])
 
