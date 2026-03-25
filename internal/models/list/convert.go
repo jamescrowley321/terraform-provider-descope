@@ -31,7 +31,7 @@ func RefreshModelFromResponse(ctx context.Context, model *Model, list *descope.L
 // For ips/texts lists, Data is []any containing string elements.
 func dataToStringSet(ctx context.Context, data any) strsetattr.Type {
 	if data == nil {
-		return strsetattr.Value([]string{})
+		return strsetattr.ValueCtx(ctx, []string{})
 	}
 	switch v := data.(type) {
 	case []any:
@@ -45,6 +45,6 @@ func dataToStringSet(ctx context.Context, data any) strsetattr.Type {
 	case []string:
 		return strsetattr.ValueCtx(ctx, v)
 	default:
-		return strsetattr.Value([]string{})
+		return strsetattr.ValueCtx(ctx, []string{})
 	}
 }
