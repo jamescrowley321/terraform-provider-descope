@@ -1,4 +1,4 @@
-//go:build integration || fork
+//go:build integration
 
 package integration
 
