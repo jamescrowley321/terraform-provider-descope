@@ -41,7 +41,7 @@ func (r *fgaSchemaResource) Metadata(_ context.Context, req resource.MetadataReq
 
 func (r *fgaSchemaResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages the Fine-Grained Authorization (FGA) schema for a Descope project. The schema defines object types and their relations for relationship-based access control.",
+		Description: "Manages the Fine-Grained Authorization (FGA) schema for a Descope project. The schema defines object types and their relations for relationship-based access control. Note: destroying this resource only removes it from Terraform state; the schema remains active on the project.",
 		Attributes:  fga.SchemaAttributes,
 	}
 }

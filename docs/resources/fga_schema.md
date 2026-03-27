@@ -9,7 +9,7 @@ description: |-
 
 Manages the Fine-Grained Authorization (FGA) schema for a Descope project. The schema defines object types, relations, and permissions for relationship-based access control (ReBAC).
 
-This is a singleton resource — only one FGA schema exists per project. Creating the resource saves the schema; destroying it clears the schema from the project.
+This is a singleton resource — only one FGA schema exists per project. Creating or updating the resource saves the schema to Descope. Destroying the resource removes it from Terraform state only — the schema remains active on the project because the Descope API does not support deleting an FGA schema.
 
 ## Example Usage
 
@@ -39,4 +39,4 @@ EOT
 
 - `id` (String) The resource identifier (always `fga_schema`).
 
-~> **Warning:** Destroying this resource clears the FGA schema from the project. This may break authorization checks that depend on the schema.
+~> **Note:** Destroying this resource only removes it from Terraform state. The FGA schema remains active on the Descope project because the API does not support schema deletion. To re-manage the schema, import it with `terraform import`.

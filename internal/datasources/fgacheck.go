@@ -76,7 +76,7 @@ func (d *fgaCheckDataSource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	if len(checks) == 0 {
+	if len(checks) == 0 || checks[0] == nil {
 		resp.Diagnostics.AddError("Error checking FGA relation", "no check result returned")
 		return
 	}

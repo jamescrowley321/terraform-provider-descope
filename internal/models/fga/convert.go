@@ -1,6 +1,8 @@
 package fga
 
 import (
+	"strings"
+
 	"github.com/descope/go-sdk/descope"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -12,5 +14,7 @@ func SchemaModelToSDK(model *SchemaModel) *descope.FGASchema {
 }
 
 func SchemaModelFromSDK(model *SchemaModel, fgaSchema *descope.FGASchema) {
-	model.Schema = types.StringValue(fgaSchema.Schema)
+	// Normalize trailing whitespace to prevent false diffs when the API
+	// returns a normalized version of the DSL string.
+	model.Schema = types.StringValue(strings.TrimRight(fgaSchema.Schema, " \t\n\r"))
 }
