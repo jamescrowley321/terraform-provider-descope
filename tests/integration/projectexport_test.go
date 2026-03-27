@@ -1,8 +1,9 @@
-//go:build integration
+//go:build integration || fork
 
 package integration
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,6 +20,11 @@ func TestProjectExportDataSource(t *testing.T) {
 	require.NotEmpty(t, id)
 
 	files := StringAttr(attrs, "files")
-	assert.NotEmpty(t, files)
-	assert.Contains(t, files, "{")
+	require.NotEmpty(t, files)
+
+	// Validate the response is valid JSON, not just a string containing "{"
+	var parsed map[string]any
+	err := json.Unmarshal([]byte(files), &parsed)
+	require.NoError(t, err, "files attribute must be valid JSON")
+	assert.NotEmpty(t, parsed, "exported project files must not be empty")
 }

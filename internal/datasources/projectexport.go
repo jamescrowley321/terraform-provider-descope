@@ -45,14 +45,26 @@ func (d *projectExportDataSource) Schema(_ context.Context, _ datasource.SchemaR
 	resp.Schema = dsschema.Schema{
 		Description: "Exports a snapshot of the current Descope project configuration. Returns the full project settings and configurations as a JSON string.",
 		Attributes: map[string]dsschema.Attribute{
-			"id":    dsschema.StringAttribute{Computed: true},
-			"files": dsschema.StringAttribute{Computed: true},
+			"id": dsschema.StringAttribute{
+				Computed:    true,
+				Description: "Static identifier for the project export data source.",
+			},
+			"files": dsschema.StringAttribute{
+				Computed:    true,
+				Sensitive:   true,
+				Description: "JSON-encoded map of the exported project configuration files.",
+			},
 		},
 	}
 }
 
 func (d *projectExportDataSource) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
 	tflog.Info(ctx, "Reading project export data source")
+
+	if d.management == nil {
+		resp.Diagnostics.AddError("Provider not configured", "The provider has not been configured. Ensure the provider block is present and valid.")
+		return
+	}
 
 	snapshot, err := infra.RetryOnRateLimit(ctx, func() (*descope.ExportSnapshotResponse, error) {
 		return d.management.Project().ExportSnapshot(ctx, &descope.ExportSnapshotRequest{})
