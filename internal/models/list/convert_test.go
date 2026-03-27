@@ -70,6 +70,8 @@ func TestRefreshModelFromResponse(t *testing.T) {
 	assert.Equal(t, "Production IPs", model.Description.ValueString())
 	assert.Equal(t, "ips", model.Type.ValueString())
 	assert.False(t, model.Data.IsNull())
+	elems := model.Data.Elements()
+	assert.Len(t, elems, 2)
 }
 
 func TestRefreshModelFromResponseNilData(t *testing.T) {

@@ -10,10 +10,12 @@ import (
 
 var Attributes = map[string]schema.Attribute{
 	"id":          stringattr.Identifier(),
-	"name":        stringattr.Required(),
+	"name":        stringattr.Required(), // Must be unique per project; duplicate names will cause an API error on create.
 	"description": stringattr.Default(""),
-	"type":        stringattr.Required(stringvalidator.OneOf("texts", "ips"), stringplanmodifier.RequiresReplace()),
-	"data":        strsetattr.Default(),
+	// Validator intentionally excludes "json" type — JSON lists use map data
+	// which is incompatible with the string set data model.
+	"type": stringattr.Required(stringvalidator.OneOf("texts", "ips"), stringplanmodifier.RequiresReplace()),
+	"data": strsetattr.Default(),
 }
 
 type Model struct {
