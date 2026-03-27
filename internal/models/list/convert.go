@@ -2,12 +2,14 @@ package list
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/descope/go-sdk/descope"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
 	"github.com/descope/terraform-provider-descope/internal/models/convert"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func ModelToRequest(ctx context.Context, model *Model, diags *diag.Diagnostics) *descope.ListRequest {
@@ -36,9 +38,11 @@ func dataToStringSet(ctx context.Context, data any) strsetattr.Type {
 	switch v := data.(type) {
 	case []any:
 		strs := make([]string, 0, len(v))
-		for _, item := range v {
+		for i, item := range v {
 			if s, ok := item.(string); ok {
 				strs = append(strs, s)
+			} else {
+				tflog.Warn(ctx, fmt.Sprintf("list data item at index %d has unexpected type %T, skipping", i, item))
 			}
 		}
 		return strsetattr.ValueCtx(ctx, strs)
