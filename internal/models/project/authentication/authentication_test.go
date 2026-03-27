@@ -356,11 +356,66 @@ func TestAuthentication(t *testing.T) {
 				authentication = {
 					sso = {
 						limit_mapping_to_mandatory_attributes = true
+						block_if_email_domain_mismatch = true
+						mark_email_as_unverified = true
 					}
 				}
 			`),
 			Check: p.Check(map[string]any{
 				"authentication.sso.limit_mapping_to_mandatory_attributes": true,
+				"authentication.sso.block_if_email_domain_mismatch":        true,
+				"authentication.sso.mark_email_as_unverified":              true,
+			}),
+		},
+		resource.TestStep{
+			Config: p.Config(`
+				authentication = {
+					sso = {
+						block_if_email_domain_mismatch = false
+						mark_email_as_unverified = false
+					}
+				}
+			`),
+			Check: p.Check(map[string]any{
+				"authentication.sso.block_if_email_domain_mismatch": false,
+				"authentication.sso.mark_email_as_unverified":       false,
+			}),
+		},
+		resource.TestStep{
+			Config: p.Config(`
+				authentication = {
+					sso = {
+						email_service = {
+							connector = "Descope"
+						}
+					}
+				}
+			`),
+			Check: p.Check(map[string]any{
+				"authentication.sso.email_service.connector": "Descope",
+			}),
+		},
+		resource.TestStep{
+			Config: p.Config(`
+				authentication = {
+					sso = {
+						email_service = {
+							connector = "Descope"
+							templates = [
+								{
+									name      = "foo"
+									subject   = "x"
+									html_body = "a"
+								}
+							]
+						}
+					}
+				}
+			`),
+			Check: p.Check(map[string]any{
+				"authentication.sso.email_service.connector":        "Descope",
+				"authentication.sso.email_service.templates.#":      1,
+				"authentication.sso.email_service.templates.0.name": "foo",
 			}),
 		},
 		resource.TestStep{
