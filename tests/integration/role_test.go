@@ -26,11 +26,22 @@ func TestRoleCRUD(t *testing.T) {
 	permNames := RequireListLen(t, attrs, "permission_names", 2)
 	require.NotEmpty(t, permNames)
 
+	// Verify create via SDK
+	sdkRole := FindRoleViaSDK(t, name)
+	assert.Equal(t, name, sdkRole.Name)
+	assert.Equal(t, "Test role", sdkRole.Description)
+	assert.Len(t, sdkRole.PermissionNames, 2)
+
 	// Update: change description and reduce to one permission
 	attrs = h.ApplyFixture("role/update.tf", address, nameVar)
 	assert.Equal(t, name, attrs["name"])
 	assert.Equal(t, "Updated test role", attrs["description"])
 	RequireListLen(t, attrs, "permission_names", 1)
+
+	// Verify update via SDK
+	sdkRole = FindRoleViaSDK(t, name)
+	assert.Equal(t, "Updated test role", sdkRole.Description)
+	assert.Len(t, sdkRole.PermissionNames, 1)
 
 	// Import
 	attrs = h.ReimportResource("role/create.tf", address, name, nameVar)

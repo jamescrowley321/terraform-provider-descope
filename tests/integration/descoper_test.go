@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,10 +27,22 @@ func TestDescoperCRUD(t *testing.T) {
 
 	id := StringAttr(attrs, "id")
 
+	// Verify create via SDK
+	// Note: Descope API lowercases emails, so use case-insensitive comparison
+	sdkDescoper := LoadDescoperViaSDK(t, id)
+	require.NotNil(t, sdkDescoper.Attributes)
+	assert.True(t, strings.EqualFold(email, sdkDescoper.Attributes.Email), "email mismatch (case-insensitive): want %q, got %q", email, sdkDescoper.Attributes.Email)
+	assert.Equal(t, name, sdkDescoper.Attributes.DisplayName)
+
 	// Update (add phone number)
 	attrs = h.ApplyFixture("descoper/update.tf", address, nameVar, emailVar)
 	assert.Equal(t, "+15551234567", attrs["phone"])
 	assert.Equal(t, id, StringAttr(attrs, "id"))
+
+	// Verify update via SDK
+	sdkDescoper = LoadDescoperViaSDK(t, id)
+	require.NotNil(t, sdkDescoper.Attributes)
+	assert.Equal(t, "+15551234567", sdkDescoper.Attributes.Phone)
 
 	// Import
 	attrs = h.ReimportResource("descoper/create.tf", address, id, nameVar, emailVar)
@@ -60,6 +73,15 @@ func TestDescoperTagRoles(t *testing.T) {
 	assert.Equal(t, "admin", tagRole["role"])
 	RequireListLen(t, tagRole, "tags", 2)
 
+	// Verify via SDK
+	id := StringAttr(attrs, "id")
+	sdkDescoper := LoadDescoperViaSDK(t, id)
+	require.NotNil(t, sdkDescoper.ReBac, "rbac should not be nil")
+	assert.False(t, sdkDescoper.ReBac.IsCompanyAdmin)
+	require.Len(t, sdkDescoper.ReBac.Tags, 1)
+	assert.Equal(t, "admin", string(sdkDescoper.ReBac.Tags[0].Role))
+	assert.Len(t, sdkDescoper.ReBac.Tags[0].Tags, 2)
+
 	h.Destroy(nameVar, emailVar)
 	assert.False(t, h.HasState())
 }
@@ -83,6 +105,15 @@ func TestDescoperProjectRoles(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "developer", projectRole["role"])
 	RequireListLen(t, projectRole, "project_ids", 1)
+
+	// Verify via SDK
+	id := StringAttr(attrs, "id")
+	sdkDescoper := LoadDescoperViaSDK(t, id)
+	require.NotNil(t, sdkDescoper.ReBac, "rbac should not be nil")
+	assert.False(t, sdkDescoper.ReBac.IsCompanyAdmin)
+	require.Len(t, sdkDescoper.ReBac.Projects, 1)
+	assert.Equal(t, "developer", string(sdkDescoper.ReBac.Projects[0].Role))
+	assert.Len(t, sdkDescoper.ReBac.Projects[0].ProjectIDs, 1)
 
 	h.Destroy(nameVar, emailVar)
 	assert.False(t, h.HasState())

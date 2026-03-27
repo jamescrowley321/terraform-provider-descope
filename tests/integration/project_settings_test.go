@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,6 +26,9 @@ func TestProjectSettings(t *testing.T) {
 	assert.Equal(t, true, settings["refresh_token_rotation"])
 
 	id := StringAttr(attrs, "id")
+
+	// Verify project exists via SDK
+	assert.True(t, ProjectExistsViaSDK(t, id), "project %s should exist in API", id)
 
 	// Import and verify settings survive
 	attrs = h.ReimportResource("project/with_settings.tf", address, id, nameVar)
@@ -60,6 +64,21 @@ func TestProjectAuthorization(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "build-apps", perm0["name"])
 	assert.Equal(t, "Allowed to build and sign applications", perm0["description"])
+
+	// Verify project exists via SDK
+	id := StringAttr(attrs, "id")
+	assert.True(t, ProjectExistsViaSDK(t, id), "project %s should exist in API", id)
+
+	// Verify roles and permissions exist in the created project via SDK
+	projectClient := newSDKClientWithProject(t, id)
+	ctx := context.Background()
+	sdkRoles, err := projectClient.Management.Role().LoadAll(ctx)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, len(sdkRoles), 2, "project should have at least 2 roles")
+
+	sdkPerms, err := projectClient.Management.Permission().LoadAll(ctx)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, len(sdkPerms), 3, "project should have at least 3 permissions")
 
 	// Destroy
 	h.Destroy(nameVar)

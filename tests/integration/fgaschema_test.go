@@ -25,6 +25,11 @@ func TestFGASchemaCRUD(t *testing.T) {
 	assert.Contains(t, schema, "document")
 	assert.Contains(t, schema, "owner")
 
+	// Verify via SDK
+	sdkSchema := LoadFGASchemaViaSDK(t)
+	assert.Contains(t, sdkSchema.Schema, "document")
+	assert.Contains(t, sdkSchema.Schema, "owner")
+
 	// Destroy
 	h.Destroy(nameVar)
 	assert.False(t, h.HasState())

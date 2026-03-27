@@ -29,6 +29,12 @@ func TestThirdPartyAppCRUD(t *testing.T) {
 	clientSecret := StringAttr(attrs, "client_secret")
 	require.NotEmpty(t, clientSecret)
 
+	// Verify via SDK
+	sdkApp := LoadThirdPartyAppViaSDK(t, id)
+	assert.Equal(t, name, sdkApp.Name)
+	assert.Equal(t, "Test third-party application", sdkApp.Description)
+	assert.Equal(t, clientID, sdkApp.ClientID)
+
 	// Destroy
 	h.Destroy(nameVar)
 	assert.False(t, h.HasState())
