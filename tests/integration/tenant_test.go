@@ -21,12 +21,22 @@ func TestTenantCRUD(t *testing.T) {
 	require.NotEmpty(t, attrs["id"])
 	id := StringAttr(attrs, "id")
 
+	// Verify create via SDK
+	sdkTenant := LoadTenantViaSDK(t, id)
+	assert.Equal(t, name, sdkTenant.Name)
+
 	// Update (add self_provisioning_domains, enable enforce_sso)
 	attrs = h.ApplyFixture("tenant/update.tf", address, nameVar)
 	assert.Equal(t, name, attrs["name"])
 	assert.Equal(t, true, attrs["enforce_sso"])
 	domains := RequireListLen(t, attrs, "self_provisioning_domains", 1)
 	assert.Equal(t, name+".example.com", domains[0])
+
+	// Verify update via SDK
+	sdkTenant = LoadTenantViaSDK(t, id)
+	assert.Equal(t, name, sdkTenant.Name)
+	assert.True(t, sdkTenant.EnforceSSO, "enforce_sso should be true in API")
+	assert.Equal(t, []string{name + ".example.com"}, sdkTenant.SelfProvisioningDomains)
 
 	// Import
 	attrs = h.ReimportResource("tenant/update.tf", address, id, nameVar)
@@ -49,6 +59,11 @@ func TestTenantWithCustomID(t *testing.T) {
 	assert.Equal(t, customID, StringAttr(attrs, "tenant_id"))
 	assert.Equal(t, name, attrs["name"])
 
+	// Verify via SDK
+	sdkTenant := LoadTenantViaSDK(t, customID)
+	assert.Equal(t, customID, sdkTenant.ID)
+	assert.Equal(t, name, sdkTenant.Name)
+
 	h.Destroy("name="+name, "tenant_id="+customID)
 	assert.False(t, h.HasState())
 }
@@ -68,6 +83,18 @@ func TestTenantWithSettings(t *testing.T) {
 	assert.Equal(t, "days", settings["refresh_token_expiration_unit"])
 	assert.Equal(t, float64(10), settings["session_token_expiration"])
 	assert.Equal(t, "minutes", settings["session_token_expiration_unit"])
+
+	// Verify via SDK
+	id := StringAttr(attrs, "id")
+	sdkTenant := LoadTenantViaSDK(t, id)
+	assert.Equal(t, name, sdkTenant.Name)
+
+	sdkSettings := LoadTenantSettingsViaSDK(t, id)
+	assert.True(t, sdkSettings.SessionSettingsEnabled, "session_settings_enabled should be true in API")
+	assert.Equal(t, int32(30), sdkSettings.RefreshTokenExpiration)
+	assert.Equal(t, "days", sdkSettings.RefreshTokenExpirationUnit)
+	assert.Equal(t, int32(10), sdkSettings.SessionTokenExpiration)
+	assert.Equal(t, "minutes", sdkSettings.SessionTokenExpirationUnit)
 
 	h.Destroy("name=" + name)
 	assert.False(t, h.HasState())

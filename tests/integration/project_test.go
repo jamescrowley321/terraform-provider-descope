@@ -22,6 +22,9 @@ func TestProjectCRUD(t *testing.T) {
 
 	id := StringAttr(attrs, "id")
 
+	// Verify project exists via SDK
+	assert.True(t, ProjectExistsViaSDK(t, id), "project %s should exist in API after create", id)
+
 	// Update (add tags)
 	attrs = h.ApplyFixture("project/update.tf", address, nameVar)
 	assert.Equal(t, name, attrs["name"])

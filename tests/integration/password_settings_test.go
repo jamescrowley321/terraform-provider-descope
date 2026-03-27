@@ -24,6 +24,17 @@ func TestPasswordSettingsCRUD(t *testing.T) {
 	assert.Equal(t, false, attrs["expiration"])
 	assert.Equal(t, false, attrs["lock"])
 
+	// Verify create via SDK
+	sdkSettings := LoadPasswordSettingsViaSDK(t, "")
+	assert.True(t, sdkSettings.Enabled)
+	assert.Equal(t, int32(10), sdkSettings.MinLength)
+	assert.True(t, sdkSettings.Lowercase)
+	assert.True(t, sdkSettings.Uppercase)
+	assert.True(t, sdkSettings.Number)
+	assert.False(t, sdkSettings.NonAlphanumeric)
+	assert.False(t, sdkSettings.Expiration)
+	assert.False(t, sdkSettings.Lock)
+
 	// Update — tighten the policy
 	attrs = h.ApplyFixture("password_settings/update.tf", address)
 	assert.Equal(t, float64(12), attrs["min_length"])
@@ -34,6 +45,17 @@ func TestPasswordSettingsCRUD(t *testing.T) {
 	assert.Equal(t, float64(5), attrs["reuse_amount"])
 	assert.Equal(t, true, attrs["lock"])
 	assert.Equal(t, float64(5), attrs["lock_attempts"])
+
+	// Verify update via SDK
+	sdkSettings = LoadPasswordSettingsViaSDK(t, "")
+	assert.Equal(t, int32(12), sdkSettings.MinLength)
+	assert.True(t, sdkSettings.NonAlphanumeric)
+	assert.True(t, sdkSettings.Expiration)
+	assert.Equal(t, int32(26), sdkSettings.ExpirationWeeks)
+	assert.True(t, sdkSettings.Reuse)
+	assert.Equal(t, int32(5), sdkSettings.ReuseAmount)
+	assert.True(t, sdkSettings.Lock)
+	assert.Equal(t, int32(5), sdkSettings.LockAttempts)
 
 	// Destroy — removes from state only
 	h.Destroy()

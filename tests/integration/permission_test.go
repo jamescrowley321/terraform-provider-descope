@@ -23,10 +23,19 @@ func TestPermissionCRUD(t *testing.T) {
 	id := StringAttr(attrs, "id")
 	require.Equal(t, name, id)
 
+	// Verify create via SDK
+	sdkPerm := FindPermissionViaSDK(t, name)
+	assert.Equal(t, name, sdkPerm.Name)
+	assert.Equal(t, "Test permission", sdkPerm.Description)
+
 	// Update description
 	attrs = h.ApplyFixture("permission/update.tf", address, nameVar)
 	assert.Equal(t, name, attrs["name"])
 	assert.Equal(t, "Updated test permission", attrs["description"])
+
+	// Verify update via SDK
+	sdkPerm = FindPermissionViaSDK(t, name)
+	assert.Equal(t, "Updated test permission", sdkPerm.Description)
 
 	// Import
 	attrs = h.ReimportResource("permission/create.tf", address, name, nameVar)

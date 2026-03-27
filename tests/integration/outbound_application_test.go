@@ -23,6 +23,11 @@ func TestOutboundAppCRUD(t *testing.T) {
 	id := StringAttr(attrs, "id")
 	require.NotEmpty(t, id)
 
+	// Verify via SDK
+	sdkApp := LoadOutboundAppViaSDK(t, id)
+	assert.Equal(t, name, sdkApp.Name)
+	assert.Equal(t, "Test outbound application", sdkApp.Description)
+
 	// Destroy
 	h.Destroy(nameVar)
 	assert.False(t, h.HasState())

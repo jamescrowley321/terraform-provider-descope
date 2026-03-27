@@ -103,6 +103,26 @@ func (h *Harness) Apply(vars ...string) string {
 	return h.terraformRetry(commandMaxRetries, args...)
 }
 
+// TryApply runs terraform apply and returns the combined output and any error
+// instead of calling t.Fatal. This allows callers to inspect the error and
+// decide how to proceed (e.g., skip on license errors).
+func (h *Harness) TryApply(vars ...string) (string, error) {
+	h.t.Helper()
+	h.lastVars = vars
+	args := []string{"apply", "-auto-approve", "-no-color", "-input=false"}
+	args = append(args, varArgs(vars)...)
+	cmd := exec.Command(terraformPath, args...)
+	cmd.Dir = h.workDir
+	cmd.Env = h.env
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return stdout.String() + "\n" + stderr.String(), err
+	}
+	return stdout.String(), nil
+}
+
 // Plan runs terraform plan and returns stdout.
 func (h *Harness) Plan(vars ...string) string {
 	h.t.Helper()
