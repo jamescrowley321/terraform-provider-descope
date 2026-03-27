@@ -18,7 +18,7 @@ resource "descope_list" "ip_allowlist" {
   name        = "Production IP Allowlist"
   description = "Allowed IPs for production access"
   type        = "ips"
-  data        = ["192.168.1.0/24", "10.0.0.1"]
+  data        = ["192.0.2.0/24", "198.51.100.1"]
 }
 ```
 

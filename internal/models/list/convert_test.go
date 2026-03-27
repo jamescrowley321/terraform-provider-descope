@@ -20,7 +20,7 @@ func TestModelToRequest(t *testing.T) {
 		Name:        types.StringValue("Test List"),
 		Description: types.StringValue("A test list"),
 		Type:        types.StringValue("ips"),
-		Data:        strsetattr.Value([]string{"192.168.1.1", "10.0.0.0/8"}),
+		Data:        strsetattr.Value([]string{"192.0.2.1", "198.51.100.0/24"}),
 	}
 
 	req := ModelToRequest(ctx, model, &diags)
@@ -29,7 +29,7 @@ func TestModelToRequest(t *testing.T) {
 	assert.Equal(t, "Test List", req.Name)
 	assert.Equal(t, "A test list", req.Description)
 	assert.Equal(t, descope.ListTypeIPs, req.Type)
-	assert.ElementsMatch(t, []string{"192.168.1.1", "10.0.0.0/8"}, req.Data)
+	assert.ElementsMatch(t, []string{"192.0.2.1", "198.51.100.0/24"}, req.Data)
 }
 
 func TestModelToRequestEmpty(t *testing.T) {
@@ -60,7 +60,7 @@ func TestRefreshModelFromResponse(t *testing.T) {
 		Name:        "IP Allowlist",
 		Description: "Production IPs",
 		Type:        descope.ListTypeIPs,
-		Data:        []any{"192.168.1.1", "10.0.0.1"},
+		Data:        []any{"192.0.2.1", "192.0.2.2"},
 	}
 
 	RefreshModelFromResponse(ctx, model, list)
