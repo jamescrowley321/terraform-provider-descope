@@ -121,6 +121,7 @@ func (p *descopeProvider) DataSources(_ context.Context) []func() datasource.Dat
 		datasources.NewProjectDataSource,
 		datasources.NewPasswordSettingsDataSource,
 		datasources.NewProjectExportDataSource,
+		datasources.NewFGACheckDataSource,
 	}
 }
 
@@ -139,5 +140,6 @@ func (p *descopeProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewOutboundAppResource,
 		resources.NewSSOApplicationResource,
 		resources.NewThirdPartyAppResource,
+		resources.NewFGASchemaResource,
 	}
 }
