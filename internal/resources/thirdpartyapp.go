@@ -70,8 +70,21 @@ func (r *thirdPartyAppResource) Create(ctx context.Context, req resource.CreateR
 		}
 		return &createResult{id: id, secret: secret}, nil
 	})
+	if failure, ok := infra.AsValidationError(err); ok {
+		resp.Diagnostics.AddError("Invalid third-party application configuration", failure)
+		return
+	}
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating third-party application", err.Error())
+		return
+	}
+
+	// Write partial state immediately so the resource is tracked even if the
+	// subsequent Load call fails (prevents orphaned resources in Descope).
+	model.ID = types.StringValue(result.id)
+	model.ClientSecret = types.StringValue(result.secret)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -80,7 +93,8 @@ func (r *thirdPartyAppResource) Create(ctx context.Context, req resource.CreateR
 		return r.management.ThirdPartyApplication().LoadApplication(ctx, result.id)
 	})
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading third-party application after creation", err.Error())
+		resp.Diagnostics.AddWarning("Error reading third-party application after creation",
+			"The application was created successfully but could not be read back. Run 'terraform refresh' to sync state. Error: "+err.Error())
 		return
 	}
 
@@ -138,8 +152,12 @@ func (r *thirdPartyAppResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-		return r.management.ThirdPartyApplication().UpdateApplication(ctx, appReq)
+		return r.management.ThirdPartyApplication().PatchApplication(ctx, appReq)
 	})
+	if failure, ok := infra.AsValidationError(err); ok {
+		resp.Diagnostics.AddError("Invalid third-party application configuration", failure)
+		return
+	}
 	if err != nil {
 		resp.Diagnostics.AddError("Error updating third-party application", err.Error())
 		return
