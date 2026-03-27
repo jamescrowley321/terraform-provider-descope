@@ -26,7 +26,7 @@ func TestTenantCRUD(t *testing.T) {
 	assert.Equal(t, name, attrs["name"])
 	assert.Equal(t, true, attrs["enforce_sso"])
 	domains := RequireListLen(t, attrs, "self_provisioning_domains", 1)
-	assert.Equal(t, "example.com", domains[0])
+	assert.Equal(t, name+".example.com", domains[0])
 
 	// Import
 	attrs = h.ReimportResource("tenant/update.tf", address, id, nameVar)
