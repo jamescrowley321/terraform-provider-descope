@@ -43,3 +43,13 @@ func TestSchemaModelFromSDKEmpty(t *testing.T) {
 	SchemaModelFromSDK(model, fgaSchema)
 	assert.Equal(t, "", model.Schema.ValueString())
 }
+
+func TestSchemaModelFromSDKTrimsTrailingWhitespace(t *testing.T) {
+	model := &SchemaModel{}
+	fgaSchema := &descope.FGASchema{
+		Schema: "model AuthZ 1.0\n\ntype user\n\n",
+	}
+
+	SchemaModelFromSDK(model, fgaSchema)
+	assert.Equal(t, "model AuthZ 1.0\n\ntype user", model.Schema.ValueString())
+}
