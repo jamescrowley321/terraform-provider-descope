@@ -138,5 +138,6 @@ func (p *descopeProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewSSOResource,
 		resources.NewOutboundAppResource,
 		resources.NewSSOApplicationResource,
+		resources.NewThirdPartyAppResource,
 	}
 }
