@@ -1,9 +1,13 @@
 package ssoapplication
 
 import (
+	"context"
+
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/boolattr"
 	"github.com/descope/terraform-provider-descope/internal/models/attrs/stringattr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 )
 
 var Attributes = map[string]schema.Attribute{
@@ -16,10 +20,22 @@ var Attributes = map[string]schema.Attribute{
 	"oidc": schema.SingleNestedAttribute{
 		Optional:   true,
 		Attributes: oidcAttributes,
+		PlanModifiers: []planmodifier.Object{
+			objectplanmodifier.RequiresReplaceIf(requiresReplaceIfBlockToggled,
+				"Requires replace when switching between OIDC and SAML application types.",
+				"Requires replace when switching between OIDC and SAML application types.",
+			),
+		},
 	},
 	"saml": schema.SingleNestedAttribute{
 		Optional:   true,
 		Attributes: samlAttributes,
+		PlanModifiers: []planmodifier.Object{
+			objectplanmodifier.RequiresReplaceIf(requiresReplaceIfBlockToggled,
+				"Requires replace when switching between OIDC and SAML application types.",
+				"Requires replace when switching between OIDC and SAML application types.",
+			),
+		},
 	},
 }
 
@@ -56,6 +72,13 @@ type OIDCModel struct {
 	LoginPageURL         stringattr.Type `tfsdk:"login_page_url"`
 	ForceAuthentication  boolattr.Type   `tfsdk:"force_authentication"`
 	BackChannelLogoutURL stringattr.Type `tfsdk:"back_channel_logout_url"`
+}
+
+// requiresReplaceIfBlockToggled triggers resource replacement when the block
+// transitions between null and non-null (i.e., switching from OIDC to SAML or vice versa).
+// Updates within the same block type do not trigger replacement.
+func requiresReplaceIfBlockToggled(_ context.Context, req planmodifier.ObjectRequest, resp *objectplanmodifier.RequiresReplaceIfFuncResponse) {
+	resp.RequiresReplace = req.StateValue.IsNull() != req.PlanValue.IsNull()
 }
 
 type SAMLModel struct {

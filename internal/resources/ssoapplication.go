@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	_ resource.Resource                = &ssoApplicationResource{}
-	_ resource.ResourceWithConfigure   = &ssoApplicationResource{}
-	_ resource.ResourceWithImportState = &ssoApplicationResource{}
+	_ resource.Resource                   = &ssoApplicationResource{}
+	_ resource.ResourceWithConfigure      = &ssoApplicationResource{}
+	_ resource.ResourceWithImportState    = &ssoApplicationResource{}
+	_ resource.ResourceWithValidateConfig = &ssoApplicationResource{}
 )
 
 func NewSSOApplicationResource() resource.Resource {
@@ -42,6 +43,30 @@ func (r *ssoApplicationResource) Schema(_ context.Context, _ resource.SchemaRequ
 	resp.Schema = schema.Schema{
 		Description: "Manages a Descope SSO application (OIDC or SAML).",
 		Attributes:  ssoapplication.Attributes,
+	}
+}
+
+func (r *ssoApplicationResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	var model ssoapplication.Model
+	if resp.Diagnostics.Append(req.Config.Get(ctx, &model)...); resp.Diagnostics.HasError() {
+		return
+	}
+
+	hasOIDC := model.OIDC != nil
+	hasSAML := model.SAML != nil
+
+	if hasOIDC && hasSAML {
+		resp.Diagnostics.AddError(
+			"Invalid SSO application configuration",
+			"Only one of 'oidc' or 'saml' block can be specified, not both.",
+		)
+	}
+
+	if !hasOIDC && !hasSAML {
+		resp.Diagnostics.AddError(
+			"Invalid SSO application configuration",
+			"Either 'oidc' or 'saml' block must be specified.",
+		)
 	}
 }
 
@@ -147,6 +172,9 @@ func (r *ssoApplicationResource) Update(ctx context.Context, req resource.Update
 		err = infra.RetryOnRateLimitNoResult(ctx, func() error {
 			return r.management.SSOApplication().UpdateSAMLApplication(ctx, ssoapplication.ModelToSAMLRequest(&plan))
 		})
+	} else {
+		resp.Diagnostics.AddError("Invalid SSO application", "Either oidc or saml block must be specified")
+		return
 	}
 
 	if err != nil {

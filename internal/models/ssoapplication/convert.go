@@ -44,6 +44,10 @@ func ModelToSAMLRequest(model *Model) *descope.SAMLApplicationRequest {
 }
 
 func RefreshModelFromResponse(model *Model, app *descope.SSOApplication) {
+	if app == nil {
+		return
+	}
+
 	model.ID = types.StringValue(app.ID)
 	model.Name = types.StringValue(app.Name)
 	model.Description = types.StringValue(app.Description)
@@ -63,6 +67,10 @@ func RefreshModelFromResponse(model *Model, app *descope.SSOApplication) {
 }
 
 func RefreshModelFromResponseForImport(model *Model, app *descope.SSOApplication) {
+	if app == nil {
+		return
+	}
+
 	model.ID = types.StringValue(app.ID)
 	model.Name = types.StringValue(app.Name)
 	model.Description = types.StringValue(app.Description)
@@ -70,20 +78,25 @@ func RefreshModelFromResponseForImport(model *Model, app *descope.SSOApplication
 	model.Logo = types.StringValue(app.Logo)
 	model.AppType = types.StringValue(app.AppType)
 
-	if app.OIDCSettings != nil {
-		if model.OIDC == nil {
-			model.OIDC = &OIDCModel{}
+	// Populate only the block matching the application type to avoid
+	// setting both blocks when the API returns non-nil settings for both.
+	switch app.AppType {
+	case "oidc":
+		if app.OIDCSettings != nil {
+			if model.OIDC == nil {
+				model.OIDC = &OIDCModel{}
+			}
+			model.OIDC.LoginPageURL = types.StringValue(app.OIDCSettings.LoginPageURL)
+			model.OIDC.ForceAuthentication = types.BoolValue(app.OIDCSettings.ForceAuthentication)
+			model.OIDC.BackChannelLogoutURL = types.StringValue(app.OIDCSettings.BackChannelLogoutURL)
 		}
-		model.OIDC.LoginPageURL = types.StringValue(app.OIDCSettings.LoginPageURL)
-		model.OIDC.ForceAuthentication = types.BoolValue(app.OIDCSettings.ForceAuthentication)
-		model.OIDC.BackChannelLogoutURL = types.StringValue(app.OIDCSettings.BackChannelLogoutURL)
-	}
-
-	if app.SAMLSettings != nil {
-		if model.SAML == nil {
-			model.SAML = &SAMLModel{}
+	case "saml":
+		if app.SAMLSettings != nil {
+			if model.SAML == nil {
+				model.SAML = &SAMLModel{}
+			}
+			refreshSAMLFromResponse(model.SAML, app.SAMLSettings)
 		}
-		refreshSAMLFromResponse(model.SAML, app.SAMLSettings)
 	}
 }
 
