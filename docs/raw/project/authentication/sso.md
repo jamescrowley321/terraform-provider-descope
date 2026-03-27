@@ -106,6 +106,33 @@ When configuring SSO the groups attribute name must be specified.
 
 
 
+block_if_email_domain_mismatch
+------------------------------
+
+- Type: `bool`
+
+Whether to block SSO login if the user's email domain doesn't match the configured SSO domains.
+
+
+
+mark_email_as_unverified
+------------------------
+
+- Type: `bool`
+
+Whether to mark the user's email as unverified when logging in via SSO.
+
+
+
+email_service
+-------------
+
+- Type: `object` of `templates.EmailService`
+
+Settings related to sending SSO invite emails as part of the SSO feature.
+
+
+
 
 
 MandatoryUserAttribute

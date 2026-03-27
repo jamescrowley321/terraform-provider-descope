@@ -165,20 +165,21 @@ var docsOIDC = map[string]string{
 }
 
 var docsSAML = map[string]string{
-	"id":                        "An optional identifier for the SAML application.",
-	"name":                      "A name for the SAML application.",
-	"description":               "A description for the SAML application.",
-	"logo":                      "A logo for the SAML application. Should be a hosted image URL.",
-	"disabled":                  "Whether the application should be enabled or disabled.",
-	"login_page_url":            "The Flow Hosting URL. Read more about using this parameter with custom domain [here](https://docs.descope.com/sso-integrations/applications/saml-apps).",
-	"dynamic_configuration":     "The `DynamicConfiguration` object. Read the description below.",
-	"manual_configuration":      "The `ManualConfiguration` object. Read the description below.",
-	"acs_allowed_callback_urls": "A list of allowed ACS callback URLS. This configuration is used when the default ACS URL value is unreachable. Supports wildcards.",
-	"subject_name_id_type":      "The subject name id type. Choose one of \"\", \"email\", \"phone\". Read more about this configuration [here](https://docs.descope.com/sso-integrations/applications/saml-apps).",
-	"subject_name_id_format":    "The subject name id format. Choose one of \"\", \"urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified\", \"urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress\", \"urn:oasis:names:tc:SAML:2.0:nameid-format:persistent\", \"urn:oasis:names:tc:SAML:2.0:nameid-format:transient\". Read more about this configuration [here](https://docs.descope.com/sso-integrations/applications/saml-apps).",
-	"default_relay_state":       "The default relay state. When using IdP-initiated authentication, this value may be used as a URL to a resource in the Service Provider.",
-	"attribute_mapping":         "The `AttributeMapping` object. Read the description below.",
-	"force_authentication":      "This configuration overrides the default behavior of the SSO application and forces the user to authenticate via the Descope flow, regardless of the SP's request.",
+	"id":                          "An optional identifier for the SAML application.",
+	"name":                        "A name for the SAML application.",
+	"description":                 "A description for the SAML application.",
+	"logo":                        "A logo for the SAML application. Should be a hosted image URL.",
+	"disabled":                    "Whether the application should be enabled or disabled.",
+	"login_page_url":              "The Flow Hosting URL. Read more about using this parameter with custom domain [here](https://docs.descope.com/sso-integrations/applications/saml-apps).",
+	"dynamic_configuration":       "The `DynamicConfiguration` object. Read the description below.",
+	"manual_configuration":        "The `ManualConfiguration` object. Read the description below.",
+	"acs_allowed_callback_urls":   "A list of allowed ACS callback URLS. This configuration is used when the default ACS URL value is unreachable. Supports wildcards.",
+	"subject_name_id_type":        "The subject name id type. Choose one of \"\", \"email\", \"phone\". Read more about this configuration [here](https://docs.descope.com/sso-integrations/applications/saml-apps).",
+	"subject_name_id_format":      "The subject name id format. Choose one of \"\", \"urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified\", \"urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress\", \"urn:oasis:names:tc:SAML:2.0:nameid-format:persistent\", \"urn:oasis:names:tc:SAML:2.0:nameid-format:transient\". Read more about this configuration [here](https://docs.descope.com/sso-integrations/applications/saml-apps).",
+	"default_relay_state":         "The default relay state. When using IdP-initiated authentication, this value may be used as a URL to a resource in the Service Provider.",
+	"default_signature_algorithm": "The signature algorithm used to sign SAML responses. Choose one of `\"\"` (default, SHA-1) or `\"sha256\"` (SHA-256). Only applies to IdP-initiated flows — SP-initiated flows use the algorithm specified in the SP's SAML request.",
+	"attribute_mapping":           "The `AttributeMapping` object. Read the description below.",
+	"force_authentication":        "This configuration overrides the default behavior of the SSO application and forces the user to authenticate via the Descope flow, regardless of the SP's request.",
 }
 
 var docsAttributeMapping = map[string]string{
@@ -409,6 +410,9 @@ var docsSSO = map[string]string{
 	"limit_mapping_to_mandatory_attributes": "Mapping to attributes not specified in `mandatory_user_attributes` is not allowed.",
 	"require_sso_domains":                   "When configuring SSO an SSO domain must be specified.",
 	"require_groups_attribute_name":         "When configuring SSO the groups attribute name must be specified.",
+	"block_if_email_domain_mismatch":        "Whether to block SSO login if the user's email domain doesn't match the configured SSO domains.",
+	"mark_email_as_unverified":              "Whether to mark the user's email as unverified when logging in via SSO.",
+	"email_service":                         "Settings related to sending SSO invite emails as part of the SSO feature.",
 }
 
 var docsMandatoryUserAttribute = map[string]string{

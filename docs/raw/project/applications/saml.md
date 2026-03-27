@@ -112,6 +112,15 @@ The default relay state. When using IdP-initiated authentication, this value may
 
 
 
+default_signature_algorithm
+---------------------------
+
+- Type: `string`
+
+The signature algorithm used to sign SAML responses. Choose one of `""` (default, SHA-1) or `"sha256"` (SHA-256). Only applies to IdP-initiated flows — SP-initiated flows use the algorithm specified in the SP's SAML request.
+
+
+
 attribute_mapping
 -----------------
 
