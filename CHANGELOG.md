@@ -1,0 +1,56 @@
+# Changelog
+
+## [0.4.0](https://github.com/jamescrowley321/terraform-provider-descope/compare/v0.3.6...v0.4.0) (2026-03-28)
+
+
+### Features
+
+* add access key resource with integration tests ([#40](https://github.com/jamescrowley321/terraform-provider-descope/issues/40)) ([888560d](https://github.com/jamescrowley321/terraform-provider-descope/commit/888560df69924016fdc34b98ba4592b35b6f806d))
+* add descope_access_key resource ([#35](https://github.com/jamescrowley321/terraform-provider-descope/issues/35)) ([414594a](https://github.com/jamescrowley321/terraform-provider-descope/commit/414594a0f7b564e10a88cc1f51d13f360e879ef0))
+* add descope_list resource for IP/text allow/deny lists ([#94](https://github.com/jamescrowley321/terraform-provider-descope/issues/94)) ([931fd86](https://github.com/jamescrowley321/terraform-provider-descope/commit/931fd86ad024fae900e51bc7c4768e02639f4cee))
+* add descope_outbound_application resource ([b352572](https://github.com/jamescrowley321/terraform-provider-descope/commit/b352572d52c11d1625244484d23d8b48289e7084))
+* add descope_outbound_application resource ([c1f5e0c](https://github.com/jamescrowley321/terraform-provider-descope/commit/c1f5e0caee3c60f5a5931a91fd6aa4b4067ce37c)), closes [#13](https://github.com/jamescrowley321/terraform-provider-descope/issues/13)
+* add descope_password_settings resource and data source ([#62](https://github.com/jamescrowley321/terraform-provider-descope/issues/62)) ([777db00](https://github.com/jamescrowley321/terraform-provider-descope/commit/777db00db0c8f35f605e8d97b06127474f0dd5c2))
+* add descope_permission and descope_role standalone resources ([#78](https://github.com/jamescrowley321/terraform-provider-descope/issues/78)) ([f437b3d](https://github.com/jamescrowley321/terraform-provider-descope/commit/f437b3d0f801723ff1c312f4a5365f8cad6f3be8))
+* add descope_project data source ([#54](https://github.com/jamescrowley321/terraform-provider-descope/issues/54)) ([58e596e](https://github.com/jamescrowley321/terraform-provider-descope/commit/58e596e5e848697c9cfe8a962a5878ae508782ee))
+* add descope_project_export data source ([#88](https://github.com/jamescrowley321/terraform-provider-descope/issues/88)) ([4c26a7a](https://github.com/jamescrowley321/terraform-provider-descope/commit/4c26a7a7a572e4a324fa1fb853b68611e4ed4b8e))
+* add descope_sso resource with OIDC and SAML support ([4a17c6b](https://github.com/jamescrowley321/terraform-provider-descope/commit/4a17c6b2ee8a8f04c183f4df0f759569918afbc6))
+* add descope_sso resource with OIDC and SAML support ([c908145](https://github.com/jamescrowley321/terraform-provider-descope/commit/c908145b9a31b75797447ee4177353efc988efc4)), closes [#16](https://github.com/jamescrowley321/terraform-provider-descope/issues/16)
+* add descope_sso_application resource with OIDC and SAML support ([#80](https://github.com/jamescrowley321/terraform-provider-descope/issues/80)) ([583a149](https://github.com/jamescrowley321/terraform-provider-descope/commit/583a1491580042d17c47af2cf50f22751d0f1fb5))
+* add descope_tenant resource ([#53](https://github.com/jamescrowley321/terraform-provider-descope/issues/53)) ([f77d52f](https://github.com/jamescrowley321/terraform-provider-descope/commit/f77d52f4012275dd36fd70c82bf2f938cfea2739))
+* add descope_third_party_application resource ([#86](https://github.com/jamescrowley321/terraform-provider-descope/issues/86)) ([08cde2b](https://github.com/jamescrowley321/terraform-provider-descope/commit/08cde2bba6a8eecdf69e2dc65d49fd331b7b5aed))
+* add FGA schema resource and check data source ([#87](https://github.com/jamescrowley321/terraform-provider-descope/issues/87)) ([b7b8b85](https://github.com/jamescrowley321/terraform-provider-descope/commit/b7b8b8534c0b4d8aaf09a4af937333b552897571))
+* publish provider to Terraform Registry ([#108](https://github.com/jamescrowley321/terraform-provider-descope/issues/108)) ([555e580](https://github.com/jamescrowley321/terraform-provider-descope/commit/555e5809fba72a9baf8d52b923e3c6ef581da479))
+* SSO Suite invite Template and Provider support ([#251](https://github.com/jamescrowley321/terraform-provider-descope/issues/251)) ([9c5d0da](https://github.com/jamescrowley321/terraform-provider-descope/commit/9c5d0da805c0c171d1291f5de751095224603541))
+* **sso:** add default_signature_algorithm, blockIfEmailDomainMismatch and markEmailAsUnverified ([#263](https://github.com/jamescrowley321/terraform-provider-descope/issues/263)) ([1172bca](https://github.com/jamescrowley321/terraform-provider-descope/commit/1172bca5f97e002a580a5be639a912c46ee960a8))
+* **test:** adversarial SDK verification + docs overhaul ([#107](https://github.com/jamescrowley321/terraform-provider-descope/issues/107)) ([4a47166](https://github.com/jamescrowley321/terraform-provider-descope/commit/4a4716671c90a555181356a44999e2f2b93afc52))
+
+
+### Bug Fixes
+
+* add OIDC attribute_mapping support for SSO resource ([11238ff](https://github.com/jamescrowley321/terraform-provider-descope/commit/11238ffbffa315bf3b6441f34230758fe2da6d9a))
+* add required user_data_url to SSO OIDC test fixture ([090f2e5](https://github.com/jamescrowley321/terraform-provider-descope/commit/090f2e57f6a659516dbcdee9293646bfd4ec6256))
+* add retry to test harness Apply for transient API errors ([#77](https://github.com/jamescrowley321/terraform-provider-descope/issues/77)) ([c1494df](https://github.com/jamescrowley321/terraform-provider-descope/commit/c1494df43656f6d0f90547a29911d140f2cf33b2)), closes [#72](https://github.com/jamescrowley321/terraform-provider-descope/issues/72)
+* add retry with backoff for Descope API rate limiting ([#34](https://github.com/jamescrowley321/terraform-provider-descope/issues/34)) ([b5dca73](https://github.com/jamescrowley321/terraform-provider-descope/commit/b5dca73712ffa2b7ea8ec41f566827647581cf89))
+* **ci:** correct release-please-action commit SHA ([#110](https://github.com/jamescrowley321/terraform-provider-descope/issues/110)) ([590cc5d](https://github.com/jamescrowley321/terraform-provider-descope/commit/590cc5d4c6d0c9971b719764394d020d41950b81))
+* **ci:** split integration test suites for upstream and fork ([#55](https://github.com/jamescrowley321/terraform-provider-descope/issues/55)) ([a54e303](https://github.com/jamescrowley321/terraform-provider-descope/commit/a54e3035bdbf93c62545b4c3af5d7c3d9b5dc549))
+* **deps:** update module github.com/descope/go-sdk to v1.10.0 ([#248](https://github.com/jamescrowley321/terraform-provider-descope/issues/248)) ([1e9709b](https://github.com/jamescrowley321/terraform-provider-descope/commit/1e9709b31751a7336bb24a463adfecbf2eeaaf50))
+* **deps:** update module github.com/descope/go-sdk to v1.11.0 ([#250](https://github.com/jamescrowley321/terraform-provider-descope/issues/250)) ([8719520](https://github.com/jamescrowley321/terraform-provider-descope/commit/8719520028d64cea661b8ba804bf42fddb5c65d3))
+* **deps:** update module github.com/descope/go-sdk to v1.13.0 ([#261](https://github.com/jamescrowley321/terraform-provider-descope/issues/261)) ([6f867a4](https://github.com/jamescrowley321/terraform-provider-descope/commit/6f867a4fea34f20863edfecc35cc9779a1771eb7))
+* **deps:** update module github.com/descope/go-sdk to v1.14.0 ([#266](https://github.com/jamescrowley321/terraform-provider-descope/issues/266)) ([8bab138](https://github.com/jamescrowley321/terraform-provider-descope/commit/8bab138e14046e1ba7a6163a4e6840af6dd8cda5))
+* **deps:** update module github.com/hashicorp/terraform-plugin-framework to v1.18.0 ([#256](https://github.com/jamescrowley321/terraform-provider-descope/issues/256)) ([b2e5e29](https://github.com/jamescrowley321/terraform-provider-descope/commit/b2e5e29ebd89be19167e23c6095e56cddd40daed))
+* **deps:** update module github.com/hashicorp/terraform-plugin-go to v0.30.0 ([#257](https://github.com/jamescrowley321/terraform-provider-descope/issues/257)) ([037d1cb](https://github.com/jamescrowley321/terraform-provider-descope/commit/037d1cb0d947f4e43f9607f1ec8f10e5ff1f8c4e))
+* handle not-found in SSO Read and auto-init type blocks for import ([43078ca](https://github.com/jamescrowley321/terraform-provider-descope/commit/43078ca2a9c25c701f63f71f8b7d4a6a4eb92f41))
+* normalize file naming to snake_case convention ([#91](https://github.com/jamescrowley321/terraform-provider-descope/issues/91)) ([15dc336](https://github.com/jamescrowley321/terraform-provider-descope/commit/15dc336df97255874b1b6c3076804cc41ec795ae))
+* only refresh SSO type blocks that match the plan ([feb65bc](https://github.com/jamescrowley321/terraform-provider-descope/commit/feb65bc3cfc827a447ef96f7b93d784b395eaaa9))
+* pass project ID to SDK client for access key operations ([#51](https://github.com/jamescrowley321/terraform-provider-descope/issues/51)) ([7f30d88](https://github.com/jamescrowley321/terraform-provider-descope/commit/7f30d883beba87daa8227d3df69a0a815493cb07))
+* rename descope_inbound_app to descope_inbound_application ([#84](https://github.com/jamescrowley321/terraform-provider-descope/issues/84)) ([34b3ca2](https://github.com/jamescrowley321/terraform-provider-descope/commit/34b3ca261395386f8f8bbf824ca2c8cd8fc28150))
+* resolve gosec code scanning alerts ([#37](https://github.com/jamescrowley321/terraform-provider-descope/issues/37)) ([626a566](https://github.com/jamescrowley321/terraform-provider-descope/commit/626a56642d20baded9224f22218811f87f9f6f2a)), closes [#36](https://github.com/jamescrowley321/terraform-provider-descope/issues/36)
+* restore Go 1.26 toolchain version and update dependencies ([aefd213](https://github.com/jamescrowley321/terraform-provider-descope/commit/aefd21382cfdf02ba1fd5bf70f8529d3dd1f8586))
+* retry transient server errors (5xx) in Descope API calls ([#75](https://github.com/jamescrowley321/terraform-provider-descope/issues/75)) ([3c74794](https://github.com/jamescrowley321/terraform-provider-descope/commit/3c74794eb2f5ab99924950314a6e1bef7cfb55ae))
+* simplify SSO test assertions to avoid sso_id state check ([77b2bff](https://github.com/jamescrowley321/terraform-provider-descope/commit/77b2bffb8b422aea9239c981cb2806d25c784479))
+* skip default SSO apps in integration test cleanup ([#47](https://github.com/jamescrowley321/terraform-provider-descope/issues/47)) ([facd9f9](https://github.com/jamescrowley321/terraform-provider-descope/commit/facd9f90dd3385827dd45016c4e9d11c4740b078))
+* standardize resource naming conventions ([ff37e03](https://github.com/jamescrowley321/terraform-provider-descope/commit/ff37e03ca85cfa64de8ac8877b192b8e940096b6))
+* **test:** use unique domain in TestTenantCRUD to avoid collision ([80feda9](https://github.com/jamescrowley321/terraform-provider-descope/commit/80feda9f7910b576dfc13da4d1e11fe015517a81))
+* update ossf/scorecard-action to official v2.4.3 commit ([#46](https://github.com/jamescrowley321/terraform-provider-descope/issues/46)) ([f51c2be](https://github.com/jamescrowley321/terraform-provider-descope/commit/f51c2befa8aeb2c412878c1ac4d96c83a5ed3006))
+* use assignment syntax for SingleNestedAttribute in SSO test fixture ([c8939d0](https://github.com/jamescrowley321/terraform-provider-descope/commit/c8939d0704a0159510dd16eb90b27a09395a4ed9))
