@@ -33,9 +33,8 @@ import (
 
 // Resolved absolute paths to required executables.
 var (
-	gpgPath     string
-	ghPath      string
-	opensslPath string
+	gpgPath string
+	ghPath  string
 )
 
 func main() {
