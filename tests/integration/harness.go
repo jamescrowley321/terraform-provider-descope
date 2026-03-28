@@ -58,7 +58,7 @@ func NewHarness(t *testing.T) *Harness {
 	// Write .terraformrc with dev_overrides pointing to the binary directory
 	binDir := filepath.Dir(binaryPath)
 	terraformrc := filepath.Join(workDir, ".terraformrc")
-	content := fmt.Sprintf("provider_installation {\n  dev_overrides {\n    \"descope/descope\" = %q\n  }\n  direct {}\n}\n", binDir)
+	content := fmt.Sprintf("provider_installation {\n  dev_overrides {\n    \"jamescrowley321/descope\" = %q\n  }\n  direct {}\n}\n", binDir)
 	require.NoError(t, os.WriteFile(terraformrc, []byte(content), 0600))
 
 	env := append(os.Environ(), "TF_CLI_CONFIG_FILE="+terraformrc)

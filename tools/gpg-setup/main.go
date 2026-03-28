@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -108,12 +109,17 @@ func main() {
 		}
 	}
 
+	// Write passphrase to a temp file with restricted permissions so it
+	// never appears in terminal scrollback or CI logs.
+	ppFile := filepath.Join(os.TempDir(), "gpg-passphrase.txt")
+	if err := os.WriteFile(ppFile, []byte(*passphrase), 0600); err != nil {
+		fatalf("writing passphrase file: %v", err)
+	}
+
 	fmt.Println("")
 	fmt.Println("=== Setup Complete ===")
 	fmt.Printf("Fingerprint:  %s\n", fingerprint)
-	fmt.Printf("Passphrase:   %s\n", *passphrase)
-	fmt.Println("")
-	fmt.Println("Store the passphrase securely — it is not recoverable.")
+	fmt.Printf("Passphrase:   written to %s (delete after saving)\n", ppFile)
 	fmt.Println("")
 	fmt.Println("Public key (for manual Terraform Registry upload if needed):")
 	fmt.Println(publicKey)
@@ -133,14 +139,14 @@ Passphrase: %s
 %%commit
 `, name, email, passphrase)
 
-	cmd := exec.Command("gpg", "--batch", "--gen-key")
+	cmd := exec.Command("gpg", "--batch", "--gen-key") //#nosec G204 -- gpg args are hardcoded
 	cmd.Stdin = strings.NewReader(params)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return "", fmt.Errorf("%s: %w", string(out), err)
 	}
 
 	// Get the fingerprint of the most recently created key for this email
-	out, err := exec.Command("gpg", "--list-keys", "--with-colons", email).Output()
+	out, err := exec.Command("gpg", "--list-keys", "--with-colons", email).Output() //#nosec G204 -- email is from CLI flag
 	if err != nil {
 		return "", fmt.Errorf("listing keys: %w", err)
 	}
@@ -157,7 +163,7 @@ Passphrase: %s
 
 // exportPrivateKey exports the ASCII-armored private key.
 func exportPrivateKey(fingerprint, passphrase string) (string, error) {
-	cmd := exec.Command("gpg", "--batch", "--yes", "--pinentry-mode", "loopback",
+	cmd := exec.Command("gpg", "--batch", "--yes", "--pinentry-mode", "loopback", //#nosec G204 -- gpg args from internal state
 		"--passphrase", passphrase, "--armor", "--export-secret-keys", fingerprint)
 	out, err := cmd.Output()
 	if err != nil {
@@ -171,7 +177,7 @@ func exportPrivateKey(fingerprint, passphrase string) (string, error) {
 
 // exportPublicKey exports the ASCII-armored public key.
 func exportPublicKey(fingerprint string) (string, error) {
-	out, err := exec.Command("gpg", "--armor", "--export", fingerprint).Output()
+	out, err := exec.Command("gpg", "--armor", "--export", fingerprint).Output() //#nosec G204 -- fingerprint from internal state
 	if err != nil {
 		return "", err
 	}
@@ -180,7 +186,7 @@ func exportPublicKey(fingerprint string) (string, error) {
 
 // setGitHubSecret sets a repository secret using the gh CLI.
 func setGitHubSecret(repo, name, value string) error {
-	cmd := exec.Command("gh", "secret", "set", name, "--repo", repo)
+	cmd := exec.Command("gh", "secret", "set", name, "--repo", repo) //#nosec G204 -- gh args from CLI flags
 	cmd.Stdin = strings.NewReader(value)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("%s: %w", string(out), err)
@@ -204,7 +210,7 @@ func uploadToRegistry(token, namespace, publicKey string) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", "https://app.terraform.io/api/registry/private/v2/gpg-keys", bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, "https://app.terraform.io/api/registry/private/v2/gpg-keys", bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -215,7 +221,7 @@ func uploadToRegistry(token, namespace, publicKey string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 300 {
 		respBody, _ := io.ReadAll(resp.Body)
