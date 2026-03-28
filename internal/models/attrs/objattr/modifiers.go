@@ -3,8 +3,8 @@ package objattr
 import (
 	"context"
 
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 type ModifierOptions int

@@ -59,7 +59,7 @@ docs: ensure-go ## runs tfplugindocs to generate documentation for the registry
 terraformrc:
 	echo 'provider_installation {'                      > ~/.terraformrc
 	echo '  dev_overrides {'                            >> ~/.terraformrc
-	echo '    "descope/descope" = "'$$GOPATH'/bin"'     >> ~/.terraformrc
+	echo '    "jamescrowley321/descope" = "'$$GOPATH'/bin"'     >> ~/.terraformrc
 	echo '  }'                                          >> ~/.terraformrc
 	echo '  direct {}'                                  >> ~/.terraformrc
 	echo '}'                                            >> ~/.terraformrc

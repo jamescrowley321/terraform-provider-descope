@@ -4,7 +4,7 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/descope/terraform-provider-descope/tools/terragen/utils"
+	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/utils"
 )
 
 type Naming struct {

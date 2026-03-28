@@ -3,9 +3,9 @@ package objattr
 import (
 	"context"
 
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 func NewValidator[T any, M validatableModel[T]](description string) validator.Object {

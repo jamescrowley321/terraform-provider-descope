@@ -1,11 +1,11 @@
 package tenant
 
 import (
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/boolattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/intattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/stringattr"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/boolattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/intattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
 )
 
 var timeUnitValidator = stringvalidator.OneOf("", "seconds", "minutes", "hours", "days", "weeks")

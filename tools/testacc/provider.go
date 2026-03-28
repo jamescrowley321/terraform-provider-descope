@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/descope/terraform-provider-descope/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/provider"
 	"github.com/stretchr/testify/require"
 )
 

@@ -3,11 +3,11 @@ package ssoapplication
 import (
 	"context"
 
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/boolattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/stringattr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/boolattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
 )
 
 var Attributes = map[string]schema.Attribute{

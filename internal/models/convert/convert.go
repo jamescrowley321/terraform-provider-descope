@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strmapattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strmapattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strsetattr"
 )
 
 // StringSetToSlice converts a Terraform string set to a Go string slice.

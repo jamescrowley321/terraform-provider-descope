@@ -3,9 +3,9 @@ package strsetattr
 import (
 	"regexp"
 
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/stringattr"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
 )
 
 var CommaSeparatedValidator = setvalidator.ValueStringsAre(

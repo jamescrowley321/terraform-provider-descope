@@ -3,8 +3,8 @@ package inboundapp_test
 import (
 	"testing"
 
-	"github.com/descope/terraform-provider-descope/tools/testacc"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/jamescrowley321/terraform-provider-descope/tools/testacc"
 )
 
 func TestInboundApp(t *testing.T) {

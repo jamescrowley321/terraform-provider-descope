@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/descope/terraform-provider-descope/tools/testacc"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/jamescrowley321/terraform-provider-descope/tools/testacc"
 )
 
 func TestJWTTemplates(t *testing.T) {

@@ -1,10 +1,10 @@
 package authentication
 
 import (
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/boolattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/durationattr"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/boolattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/durationattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 var EmbeddedLinkAttributes = map[string]schema.Attribute{

@@ -70,10 +70,24 @@ Use this Terraform provider to manage your [Descope](https://www.descope.com) pr
 - A Descope account (free tier works for most resources; pro/enterprise required for SSO applications and project export)
 - A [management key](https://app.descope.com/settings/company) for your Descope company
 
-### Usage
+### Installation
 
-> **Note:** Until this fork is published to a Terraform registry, you must build and install the provider locally.
-> See [Development](#development) below.
+Add the provider to your Terraform configuration:
+
+```hcl
+terraform {
+  required_providers {
+    descope = {
+      source  = "jamescrowley321/descope"
+      version = "~> 1.0"
+    }
+  }
+}
+```
+
+Then run `terraform init` to install it.
+
+### Usage
 
 Configure the provider and declare resources. The management key and other provider settings can also be set via environment variables (`DESCOPE_MANAGEMENT_KEY`, `DESCOPE_PROJECT_ID`, `DESCOPE_BASE_URL`).
 

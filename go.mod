@@ -1,4 +1,4 @@
-module github.com/descope/terraform-provider-descope
+module github.com/jamescrowley321/terraform-provider-descope
 
 go 1.26
 

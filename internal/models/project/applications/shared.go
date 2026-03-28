@@ -1,9 +1,9 @@
 package applications
 
 import (
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/boolattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/stringattr"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/boolattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 func sharedApplicationData(_ *helpers.Handler, id, name, description, logo stringattr.Type, disabled boolattr.Type) map[string]any {

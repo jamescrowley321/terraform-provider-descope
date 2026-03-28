@@ -3,11 +3,11 @@ package settype
 import (
 	"context"
 
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/objtype"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/types/objtype"
 )
 
 var (

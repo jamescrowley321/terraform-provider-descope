@@ -3,8 +3,8 @@ package entities
 import (
 	"context"
 
-	"github.com/descope/terraform-provider-descope/internal/docs"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/docs"
 )
 
 // Inject documentation into models before using them

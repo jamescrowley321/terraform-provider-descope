@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	"github.com/descope/go-sdk/descope"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/listattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strlistattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/listtype"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/valuelisttype"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/listattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strlistattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strsetattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/types/listtype"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/types/valuelisttype"
 )
 
 // RFC 5737 TEST-NET-1 addresses (192.0.2.0/24) reserved for documentation and testing.

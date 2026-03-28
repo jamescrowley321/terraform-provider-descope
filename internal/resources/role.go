@@ -6,15 +6,15 @@ import (
 
 	"github.com/descope/go-sdk/descope"
 	"github.com/descope/go-sdk/descope/sdk"
-	"github.com/descope/terraform-provider-descope/internal/infra"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
-	"github.com/descope/terraform-provider-descope/internal/models/convert"
-	"github.com/descope/terraform-provider-descope/internal/models/role"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/infra"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strsetattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/convert"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/role"
 )
 
 var (

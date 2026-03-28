@@ -7,22 +7,22 @@ import (
 	"slices"
 
 	{{ end }}
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
     {{- if .HasField "boolean" }}
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/boolattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/boolattr"
     {{- end }}
     {{- if .HasField "number" }}
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/floatattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/floatattr"
     {{- end }}
     {{- if .HasField "auditFilters" }}
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/listattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/listattr"
     {{- end }}
     {{- if or .HasValidator (.HasField "httpAuth") }}
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/objattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/objattr"
     {{- end }}
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/stringattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
     {{- if .HasField "object" }}
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strmapattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strmapattr"
     {{- end }}
     {{- if .HasEnumFields }}
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"

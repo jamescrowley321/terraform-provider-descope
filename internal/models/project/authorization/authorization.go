@@ -3,12 +3,12 @@ package authorization
 import (
 	"slices"
 
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/listattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/objattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/iancoleman/strcase"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/listattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/objattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strsetattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 var systemPermissions = []string{

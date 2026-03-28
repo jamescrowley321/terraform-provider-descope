@@ -1,8 +1,8 @@
 package permission
 
 import (
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/stringattr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
 )
 
 var Attributes = map[string]schema.Attribute{

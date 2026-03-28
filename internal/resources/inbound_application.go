@@ -4,12 +4,12 @@ import (
 	"context"
 	"strings"
 
-	"github.com/descope/terraform-provider-descope/internal/entities"
-	"github.com/descope/terraform-provider-descope/internal/infra"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/entities"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/infra"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 const (

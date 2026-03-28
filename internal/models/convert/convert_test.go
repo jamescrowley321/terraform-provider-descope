@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strmapattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/valuemaptype"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/valuesettype"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strmapattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strsetattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/types/valuemaptype"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/types/valuesettype"
 )
 
 func TestStringSetToSlice(t *testing.T) {

@@ -4,13 +4,13 @@ import (
 	"context"
 
 	"github.com/descope/go-sdk/descope"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/listattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strlistattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strmapattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
-	"github.com/descope/terraform-provider-descope/internal/models/convert"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/listattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strlistattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strmapattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strsetattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/convert"
 )
 
 // StringListToSlice converts a Terraform string list to a Go string slice.

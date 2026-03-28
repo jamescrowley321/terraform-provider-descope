@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"iter"
 
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/listtype"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/objtype"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/types/listtype"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/types/objtype"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 type Type[T any] = listtype.ListValueOf[T]

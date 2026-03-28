@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/descope/terraform-provider-descope/tools/terragen/conngen"
-	"github.com/descope/terraform-provider-descope/tools/terragen/docgen"
-	"github.com/descope/terraform-provider-descope/tools/terragen/schema"
-	"github.com/descope/terraform-provider-descope/tools/terragen/srcgen"
-	"github.com/descope/terraform-provider-descope/tools/terragen/utils"
+	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/conngen"
+	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/docgen"
+	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/schema"
+	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/srcgen"
+	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/utils"
 )
 
 func main() {

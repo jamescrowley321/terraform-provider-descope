@@ -16,7 +16,7 @@ This guide helps you set up a local development environment and work with existi
 terraform {
   required_providers {
     descope = {
-      source = "descope/descope"
+      source = "jamescrowley321/descope"
     }
   }
 }
