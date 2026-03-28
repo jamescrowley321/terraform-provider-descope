@@ -7,9 +7,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/descope/terraform-provider-descope/internal/models/attrs"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/valuesettype"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -17,6 +14,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/types/valuesettype"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 type Type = valuesettype.SetValueOf[types.String]

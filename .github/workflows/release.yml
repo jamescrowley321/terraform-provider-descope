@@ -36,8 +36,8 @@ jobs:
         uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
         id: import_gpg
         with:
-          gpg_private_key: ${{ secrets.MAVEN_GPG_KEY }}
-          passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Run GoReleaser
         id: goreleaser

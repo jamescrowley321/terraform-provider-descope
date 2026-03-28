@@ -5,12 +5,12 @@ package connectors
 import (
 	"slices"
 
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/floatattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/objattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/stringattr"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/floatattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/objattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 var SQLValidator = objattr.NewValidator[SQLModel]("must have a valid configuration")

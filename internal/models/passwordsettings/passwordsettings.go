@@ -4,12 +4,12 @@ import (
 	"math"
 
 	"github.com/descope/go-sdk/descope"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/boolattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/intattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/stringattr"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/boolattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/intattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
 )
 
 var PasswordSettingsAttributes = map[string]schema.Attribute{

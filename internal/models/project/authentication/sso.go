@@ -3,13 +3,13 @@ package authentication
 import (
 	"strings"
 
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/boolattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/listattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/objattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/stringattr"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
-	"github.com/descope/terraform-provider-descope/internal/models/project/templates"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/boolattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/listattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/objattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/project/templates"
 )
 
 var SSOAttributes = map[string]schema.Attribute{

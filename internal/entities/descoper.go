@@ -3,11 +3,11 @@ package entities
 import (
 	"context"
 
-	"github.com/descope/terraform-provider-descope/internal/models/descoper"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/descoper"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 var DescoperSchema = schema.Schema{

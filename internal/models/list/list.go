@@ -1,11 +1,11 @@
 package list
 
 import (
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/stringattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strsetattr"
 )
 
 var Attributes = map[string]schema.Attribute{

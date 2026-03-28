@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/descope/go-sdk/descope"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
-	"github.com/descope/terraform-provider-descope/internal/models/convert"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strsetattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/convert"
 )
 
 func ModelToRequest(ctx context.Context, model *Model, diags *diag.Diagnostics) *descope.ListRequest {

@@ -4,8 +4,8 @@ import (
 	_ "embed"
 	"path/filepath"
 
-	"github.com/descope/terraform-provider-descope/tools/terragen/schema"
-	"github.com/descope/terraform-provider-descope/tools/terragen/utils"
+	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/schema"
+	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/utils"
 )
 
 //go:embed docs.gotmpl

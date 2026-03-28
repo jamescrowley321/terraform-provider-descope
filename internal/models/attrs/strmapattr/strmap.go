@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"iter"
 
-	"github.com/descope/terraform-provider-descope/internal/models/attrs"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/valuemaptype"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -15,6 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/types/valuemaptype"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 type Type = valuemaptype.MapValueOf[types.String]

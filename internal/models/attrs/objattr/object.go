@@ -6,8 +6,6 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/types/objtype"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
@@ -15,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/types/objtype"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 type Type[T any] = objtype.ObjectValueOf[T]

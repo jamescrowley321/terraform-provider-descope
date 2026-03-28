@@ -1,9 +1,9 @@
 package attributes
 
 import (
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/listattr"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/listattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 var AttributesAttributes = map[string]schema.Attribute{

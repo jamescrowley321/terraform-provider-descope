@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/descope/go-sdk/descope"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strsetattr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strsetattr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

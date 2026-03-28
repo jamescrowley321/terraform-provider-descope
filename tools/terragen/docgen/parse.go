@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/descope/terraform-provider-descope/tools/terragen/schema"
-	"github.com/descope/terraform-provider-descope/tools/terragen/utils"
+	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/schema"
+	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/utils"
 )
 
 const breakBlankLines = 3

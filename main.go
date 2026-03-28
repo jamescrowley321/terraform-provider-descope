@@ -5,8 +5,8 @@ import (
 	"flag"
 	"log"
 
-	"github.com/descope/terraform-provider-descope/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/provider"
 )
 
 var (
@@ -20,7 +20,7 @@ func main() {
 
 	ctx := context.Background()
 	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/descope/descope",
+		Address: "registry.terraform.io/jamescrowley321/descope",
 		Debug:   debug,
 	}
 

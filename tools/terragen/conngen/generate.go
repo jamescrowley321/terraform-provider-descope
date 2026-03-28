@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/descope/terraform-provider-descope/tools/terragen/utils"
+	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/utils"
 )
 
 //go:embed connector.gotmpl

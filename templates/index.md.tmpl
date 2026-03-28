@@ -42,7 +42,7 @@ terraform plan
 terraform {
   required_providers {
     descope = {
-      source  = "descope/descope"
+      source  = "jamescrowley321/descope"
       version = "~> 0.3"
     }
   }
@@ -70,7 +70,7 @@ If you need to explicitly configure the provider (e.g. in a module or when not u
 terraform {
   required_providers {
     descope = {
-      source  = "descope/descope"
+      source  = "jamescrowley321/descope"
       version = "~> 0.3"
     }
   }

@@ -3,7 +3,7 @@ package listattr
 import (
 	"slices"
 
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 // A backwards compatibility matching function that uses keys if they are present, otherwise falls back to names.

@@ -4,9 +4,6 @@ import (
 	"context"
 	"os"
 
-	"github.com/descope/terraform-provider-descope/internal/datasources"
-	"github.com/descope/terraform-provider-descope/internal/infra"
-	"github.com/descope/terraform-provider-descope/internal/resources"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -14,6 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/datasources"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/infra"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/resources"
 )
 
 var (

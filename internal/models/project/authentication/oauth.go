@@ -5,16 +5,16 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/boolattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/mapattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/objattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/stringattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strlistattr"
-	"github.com/descope/terraform-provider-descope/internal/models/attrs/strmapattr"
-	"github.com/descope/terraform-provider-descope/internal/models/helpers"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/boolattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/mapattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/objattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strlistattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strmapattr"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 var OAuthValidator = objattr.NewValidator[OAuthModel]("must have a valid OAuth configuration")
