@@ -18,6 +18,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -27,6 +29,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+)
+
+// Resolved absolute paths to required executables.
+var (
+	gpgPath     string
+	ghPath      string
+	opensslPath string
 )
 
 func main() {
@@ -45,9 +54,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	requireCmd("gpg")
+	gpgPath = resolveCmd("gpg")
 	if !*skipGitHub {
-		requireCmd("gh")
+		ghPath = resolveCmd("gh")
 	}
 
 	// Generate passphrase if not provided
@@ -109,9 +118,13 @@ func main() {
 		}
 	}
 
-	// Write passphrase to a temp file with restricted permissions so it
-	// never appears in terminal scrollback or CI logs.
-	ppFile := filepath.Join(os.TempDir(), "gpg-passphrase.txt")
+	// Write passphrase to a file in the user's home directory (not /tmp)
+	// with restricted permissions so it never appears in terminal scrollback.
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fatalf("getting home directory: %v", err)
+	}
+	ppFile := filepath.Join(home, ".gpg-passphrase.txt")
 	if err := os.WriteFile(ppFile, []byte(*passphrase), 0600); err != nil {
 		fatalf("writing passphrase file: %v", err)
 	}
@@ -139,14 +152,14 @@ Passphrase: %s
 %%commit
 `, name, email, passphrase)
 
-	cmd := exec.Command("gpg", "--batch", "--gen-key") //#nosec G204 -- gpg args are hardcoded
+	cmd := exec.Command(gpgPath, "--batch", "--gen-key") //#nosec G204 -- resolved absolute path
 	cmd.Stdin = strings.NewReader(params)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return "", fmt.Errorf("%s: %w", string(out), err)
 	}
 
 	// Get the fingerprint of the most recently created key for this email
-	out, err := exec.Command("gpg", "--list-keys", "--with-colons", email).Output() //#nosec G204 -- email is from CLI flag
+	out, err := exec.Command(gpgPath, "--list-keys", "--with-colons", email).Output() //#nosec G204 -- resolved absolute path
 	if err != nil {
 		return "", fmt.Errorf("listing keys: %w", err)
 	}
@@ -163,7 +176,7 @@ Passphrase: %s
 
 // exportPrivateKey exports the ASCII-armored private key.
 func exportPrivateKey(fingerprint, passphrase string) (string, error) {
-	cmd := exec.Command("gpg", "--batch", "--yes", "--pinentry-mode", "loopback", //#nosec G204 -- gpg args from internal state
+	cmd := exec.Command(gpgPath, "--batch", "--yes", "--pinentry-mode", "loopback", //#nosec G204 -- resolved absolute path
 		"--passphrase", passphrase, "--armor", "--export-secret-keys", fingerprint)
 	out, err := cmd.Output()
 	if err != nil {
@@ -177,7 +190,7 @@ func exportPrivateKey(fingerprint, passphrase string) (string, error) {
 
 // exportPublicKey exports the ASCII-armored public key.
 func exportPublicKey(fingerprint string) (string, error) {
-	out, err := exec.Command("gpg", "--armor", "--export", fingerprint).Output() //#nosec G204 -- fingerprint from internal state
+	out, err := exec.Command(gpgPath, "--armor", "--export", fingerprint).Output() //#nosec G204 -- resolved absolute path
 	if err != nil {
 		return "", err
 	}
@@ -186,7 +199,7 @@ func exportPublicKey(fingerprint string) (string, error) {
 
 // setGitHubSecret sets a repository secret using the gh CLI.
 func setGitHubSecret(repo, name, value string) error {
-	cmd := exec.Command("gh", "secret", "set", name, "--repo", repo) //#nosec G204 -- gh args from CLI flags
+	cmd := exec.Command(ghPath, "secret", "set", name, "--repo", repo) //#nosec G204 -- resolved absolute path
 	cmd.Stdin = strings.NewReader(value)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("%s: %w", string(out), err)
@@ -230,20 +243,26 @@ func uploadToRegistry(token, namespace, publicKey string) error {
 	return nil
 }
 
-// generatePassphrase creates a random passphrase using /dev/urandom.
+// generatePassphrase creates a random 32-byte passphrase using crypto/rand.
 func generatePassphrase() (string, error) {
-	out, err := exec.Command("openssl", "rand", "-base64", "32").Output()
-	if err != nil {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(string(out)), nil
+	return base64.StdEncoding.EncodeToString(b), nil
 }
 
-// requireCmd checks that a command is available on PATH.
-func requireCmd(name string) {
-	if _, err := exec.LookPath(name); err != nil {
+// resolveCmd finds the absolute path of a command or exits with an error.
+func resolveCmd(name string) string {
+	p, err := exec.LookPath(name)
+	if err != nil {
 		fatalf("%s is required but not found in PATH", name)
 	}
+	abs, err := filepath.Abs(p)
+	if err != nil {
+		fatalf("resolving absolute path for %s: %v", name, err)
+	}
+	return abs
 }
 
 func fatalf(format string, args ...any) {
