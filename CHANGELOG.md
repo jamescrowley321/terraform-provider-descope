@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.1.2...v1.1.3) (2026-03-29)
+
+
+### Bug Fixes
+
+* **ci:** add actions:write permission for workflow dispatch ([#127](https://github.com/jamescrowley321/terraform-provider-descope/issues/127)) ([0bf0e55](https://github.com/jamescrowley321/terraform-provider-descope/commit/0bf0e557d9504e71fe1df222b1326c54f50c7e3f))
+
 ## [1.1.2](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.1.1...v1.1.2) (2026-03-29)
 
 
