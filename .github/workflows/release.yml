@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v1.1.0)"
+        required: true
 
 permissions:
   contents: read
@@ -21,6 +26,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0 # Allow goreleaser to access older tag information for changelog
+          ref: ${{ inputs.tag || github.ref }}
       - name: Setup Repo
         uses: ./.github/actions/ci/setup
 
