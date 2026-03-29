@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.1.3...v1.1.4) (2026-03-29)
+
+
+### Bug Fixes
+
+* **test:** tolerate last-project deletion error in Destroy ([#129](https://github.com/jamescrowley321/terraform-provider-descope/issues/129)) ([10291ad](https://github.com/jamescrowley321/terraform-provider-descope/commit/10291ad6d4da4fc9bf4d2a7e5f64ca88da0338b4))
+
 ## [1.1.3](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.1.2...v1.1.3) (2026-03-29)
 
 
