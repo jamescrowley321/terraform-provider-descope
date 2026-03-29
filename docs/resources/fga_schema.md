@@ -13,7 +13,7 @@ This is a singleton resource — only one FGA schema exists per project. Creatin
 
 ## Example Usage
 
-```terraform
+```hcl
 resource "descope_fga_schema" "main" {
   schema = <<-EOT
 model AuthZ 1.0

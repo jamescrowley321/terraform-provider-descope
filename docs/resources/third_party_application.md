@@ -11,7 +11,7 @@ Manages a Descope third-party application that authenticates against Descope as 
 
 ## Example Usage
 
-```terraform
+```hcl
 resource "descope_third_party_application" "partner_app" {
   name                   = "Partner Portal"
   description            = "OAuth client for partner system"

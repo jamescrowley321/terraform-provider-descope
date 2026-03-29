@@ -15,7 +15,7 @@ Manages a standalone Descope role. Roles group permissions together and can be a
 
 ### Global Role
 
-```terraform
+```hcl
 resource "descope_permission" "read_data" {
   name        = "read:data"
   description = "Allows reading data resources"
@@ -39,7 +39,7 @@ resource "descope_role" "editor" {
 
 ### Tenant-Scoped Role
 
-```terraform
+```hcl
 resource "descope_role" "tenant_admin" {
   name        = "admin"
   description = "Tenant administrator"

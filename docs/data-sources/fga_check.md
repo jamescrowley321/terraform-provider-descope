@@ -11,7 +11,7 @@ Checks whether a target has the specified relation to a resource in the Descope 
 
 ## Example Usage
 
-```terraform
+```hcl
 data "descope_fga_check" "can_alice_view" {
   resource_type = "document"
   resource      = "doc1"

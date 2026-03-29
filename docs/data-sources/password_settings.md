@@ -11,7 +11,7 @@ Reads the current password authentication settings for a Descope project.
 
 ## Example Usage
 
-```terraform
+```hcl
 data "descope_password_settings" "current" {}
 
 output "min_password_length" {

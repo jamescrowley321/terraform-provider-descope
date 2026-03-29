@@ -13,7 +13,7 @@ This guide walks you through setting up the Descope Terraform Provider and creat
 Before you begin, make sure you have:
 
 1. **Terraform CLI** – [Install Terraform](https://developer.hashicorp.com/terraform/install)
-2. **Descope Pro or Enterprise account** – The Terraform provider requires a paid plan
+2. **Descope account** – Community tier works; some features require a Pro or Enterprise plan
 3. **A Management Key** – Create one in [Company Settings](https://app.descope.com/settings/company) in the Descope console. Set the scope to **All Projects** to allow creating new projects.
 
 ## Step 1: Configure the Provider

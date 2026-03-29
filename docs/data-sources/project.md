@@ -13,7 +13,7 @@ This data source is useful for referencing an existing project's settings withou
 
 ## Example Usage
 
-```terraform
+```hcl
 data "descope_project" "current" {
   id = "P2abc123def456"
 }

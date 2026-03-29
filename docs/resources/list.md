@@ -13,7 +13,7 @@ Manages a Descope list for IP allowlisting/denylisting or text-based filtering. 
 
 ### IP Allowlist
 
-```terraform
+```hcl
 resource "descope_list" "ip_allowlist" {
   name        = "Production IP Allowlist"
   description = "Allowed IPs for production access"
@@ -24,7 +24,7 @@ resource "descope_list" "ip_allowlist" {
 
 ### Text Denylist
 
-```terraform
+```hcl
 resource "descope_list" "blocked_domains" {
   name        = "Blocked Email Domains"
   description = "Email domains to block during signup"
