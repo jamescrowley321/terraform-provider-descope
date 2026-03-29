@@ -43,7 +43,7 @@ terraform {
   required_providers {
     descope = {
       source  = "jamescrowley321/descope"
-      version = "~> 0.3"
+      version = "~> 1.0"
     }
   }
 }
@@ -71,7 +71,7 @@ terraform {
   required_providers {
     descope = {
       source  = "jamescrowley321/descope"
-      version = "~> 0.3"
+      version = "~> 1.0"
     }
   }
 }
@@ -91,8 +91,29 @@ provider "descope" {
 | Resource | Description |
 |----------|-------------|
 | [`descope_project`](resources/project) | Full project configuration: authentication, RBAC, connectors, flows, and more |
+| [`descope_access_key`](resources/access_key) | API access keys for programmatic authentication |
 | [`descope_management_key`](resources/management_key) | Programmatic management keys with scoped permissions |
+| [`descope_tenant`](resources/tenant) | Multi-tenant environments with session and SSO configuration |
+| [`descope_permission`](resources/permission) | Standalone permissions for role-based access control |
+| [`descope_role`](resources/role) | Roles that group permissions for RBAC |
 | [`descope_descoper`](resources/descoper) | Descope console user accounts with role assignments |
+| [`descope_sso`](resources/sso) | SSO configuration for a project |
+| [`descope_sso_application`](resources/sso_application) | SSO application definitions |
+| [`descope_inbound_application`](resources/inbound_application) | Inbound application integrations |
+| [`descope_outbound_application`](resources/outbound_application) | Outbound application integrations |
+| [`descope_third_party_application`](resources/third_party_application) | Third-party application integrations |
+| [`descope_password_settings`](resources/password_settings) | Password authentication policy configuration |
+| [`descope_fga_schema`](resources/fga_schema) | Fine-grained authorization schema |
+| [`descope_list`](resources/list) | Custom lists (IP allowlists, text lists, JSON data) |
+
+## Data Sources
+
+| Data Source | Description |
+|-------------|-------------|
+| [`descope_project`](data-sources/project) | Read an existing project's full configuration |
+| [`descope_password_settings`](data-sources/password_settings) | Read current password authentication settings |
+| [`descope_project_export`](data-sources/project_export) | Export a project's configuration |
+| [`descope_fga_check`](data-sources/fga_check) | Check fine-grained authorization permissions |
 
 ## Guides
 

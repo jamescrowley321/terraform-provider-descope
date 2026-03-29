@@ -31,7 +31,7 @@ terraform {
   required_providers {
     descope = {
       source = "jamescrowley321/descope"
-      version = "~> 0.3"
+      version = "~> 1.0"
     }
   }
 }
