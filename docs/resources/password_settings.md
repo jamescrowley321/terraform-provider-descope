@@ -11,7 +11,7 @@ Manages password authentication settings for a Descope project. This is a single
 
 ## Example Usage
 
-```terraform
+```hcl
 resource "descope_password_settings" "example" {
   enabled          = true
   min_length       = 12

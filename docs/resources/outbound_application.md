@@ -11,7 +11,7 @@ Manages a Descope outbound application for OAuth integrations with external serv
 
 ## Example Usage
 
-```terraform
+```hcl
 resource "descope_outbound_application" "github" {
   name              = "GitHub Integration"
   description       = "OAuth integration with GitHub"

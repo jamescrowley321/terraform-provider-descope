@@ -13,7 +13,7 @@ Manages a standalone Descope permission. Permissions can be referenced by `desco
 
 ## Example Usage
 
-```terraform
+```hcl
 resource "descope_permission" "read_data" {
   name        = "read:data"
   description = "Allows reading data resources"

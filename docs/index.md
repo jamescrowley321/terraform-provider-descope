@@ -13,7 +13,7 @@ Descope is an authentication and user management platform. The Terraform provide
 ## Requirements
 
 - [Terraform](https://developer.hashicorp.com/terraform/install) 1.0 or later
-- A Descope **Pro or Enterprise** plan
+- A Descope account (Community tier works; some features require a **Pro or Enterprise** plan)
 - A **Management Key** from [Company Settings](https://app.descope.com/settings/company) in the Descope console
 
 ## Authentication

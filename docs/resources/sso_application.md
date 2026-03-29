@@ -15,7 +15,7 @@ Manages a standalone Descope SSO application. SSO applications define how extern
 
 ### OIDC Application
 
-```terraform
+```hcl
 resource "descope_sso_application" "my_app" {
   name        = "My OIDC App"
   description = "OIDC SSO application for my service"
@@ -28,7 +28,7 @@ resource "descope_sso_application" "my_app" {
 
 ### SAML Application
 
-```terraform
+```hcl
 resource "descope_sso_application" "saml_app" {
   name        = "My SAML App"
   description = "SAML SSO application"

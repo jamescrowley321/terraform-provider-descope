@@ -13,7 +13,7 @@ This data source is useful for backing up project configurations, comparing envi
 
 ## Example Usage
 
-```terraform
+```hcl
 data "descope_project_export" "current" {}
 
 output "project_config" {

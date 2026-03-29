@@ -15,7 +15,7 @@ Manages SSO configuration for a Descope tenant. Each SSO configuration is scoped
 
 ### OIDC SSO
 
-```terraform
+```hcl
 resource "descope_tenant" "acme" {
   name = "Acme Corp"
 }
@@ -38,7 +38,7 @@ resource "descope_sso" "acme_oidc" {
 
 ### SAML SSO (manual)
 
-```terraform
+```hcl
 resource "descope_sso" "partner_saml" {
   tenant_id    = descope_tenant.partner.id
   display_name = "Partner SAML"
@@ -58,7 +58,7 @@ resource "descope_sso" "partner_saml" {
 
 ### SAML SSO (metadata URL)
 
-```terraform
+```hcl
 resource "descope_sso" "vendor_saml" {
   tenant_id    = descope_tenant.vendor.id
   display_name = "Vendor SAML"
@@ -113,6 +113,10 @@ resource "descope_sso" "vendor_saml" {
 - `sp_entity_id` (String, Read-Only) Service provider entity ID (computed by Descope).
 - `sp_acs_url` (String, Read-Only) Service provider ACS URL (computed by Descope).
 - `attribute_mapping` (Block) Maps IDP attributes to Descope user fields. All fields are optional strings: `name`, `given_name`, `middle_name`, `family_name`, `picture`, `email`, `phone_number`, `group`.
+
+#### OIDC attribute_mapping
+
+When using OIDC, the `attribute_mapping` block supports these additional fields beyond the SAML set: `login_id`, `verified_email`, `username`, `verified_phone`. The full list of optional string fields for OIDC is: `login_id`, `name`, `given_name`, `middle_name`, `family_name`, `email`, `verified_email`, `username`, `phone_number`, `verified_phone`, `picture`.
 
 ### SAML Metadata
 
