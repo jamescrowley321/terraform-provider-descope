@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write
     outputs:
       hashes: ${{ steps.hash.outputs.hashes }}
     steps:
@@ -24,13 +23,6 @@ jobs:
           fetch-depth: 0 # Allow goreleaser to access older tag information for changelog
       - name: Setup Repo
         uses: ./.github/actions/ci/setup
-
-      - name: Install Syft
-        shell: bash
-        run: curl -sSfL https://raw.githubusercontent.com/anchore/syft/75455f050ab028977a6b625165e2ad3644fcc845/install.sh | sh -s -- -b /usr/local/bin # v1.42.2
-
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
 
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
@@ -47,18 +39,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
-
-      - name: Sign Checksums with Cosign
-        run: cosign sign-blob --yes dist/*_SHA256SUMS --output-signature dist/*_SHA256SUMS.sig --output-certificate dist/*_SHA256SUMS.pem
-        env:
-          COSIGN_EXPERIMENTAL: "true"
-
-      - name: Upload Cosign Artifacts
-        run: |
-          tag="${GITHUB_REF#refs/tags/}"
-          gh release upload "$tag" dist/*_SHA256SUMS.sig dist/*_SHA256SUMS.pem --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate SLSA Subject Hashes
         id: hash
