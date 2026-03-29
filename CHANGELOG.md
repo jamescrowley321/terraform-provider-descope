@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.1.1...v1.1.2) (2026-03-29)
+
+
+### Bug Fixes
+
+* **ci:** add --repo flag to gh workflow dispatch in release-please ([#125](https://github.com/jamescrowley321/terraform-provider-descope/issues/125)) ([eda0518](https://github.com/jamescrowley321/terraform-provider-descope/commit/eda051839c10a59c6c871f658b303b1f5e943c79))
+
 ## [1.1.1](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.1.0...v1.1.1) (2026-03-29)
 
 
