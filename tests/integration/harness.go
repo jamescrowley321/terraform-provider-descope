@@ -24,6 +24,10 @@ import (
 const (
 	commandMaxRetries = 2
 	commandRetryWait  = 5 * time.Second
+
+	// errLastProject is the Descope API error message returned when attempting
+	// to delete the only remaining project in an account ([E073008]).
+	errLastProject = "Cannot delete last project"
 )
 
 var (
@@ -136,12 +140,25 @@ func (h *Harness) Plan(vars ...string) string {
 // It retries up to commandMaxRetries times on failure to handle transient
 // API errors. If the harness created any projects, it waits for Descope
 // to finish deleting them asynchronously before returning.
+//
+// If the Descope API rejects deletion because the resource is the last
+// project in the account ([E073008]), destroy logs a warning and clears
+// the terraform state instead of failing the test.
 func (h *Harness) Destroy(vars ...string) string {
 	h.t.Helper()
 	h.lastVars = vars
 	args := []string{"destroy", "-auto-approve", "-no-color", "-input=false"}
 	args = append(args, varArgs(vars)...)
-	out := h.terraformRetry(commandMaxRetries, args...)
+	out, err := h.tryTerraformRetry(commandMaxRetries, args...)
+	if err != nil {
+		if strings.Contains(out, errLastProject) {
+			h.t.Logf("warning: cannot delete last project in Descope account, clearing terraform state: %v", err)
+			h.clearState()
+			h.projectIDs = nil
+			return out
+		}
+		h.t.Fatalf("terraform destroy failed:\n%s\nerror: %v", out, err)
+	}
 	if len(h.projectIDs) > 0 {
 		h.waitForProjectDeletion()
 		h.projectIDs = nil
@@ -379,12 +396,25 @@ func (h *Harness) terraform(args ...string) string {
 	return stdout.String()
 }
 
-// terraformRetry runs a terraform command with retries on failure. It is used
-// for operations like destroy where transient API errors may cause the command
-// to fail even after provider-level retries.
+// terraformRetry runs a terraform command with retries on failure, calling
+// t.Fatal if all attempts are exhausted. It is used for operations like apply
+// where transient API errors may cause the command to fail.
 func (h *Harness) terraformRetry(maxRetries int, args ...string) string {
 	h.t.Helper()
-	for attempt := range maxRetries {
+	out, err := h.tryTerraformRetry(maxRetries, args...)
+	if err != nil {
+		h.t.Fatalf("terraform %s failed:\n%s\nerror: %v", strings.Join(args, " "), out, err)
+	}
+	return out
+}
+
+// tryTerraformRetry runs a terraform command with retries, returning the
+// combined output and any error instead of calling t.Fatal.
+func (h *Harness) tryTerraformRetry(maxRetries int, args ...string) (string, error) {
+	h.t.Helper()
+	var lastErr error
+	var lastOutput string
+	for attempt := range maxRetries + 1 {
 		cmd := exec.Command(terraformPath, args...)
 		cmd.Dir = h.workDir
 		cmd.Env = h.env
@@ -392,14 +422,30 @@ func (h *Harness) terraformRetry(maxRetries int, args ...string) string {
 		cmd.Stdout = &stdout
 		cmd.Stderr = &stderr
 		if err := cmd.Run(); err != nil {
-			h.t.Logf("terraform %s failed (attempt %d/%d), retrying in %v:\nstderr: %s",
-				strings.Join(args, " "), attempt+1, maxRetries+1, commandRetryWait, stderr.String())
-			time.Sleep(commandRetryWait)
-			continue
+			lastErr = err
+			lastOutput = stdout.String() + "\n" + stderr.String()
+			if attempt < maxRetries {
+				h.t.Logf("terraform %s failed (attempt %d/%d), retrying in %v:\nstderr: %s",
+					strings.Join(args, " "), attempt+1, maxRetries+1, commandRetryWait, stderr.String())
+				time.Sleep(commandRetryWait)
+				continue
+			}
+			return lastOutput, lastErr
 		}
-		return stdout.String()
+		return stdout.String(), nil
 	}
-	return h.terraform(args...)
+	return lastOutput, lastErr
+}
+
+// clearState removes terraform state and backup files so that HasState returns false.
+func (h *Harness) clearState() {
+	h.t.Helper()
+	for _, name := range []string{"terraform.tfstate", "terraform.tfstate.backup"} {
+		p := filepath.Join(h.workDir, name)
+		if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
+			h.t.Logf("warning: failed to remove %s: %v", name, err)
+		}
+	}
 }
 
 func (h *Harness) copyTestdata(src, dst string) {
