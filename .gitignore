@@ -39,3 +39,9 @@ website/vendor
 
 # Keep windows files with windows line endings
 *.winfile eol=crlf
+
+# Claude Code runtime state
+.claude/task-state.md
+
+# Ralph orchestrator runtime state
+.ralph/
