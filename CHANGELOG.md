@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.5](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.1.4...v1.1.5) (2026-03-30)
+
+
+### Bug Fixes
+
+* add ralph/claude runtime state to gitignore ([#136](https://github.com/jamescrowley321/terraform-provider-descope/issues/136)) ([867bec5](https://github.com/jamescrowley321/terraform-provider-descope/commit/867bec52ab0e7ca8ed7cfd01827c85253e1c96e4))
+
 ## [1.1.4](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.1.3...v1.1.4) (2026-03-29)
 
 
