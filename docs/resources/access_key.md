@@ -106,6 +106,21 @@ Read-Only:
 
 - `tenant_name` (String) The name of the tenant (populated from API).
 
+## Known Limitations
+
+### Token Issuer Mismatch
+
+Tokens obtained by exchanging an access key via `POST /v1/auth/accesskey/exchange` use a different `iss` (issuer) claim than the one advertised in Descope's OIDC discovery document:
+
+| Source | Issuer Format |
+|---|---|
+| OIDC Discovery (`/.well-known/openid-configuration`) | `https://api.descope.com/{project_id}` |
+| Access key exchange (`/v1/auth/accesskey/exchange`) | `https://api.descope.com/v1/apps/{project_id}` |
+
+Per the OIDC specifications (OpenID Connect Core 3.1.3.7, Discovery 1.0 Section 3), the `iss` claim in tokens **MUST exactly match** the discovery document's `issuer` value. Descope session tokens from the access key exchange API do not satisfy this requirement.
+
+If you validate these tokens using OIDC discovery, you must either disable issuer verification or validate against the session issuer format directly. Tokens obtained via standard OAuth 2.0 flows (client credentials, authorization code) use the correct OIDC issuer.
+
 ## Import
 
 Access keys can be imported using the access key ID:
