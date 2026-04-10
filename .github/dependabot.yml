@@ -1,24 +1,44 @@
 version: 2
+# Dependabot runs daily and bundles every routine update into a single grouped
+# PR per ecosystem via `groups:` below. A dedicated dependabot-auto-merge.yml
+# workflow enables `gh pr merge --auto --squash` on these PRs so they merge
+# themselves once all required CI stages pass. Security alerts continue to
+# arrive as standalone PRs outside the group.
 updates:
   - package-ecosystem: gomod
     directory: /
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 10
+      interval: daily
+      time: "03:00"
+      timezone: UTC
+    open-pull-requests-limit: 1
     commit-message:
       prefix: "build(deps)"
+      include: scope
     labels:
       - dependencies
+      - go
+    groups:
+      go-modules:
+        applies-to: version-updates
+        patterns:
+          - "*"
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 5
+      interval: daily
+      time: "03:00"
+      timezone: UTC
+    open-pull-requests-limit: 1
     commit-message:
       prefix: "ci(deps)"
+      include: scope
     labels:
       - dependencies
       - ci
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
