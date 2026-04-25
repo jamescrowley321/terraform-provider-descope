@@ -369,6 +369,9 @@ var docsPasskeys = map[string]string{
 		"API and SDK calls. Note that this does not affect authentication flows that are " +
 		"configured to use this authentication method.",
 	"top_level_domain": "Passkeys will be usable in the following domain and all its subdomains.",
+	"android_fingerprints": "A list of SHA-256 APK key hash fingerprints (colon-separated hex, e.g. `AB:CD:EF:...`) that are " +
+		"allowed as passkey origins for Android apps. When set, only Android apps with a matching fingerprint " +
+		"will be permitted to use passkey authentication.",
 }
 
 var docsPassword = map[string]string{
@@ -441,6 +444,8 @@ var docsTOTP = map[string]string{
 var docsAuthorization = map[string]string{
 	"roles":       "A list of `Role` objects.",
 	"permissions": "A list of `Permission` objects.",
+	"fga": "The project's FGA schema, configured in the [Descope console](https://app.descope.com/authorization/fga) " +
+		"under the FGA tab. Use the code view to get the schema text and paste it as the value for this attribute.",
 }
 
 var docsPermission = map[string]string{
@@ -1031,6 +1036,7 @@ var docsRecaptchaEnterprise = map[string]string{
 	"api_key": "API key associated with the current project.",
 	"base_url": "Apply a custom url to the reCAPTCHA Enterprise scripts. This is useful when " +
 		"attempting to use reCAPTCHA globally. Defaults to https://www.google.com",
+	"action": "The user-initiated action for this assessment.",
 	"override_assessment": "Override the default assessment model. Note: Overriding assessment is intended " +
 		"for automated testing and should not be utilized in production environments.",
 	"bot_threshold": "The bot threshold is used to determine whether the request is a bot or a human. " +

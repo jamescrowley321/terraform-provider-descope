@@ -3,6 +3,7 @@ package stringattr
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -119,9 +120,19 @@ func Renamed(oldname, newname string, extras ...any) schema.StringAttribute {
 	return Deprecated("The "+oldname+" attribute has been renamed, set the "+newname+" attribute instead.", extras...)
 }
 
-func Get(s Type, data map[string]any, key string) {
+type GetOption int
+
+const (
+	TrimSpaces GetOption = iota
+)
+
+func Get(s Type, data map[string]any, key string, options ...GetOption) {
 	if !s.IsNull() && !s.IsUnknown() {
-		data[key] = s.ValueString()
+		str := s.ValueString()
+		if slices.Contains(options, TrimSpaces) {
+			str = strings.TrimSpace(str)
+		}
+		data[key] = str
 	}
 }
 

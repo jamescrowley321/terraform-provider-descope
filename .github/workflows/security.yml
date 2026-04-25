@@ -78,13 +78,8 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version: '20'
-
       - name: Install Snyk CLI
-        run: npm install -g snyk@1.1297.0
+        uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
 
       - name: Snyk Open Source (SCA)
         if: env.SNYK_TOKEN != ''
