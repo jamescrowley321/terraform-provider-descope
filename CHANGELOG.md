@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.6](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.1.5...v1.1.6) (2026-04-25)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/descope/go-sdk to v1.15.0 ([#279](https://github.com/jamescrowley321/terraform-provider-descope/issues/279)) ([560b315](https://github.com/jamescrowley321/terraform-provider-descope/commit/560b315a4e76d5382249e7479e8894a2b177e20b))
+
 ## [1.1.5](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.1.4...v1.1.5) (2026-03-30)
 
 
