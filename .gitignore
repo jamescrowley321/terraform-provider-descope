@@ -29,6 +29,7 @@ website/node_modules
 .history
 /terraform-provider-descope
 /testcleanup
+/gpg-setup
 
 website/vendor
 /vendor
