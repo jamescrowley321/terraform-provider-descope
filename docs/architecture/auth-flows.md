@@ -159,7 +159,7 @@ graph LR
         Role[descope_role]
         Perm[descope_permission]
         SSO[descope_sso]
-        InApp[descope_inbound_application]
+        InApp[descope_inbound_app]
         TPA[descope_third_party_application]
         OutApp[descope_outbound_application]
         PwdSettings[descope_password_settings]
