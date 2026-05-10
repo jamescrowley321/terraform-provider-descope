@@ -49,7 +49,7 @@ func (p *descopeProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
 				Optional:           true,
-				Description:        "The Descope project ID. Used as a fallback for resources like descope_access_key that need a project ID without a descope_project resource. Can also be set via DESCOPE_PROJECT_ID. Prefer declaring a descope_project resource (or descope_project data source) and passing .id explicitly; this provider-level field will be removed in a future major version.",
+				Description:        "The Descope project ID. Fallback for resources like descope_access_key that need a project ID without a descope_project resource. Can also be set via DESCOPE_PROJECT_ID.",
 				DeprecationMessage: "Set project_id at the resource level (or via the descope_project resource/data source) rather than on the provider block. The provider-level field will be removed in a future major version.",
 			},
 			"management_key": schema.StringAttribute{

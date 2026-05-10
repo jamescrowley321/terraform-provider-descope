@@ -1,0 +1,179 @@
+diff --git a/README.md b/README.md
+index b9c7335..4e8da7a 100644
+--- a/README.md
++++ b/README.md
+@@ -27,7 +27,7 @@ The upstream Descope Terraform provider supports project-level configuration thr
+ | `descope_project` | Resource | Yes | Yes |
+ | `descope_descoper` | Resource | Yes | Yes |
+ | `descope_management_key` | Resource | Yes | Yes |
+-| `descope_inbound_application` | Resource | Yes | Yes |
++| `descope_inbound_app` | Resource | Yes | Yes |
+ | `descope_tenant` | Resource | - | **Yes** |
+ | `descope_access_key` | Resource | - | **Yes** |
+ | `descope_role` | Resource | - | **Yes** |
+diff --git a/docs/architecture/auth-flows.md b/docs/architecture/auth-flows.md
+index 0fbcdb7..0987787 100644
+--- a/docs/architecture/auth-flows.md
++++ b/docs/architecture/auth-flows.md
+@@ -159,7 +159,7 @@ graph LR
+         Role[descope_role]
+         Perm[descope_permission]
+         SSO[descope_sso]
+-        InApp[descope_inbound_application]
++        InApp[descope_inbound_app]
+         TPA[descope_third_party_application]
+         OutApp[descope_outbound_application]
+         PwdSettings[descope_password_settings]
+diff --git a/docs/architecture/descope-model.md b/docs/architecture/descope-model.md
+index 66aca28..6b81c04 100644
+--- a/docs/architecture/descope-model.md
++++ b/docs/architecture/descope-model.md
+@@ -48,7 +48,7 @@ These entities represent project configuration and are the natural domain of inf
+ | Tenant | `descope_tenant` | B2B multi-tenancy. Isolates users, roles, and SSO config. |
+ | Role | `descope_role` | Authorization role. Can be project-level or tenant-level. |
+ | Permission | `descope_permission` | Atomic authorization unit. Assigned to roles. |
+-| Inbound Application | `descope_inbound_application` | OIDC/OAuth client registered to use Descope as IdP. |
++| Inbound Application | `descope_inbound_app` | OIDC/OAuth client registered to use Descope as IdP. |
+ | Third-Party Application | `descope_third_party_application` | External OAuth client authenticating against Descope. |
+ | Outbound Application | `descope_outbound_application` | OAuth client config for Descope to connect to external services. |
+ | SSO Configuration | `descope_sso` | OIDC or SAML SSO provider configuration per tenant. |
+diff --git a/docs/architecture/oauth2-oidc-mapping.md b/docs/architecture/oauth2-oidc-mapping.md
+index 446be41..41db8c3 100644
+--- a/docs/architecture/oauth2-oidc-mapping.md
++++ b/docs/architecture/oauth2-oidc-mapping.md
+@@ -6,8 +6,8 @@ This document maps standard OAuth 2.0 and OpenID Connect (OIDC) specification co
+ 
+ | OAuth 2.0 Grant Type | RFC | Descope Implementation | Terraform Resource |
+ |---|---|---|---|
+-| **Authorization Code** | [RFC 6749 S4.1](https://datatracker.ietf.org/doc/html/rfc6749#section-4.1) | Inbound/Third-Party Apps redirect users to Descope's `/authorize` endpoint. Descope authenticates the user via Flows and returns an authorization code. | `descope_inbound_application`, `descope_third_party_application` |
+-| **Authorization Code + PKCE** | [RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636) | Supported for public clients (non-confidential inbound apps). PKCE parameters passed in the authorization request. | `descope_inbound_application` (non_confidential_client) |
++| **Authorization Code** | [RFC 6749 S4.1](https://datatracker.ietf.org/doc/html/rfc6749#section-4.1) | Inbound/Third-Party Apps redirect users to Descope's `/authorize` endpoint. Descope authenticates the user via Flows and returns an authorization code. | `descope_inbound_app`, `descope_third_party_application` |
++| **Authorization Code + PKCE** | [RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636) | Supported for public clients (non-confidential inbound apps). PKCE parameters passed in the authorization request. | `descope_inbound_app` (non_confidential_client) |
+ | **Client Credentials** | [RFC 6749 S4.4](https://datatracker.ietf.org/doc/html/rfc6749#section-4.4) | Access Keys provide service-to-service authentication. The access key ID and secret are used as client credentials. | `descope_access_key` |
+ | **Device Authorization** | [RFC 8628](https://datatracker.ietf.org/doc/html/rfc8628) | Not directly supported as a standard grant. Can be approximated with Descope Flows. | N/A |
+ | **Token Exchange** | [RFC 8693](https://datatracker.ietf.org/doc/html/rfc8693) | Not directly supported. Descope uses its own session management model. | N/A |
+@@ -37,8 +37,8 @@ This document maps standard OAuth 2.0 and OpenID Connect (OIDC) specification co
+ 
+ | OAuth 2.0 Client Type | Descope Equivalent | Terraform Resource |
+ |---|---|---|
+-| **Confidential Client** | Inbound App with `non_confidential_client = false` | `descope_inbound_application` |
+-| **Public Client** | Inbound App with `non_confidential_client = true` | `descope_inbound_application` |
++| **Confidential Client** | Inbound App with `non_confidential_client = false` | `descope_inbound_app` |
++| **Public Client** | Inbound App with `non_confidential_client = true` | `descope_inbound_app` |
+ | **Third-Party Client** | Third-Party Application (with consent flow) | `descope_third_party_application` |
+ | **First-Party Client** | Direct Descope SDK integration (no OAuth needed) | N/A (SDK-based) |
+ 
+@@ -60,14 +60,14 @@ This document maps standard OAuth 2.0 and OpenID Connect (OIDC) specification co
+ | **SAML 2.0 SP** | Descope acts as SAML Service Provider. Tenants configure their SAML IdP (Okta, Azure AD, etc.). | `descope_sso` (SAML settings) |
+ | **OIDC RP** | Descope acts as OIDC Relying Party. Tenants configure their OIDC provider. | `descope_sso` (OIDC settings) |
+ | **SAML IdP** | Descope acts as SAML Identity Provider via SSO Applications. | `descope_sso_application` (blocked - enterprise) |
+-| **OIDC OP** | Descope acts as OIDC Provider via Inbound Applications. | `descope_inbound_application` |
++| **OIDC OP** | Descope acts as OIDC Provider via Inbound Applications. | `descope_inbound_app` |
+ | **Social Login** | Outbound Apps connect to social providers (Google, GitHub, etc.). | `descope_outbound_application` |
+ 
+ ## Authorization
+ 
+ | Concept | Descope Feature | Terraform Resource |
+ |---|---|---|
+-| **OAuth 2.0 Scopes** | Permission Scopes on Inbound/Third-Party Apps | `descope_inbound_application`, `descope_third_party_application` |
++| **OAuth 2.0 Scopes** | Permission Scopes on Inbound/Third-Party Apps | `descope_inbound_app`, `descope_third_party_application` |
+ | **RBAC** | Roles and Permissions (project-level and tenant-level) | `descope_role`, `descope_permission` |
+ | **ReBAC / FGA** | Fine-Grained Authorization with Zanzibar-style relation schema | `descope_fga_schema`, `descope_fga_check` (data source) |
+ | **ABAC** | User custom attributes + tenant attributes for attribute-based decisions | `descope_project` (user attributes config) |
+diff --git a/docs/index.md b/docs/index.md
+index 5465e24..c1cd118 100644
+--- a/docs/index.md
++++ b/docs/index.md
+@@ -99,7 +99,7 @@ provider "descope" {
+ | [`descope_descoper`](resources/descoper) | Descope console user accounts with role assignments |
+ | [`descope_sso`](resources/sso) | SSO configuration for a project |
+ | [`descope_sso_application`](resources/sso_application) | SSO application definitions |
+-| [`descope_inbound_application`](resources/inbound_application) | Inbound application integrations |
++| [`descope_inbound_app`](resources/inbound_app) | Inbound application integrations |
+ | [`descope_outbound_application`](resources/outbound_application) | Outbound application integrations |
+ | [`descope_third_party_application`](resources/third_party_application) | Third-party application integrations |
+ | [`descope_password_settings`](resources/password_settings) | Password authentication policy configuration |
+diff --git a/docs/resources/inbound_application.md b/docs/resources/inbound_app.md
+similarity index 96%
+rename from docs/resources/inbound_application.md
+rename to docs/resources/inbound_app.md
+index 13dec09..2153c7a 100644
+--- a/docs/resources/inbound_application.md
++++ b/docs/resources/inbound_app.md
+@@ -1,11 +1,11 @@
+ ---
+-page_title: "descope_inbound_application Resource - descope"
++page_title: "descope_inbound_app Resource - descope"
+ subcategory: ""
+ description: |-
+   Manages an inbound OIDC/OAuth 2.0 application that uses Descope as its identity provider.
+ ---
+ 
+-# descope_inbound_application (Resource)
++# descope_inbound_app (Resource)
+ 
+ Manages an inbound application—an external OIDC/OAuth 2.0 client that uses Descope as its identity provider (IdP). Descope acts as the OAuth 2.0 Authorization Server, issuing access tokens, refresh tokens, and ID tokens to the registered client.
+ 
+@@ -16,7 +16,7 @@ Inbound applications support both confidential (server-side) and public (SPA/mob
+ ### Confidential Client
+ 
+ ```hcl
+-resource "descope_inbound_application" "backend_api" {
++resource "descope_inbound_app" "backend_api" {
+   name        = "Backend API"
+   description = "Server-side application authenticating via Descope"
+   project_id  = descope_project.main.id
+@@ -28,7 +28,7 @@ resource "descope_inbound_application" "backend_api" {
+ ### Public Client (SPA)
+ 
+ ```hcl
+-resource "descope_inbound_application" "spa" {
++resource "descope_inbound_app" "spa" {
+   name                    = "Dashboard SPA"
+   project_id              = descope_project.main.id
+   non_confidential_client = true
+diff --git a/internal/provider/provider.go b/internal/provider/provider.go
+index a9ee379..c218902 100644
+--- a/internal/provider/provider.go
++++ b/internal/provider/provider.go
+@@ -48,8 +48,9 @@ func (p *descopeProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
+ 		MarkdownDescription: "Use the Descope Terraform Provider to manage your Descope project's authentication methods, flows, roles, permissions, connectors, and more as infrastructure-as-code.",
+ 		Attributes: map[string]schema.Attribute{
+ 			"project_id": schema.StringAttribute{
+-				Optional:    true,
+-				Description: "The Descope project ID. Required for managing access keys without a descope_project resource. Can also be set via DESCOPE_PROJECT_ID environment variable.",
++				Optional:           true,
++				Description:        "The Descope project ID. Used as a fallback for resources like descope_access_key that need a project ID without a descope_project resource. Can also be set via DESCOPE_PROJECT_ID. Prefer declaring a descope_project resource (or descope_project data source) and passing .id explicitly; this provider-level field will be removed in a future major version.",
++				DeprecationMessage: "Set project_id at the resource level (or via the descope_project resource/data source) rather than on the provider block. The provider-level field will be removed in a future major version.",
+ 			},
+ 			"management_key": schema.StringAttribute{
+ 				Optional:    true,
+diff --git a/internal/resources/inbound_application.go b/internal/resources/inboundapp.go
+similarity index 99%
+rename from internal/resources/inbound_application.go
+rename to internal/resources/inboundapp.go
+index fa2cc73..14c913a 100644
+--- a/internal/resources/inbound_application.go
++++ b/internal/resources/inboundapp.go
+@@ -13,7 +13,7 @@ import (
+ )
+ 
+ const (
+-	inboundAppEntity = "inbound_application"
++	inboundAppEntity = "inbound_app"
+ )
+ 
+ var (
+diff --git a/tools/testacc/resource.go b/tools/testacc/resource.go
+index b19bf03..cf6a9b7 100644
+--- a/tools/testacc/resource.go
++++ b/tools/testacc/resource.go
+@@ -31,7 +31,7 @@ func AccessKey(t *testing.T) *Resource {
+ }
+ 
+ func InboundApp(t *testing.T) *Resource {
+-	return newResource(t, "inbound_application")
++	return newResource(t, "inbound_app")
+ }
+ 
+ func newResource(t *testing.T, typ string) *Resource {
