@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
-.PHONY:  help dev install test testintegration testacc testcoverage testcleanup terragen docs terraformrc lint ensure-linter ensure-gitleaks ensure-descope ensure-courtney ensure-brew ensure-go
-.SILENT: help dev install test testintegration testacc testcoverage testcleanup terragen docs terraformrc lint ensure-linter ensure-gitleaks ensure-descope ensure-courtney ensure-brew ensure-go
+.PHONY:  help dev install test testintegration testacc testcoverage testcleanup terragen docs terraformrc lint upstream-check ensure-linter ensure-gitleaks ensure-descope ensure-courtney ensure-brew ensure-go
+.SILENT: help dev install test testintegration testacc testcoverage testcleanup terragen docs terraformrc lint upstream-check ensure-linter ensure-gitleaks ensure-descope ensure-courtney ensure-brew ensure-go
 
 ifneq ($(tests),)
   flags := $(flags) -count 1 -run '$(tests)'
@@ -49,6 +49,9 @@ testcoverage: ensure-go ensure-courtney ## runs all tests and computes test cove
 
 testcleanup: ## cleans up redundant testacc- projects after running tests
 	go run ./tools/testcleanup
+
+upstream-check: ## report merge-risk signals before syncing from upstream
+	./scripts/upstream-sync-check.sh
 
 terragen: ensure-go ## runs the terragen tool to generate code and model documentation
 	go run tools/terragen/main.go $(flags)
