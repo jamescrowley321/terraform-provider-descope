@@ -27,7 +27,7 @@ The upstream Descope Terraform provider supports project-level configuration thr
 | `descope_project` | Resource | Yes | Yes |
 | `descope_descoper` | Resource | Yes | Yes |
 | `descope_management_key` | Resource | Yes | Yes |
-| `descope_inbound_application` | Resource | Yes | Yes |
+| `descope_inbound_app` | Resource | Yes | Yes |
 | `descope_tenant` | Resource | - | **Yes** |
 | `descope_access_key` | Resource | - | **Yes** |
 | `descope_role` | Resource | - | **Yes** |

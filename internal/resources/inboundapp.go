@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	inboundAppEntity = "inbound_application"
+	inboundAppEntity = "inbound_app"
 )
 
 var (

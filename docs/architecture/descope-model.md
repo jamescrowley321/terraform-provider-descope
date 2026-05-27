@@ -48,7 +48,7 @@ These entities represent project configuration and are the natural domain of inf
 | Tenant | `descope_tenant` | B2B multi-tenancy. Isolates users, roles, and SSO config. |
 | Role | `descope_role` | Authorization role. Can be project-level or tenant-level. |
 | Permission | `descope_permission` | Atomic authorization unit. Assigned to roles. |
-| Inbound Application | `descope_inbound_application` | OIDC/OAuth client registered to use Descope as IdP. |
+| Inbound Application | `descope_inbound_app` | OIDC/OAuth client registered to use Descope as IdP. |
 | Third-Party Application | `descope_third_party_application` | External OAuth client authenticating against Descope. |
 | Outbound Application | `descope_outbound_application` | OAuth client config for Descope to connect to external services. |
 | SSO Configuration | `descope_sso` | OIDC or SAML SSO provider configuration per tenant. |

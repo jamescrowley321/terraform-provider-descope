@@ -1,11 +1,11 @@
 ---
-page_title: "descope_inbound_application Resource - descope"
+page_title: "descope_inbound_app Resource - descope"
 subcategory: ""
 description: |-
   Manages an inbound OIDC/OAuth 2.0 application that uses Descope as its identity provider.
 ---
 
-# descope_inbound_application (Resource)
+# descope_inbound_app (Resource)
 
 Manages an inbound application—an external OIDC/OAuth 2.0 client that uses Descope as its identity provider (IdP). Descope acts as the OAuth 2.0 Authorization Server, issuing access tokens, refresh tokens, and ID tokens to the registered client.
 
@@ -16,7 +16,7 @@ Inbound applications support both confidential (server-side) and public (SPA/mob
 ### Confidential Client
 
 ```hcl
-resource "descope_inbound_application" "backend_api" {
+resource "descope_inbound_app" "backend_api" {
   name        = "Backend API"
   description = "Server-side application authenticating via Descope"
   project_id  = descope_project.main.id
@@ -28,7 +28,7 @@ resource "descope_inbound_application" "backend_api" {
 ### Public Client (SPA)
 
 ```hcl
-resource "descope_inbound_application" "spa" {
+resource "descope_inbound_app" "spa" {
   name                    = "Dashboard SPA"
   project_id              = descope_project.main.id
   non_confidential_client = true

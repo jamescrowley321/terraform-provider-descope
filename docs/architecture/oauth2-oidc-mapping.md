@@ -6,8 +6,8 @@ This document maps standard OAuth 2.0 and OpenID Connect (OIDC) specification co
 
 | OAuth 2.0 Grant Type | RFC | Descope Implementation | Terraform Resource |
 |---|---|---|---|
-| **Authorization Code** | [RFC 6749 S4.1](https://datatracker.ietf.org/doc/html/rfc6749#section-4.1) | Inbound/Third-Party Apps redirect users to Descope's `/authorize` endpoint. Descope authenticates the user via Flows and returns an authorization code. | `descope_inbound_application`, `descope_third_party_application` |
-| **Authorization Code + PKCE** | [RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636) | Supported for public clients (non-confidential inbound apps). PKCE parameters passed in the authorization request. | `descope_inbound_application` (non_confidential_client) |
+| **Authorization Code** | [RFC 6749 S4.1](https://datatracker.ietf.org/doc/html/rfc6749#section-4.1) | Inbound/Third-Party Apps redirect users to Descope's `/authorize` endpoint. Descope authenticates the user via Flows and returns an authorization code. | `descope_inbound_app`, `descope_third_party_application` |
+| **Authorization Code + PKCE** | [RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636) | Supported for public clients (non-confidential inbound apps). PKCE parameters passed in the authorization request. | `descope_inbound_app` (non_confidential_client) |
 | **Client Credentials** | [RFC 6749 S4.4](https://datatracker.ietf.org/doc/html/rfc6749#section-4.4) | Access Keys provide service-to-service authentication. The access key ID and secret are used as client credentials. | `descope_access_key` |
 | **Device Authorization** | [RFC 8628](https://datatracker.ietf.org/doc/html/rfc8628) | Not directly supported as a standard grant. Can be approximated with Descope Flows. | N/A |
 | **Token Exchange** | [RFC 8693](https://datatracker.ietf.org/doc/html/rfc8693) | Not directly supported. Descope uses its own session management model. | N/A |
@@ -37,8 +37,8 @@ This document maps standard OAuth 2.0 and OpenID Connect (OIDC) specification co
 
 | OAuth 2.0 Client Type | Descope Equivalent | Terraform Resource |
 |---|---|---|
-| **Confidential Client** | Inbound App with `non_confidential_client = false` | `descope_inbound_application` |
-| **Public Client** | Inbound App with `non_confidential_client = true` | `descope_inbound_application` |
+| **Confidential Client** | Inbound App with `non_confidential_client = false` | `descope_inbound_app` |
+| **Public Client** | Inbound App with `non_confidential_client = true` | `descope_inbound_app` |
 | **Third-Party Client** | Third-Party Application (with consent flow) | `descope_third_party_application` |
 | **First-Party Client** | Direct Descope SDK integration (no OAuth needed) | N/A (SDK-based) |
 
@@ -60,14 +60,14 @@ This document maps standard OAuth 2.0 and OpenID Connect (OIDC) specification co
 | **SAML 2.0 SP** | Descope acts as SAML Service Provider. Tenants configure their SAML IdP (Okta, Azure AD, etc.). | `descope_sso` (SAML settings) |
 | **OIDC RP** | Descope acts as OIDC Relying Party. Tenants configure their OIDC provider. | `descope_sso` (OIDC settings) |
 | **SAML IdP** | Descope acts as SAML Identity Provider via SSO Applications. | `descope_sso_application` (blocked - enterprise) |
-| **OIDC OP** | Descope acts as OIDC Provider via Inbound Applications. | `descope_inbound_application` |
+| **OIDC OP** | Descope acts as OIDC Provider via Inbound Applications. | `descope_inbound_app` |
 | **Social Login** | Outbound Apps connect to social providers (Google, GitHub, etc.). | `descope_outbound_application` |
 
 ## Authorization
 
 | Concept | Descope Feature | Terraform Resource |
 |---|---|---|
-| **OAuth 2.0 Scopes** | Permission Scopes on Inbound/Third-Party Apps | `descope_inbound_application`, `descope_third_party_application` |
+| **OAuth 2.0 Scopes** | Permission Scopes on Inbound/Third-Party Apps | `descope_inbound_app`, `descope_third_party_application` |
 | **RBAC** | Roles and Permissions (project-level and tenant-level) | `descope_role`, `descope_permission` |
 | **ReBAC / FGA** | Fine-Grained Authorization with Zanzibar-style relation schema | `descope_fga_schema`, `descope_fga_check` (data source) |
 | **ABAC** | User custom attributes + tenant attributes for attribute-based decisions | `descope_project` (user attributes config) |

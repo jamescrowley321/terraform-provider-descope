@@ -48,8 +48,9 @@ func (p *descopeProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 		MarkdownDescription: "Use the Descope Terraform Provider to manage your Descope project's authentication methods, flows, roles, permissions, connectors, and more as infrastructure-as-code.",
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
-				Optional:    true,
-				Description: "The Descope project ID. Required for managing access keys without a descope_project resource. Can also be set via DESCOPE_PROJECT_ID environment variable.",
+				Optional:           true,
+				Description:        "The Descope project ID. Fallback for resources like descope_access_key that need a project ID without a descope_project resource. Can also be set via DESCOPE_PROJECT_ID.",
+				DeprecationMessage: "Set project_id at the resource level (or via the descope_project resource/data source) rather than on the provider block. The provider-level field will be removed in a future major version.",
 			},
 			"management_key": schema.StringAttribute{
 				Optional:    true,

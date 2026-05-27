@@ -42,7 +42,7 @@ website/vendor
 *.winfile eol=crlf
 
 # Claude Code runtime state
-.claude/task-state.md
+.claude/
 
 # Ralph orchestrator runtime state
 .ralph/

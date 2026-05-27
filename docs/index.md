@@ -99,7 +99,7 @@ provider "descope" {
 | [`descope_descoper`](resources/descoper) | Descope console user accounts with role assignments |
 | [`descope_sso`](resources/sso) | SSO configuration for a project |
 | [`descope_sso_application`](resources/sso_application) | SSO application definitions |
-| [`descope_inbound_application`](resources/inbound_application) | Inbound application integrations |
+| [`descope_inbound_app`](resources/inbound_app) | Inbound application integrations |
 | [`descope_outbound_application`](resources/outbound_application) | Outbound application integrations |
 | [`descope_third_party_application`](resources/third_party_application) | Third-party application integrations |
 | [`descope_password_settings`](resources/password_settings) | Password authentication policy configuration |
