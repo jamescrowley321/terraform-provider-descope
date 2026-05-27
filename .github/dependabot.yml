@@ -1,8 +1,7 @@
 version: 2
 # Dependabot runs daily and bundles every routine update into a single grouped
-# PR per ecosystem via `groups:` below. A dedicated dependabot-auto-merge.yml
-# workflow enables `gh pr merge --auto --squash` on these PRs so they merge
-# themselves once all required CI stages pass. Security alerts continue to
+# PR per ecosystem via `groups:` below. PRs are merged manually after review;
+# auto-merge is intentionally not configured. Security alerts continue to
 # arrive as standalone PRs outside the group.
 updates:
   - package-ecosystem: gomod
