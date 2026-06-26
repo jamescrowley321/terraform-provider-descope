@@ -14,6 +14,11 @@ import (
 	"github.com/jamescrowley321/terraform-provider-descope/internal/models/passwordsettings"
 )
 
+// passwordSettingsID is the fixed Terraform resource ID for the singleton
+// password_settings resource. It is an entity name used for API routing, not a
+// credential; the directive below suppresses Snyk Code's false-positive
+// hardcoded-secret finding (CWE-798) on the constant name.
+// deepcode ignore HardcodedNonCryptoSecret: entity name for the password_settings resource, not a secret
 const passwordSettingsID = "password_settings"
 
 var (
