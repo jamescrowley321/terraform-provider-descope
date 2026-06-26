@@ -3,12 +3,15 @@ package infra
 import "github.com/descope/go-sdk/descope"
 
 const (
-	errCodeValidationError = "E113007"
+	errCodeValidationError    = "E113007"
+	errCodeValidationErrorAlt = "E113011"
 )
 
 func AsValidationError(err error) (failure string, ok bool) {
-	if de := descope.AsError(err, errCodeValidationError); de != nil && de.Message != "" {
-		return de.Message, true
+	if err, ok := err.(*descope.Error); ok && err.Message != "" {
+		if err.Code == errCodeValidationError || err.Code == errCodeValidationErrorAlt {
+			return err.Message, true
+		}
 	}
 	return
 }

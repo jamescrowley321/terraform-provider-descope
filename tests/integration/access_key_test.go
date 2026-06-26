@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,9 +25,10 @@ func TestAccessKeyCRUD(t *testing.T) {
 	require.NotEmpty(t, attrs["client_id"])
 
 	id := StringAttr(attrs, "id")
+	projectID := StringAttr(attrs, "project_id")
 
 	// Verify create via SDK
-	sdkKey := LoadAccessKeyViaSDK(t, id)
+	sdkKey := LoadAccessKeyViaSDK(t, projectID, id)
 	assert.Equal(t, name, sdkKey.Name)
 	assert.Equal(t, "active", sdkKey.Status)
 
@@ -37,12 +39,13 @@ func TestAccessKeyCRUD(t *testing.T) {
 	assert.Equal(t, id, StringAttr(attrs, "id"))
 
 	// Verify update via SDK
-	sdkKey = LoadAccessKeyViaSDK(t, id)
+	sdkKey = LoadAccessKeyViaSDK(t, projectID, id)
 	assert.Equal(t, "inactive", sdkKey.Status)
 	assert.Equal(t, "Updated via integration test", sdkKey.Description)
 
-	// Import
-	attrs = h.ReimportResource("access_key/update.tf", address, id, nameVar)
+	// Import (project-level resource uses a composite project_id/id import ID)
+	importID := StringAttr(attrs, "project_id") + "/" + id
+	attrs = h.ReimportResource("access_key/update.tf", address, importID, nameVar)
 	assert.Equal(t, id, StringAttr(attrs, "id"))
 	assert.Equal(t, name, attrs["name"])
 
@@ -65,15 +68,16 @@ func TestAccessKeyWithOptions(t *testing.T) {
 	ips := RequireListLen(t, attrs, "permitted_ips", 1)
 	assert.Equal(t, "192.168.1.0/24", ips[0])
 
-	claims := RequireMap(t, attrs, "custom_claims")
+	var claims map[string]any
+	require.NoError(t, json.Unmarshal([]byte(StringAttr(attrs, "custom_claims")), &claims))
 	assert.Equal(t, "value1", claims["claim1"])
 
-	roles := RequireListLen(t, attrs, "role_names", 1)
-	assert.Equal(t, "Tenant Admin", roles[0])
+	roles := RequireListLen(t, attrs, "roles", 1)
+	assert.Equal(t, "Viewer", roles[0])
 
 	// Verify via SDK
 	id := StringAttr(attrs, "id")
-	sdkKey := LoadAccessKeyViaSDK(t, id)
+	sdkKey := LoadAccessKeyViaSDK(t, StringAttr(attrs, "project_id"), id)
 	assert.Equal(t, name, sdkKey.Name)
 	assert.Equal(t, "Test access key", sdkKey.Description)
 	assert.Equal(t, []string{"192.168.1.0/24"}, sdkKey.PermittedIPs)

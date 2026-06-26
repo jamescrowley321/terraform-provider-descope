@@ -9,76 +9,121 @@ import (
 )
 
 func TestAccessKey(t *testing.T) {
+	p := testacc.Project(t)
 	a := testacc.AccessKey(t)
 	testacc.Run(t,
-		// Test creating with status = "inactive" fails
+		// Test basic creation with required fields only
 		resource.TestStep{
-			Config: a.Config(`
-				status = "inactive"
-			`),
-			ExpectError: regexp.MustCompile(`Cannot set status`),
-		},
-		// Test expire_time exceeding int32 max fails validation
-		resource.TestStep{
-			Config: a.Config(`
-				expire_time = 9999999999
-			`),
-			ExpectError: regexp.MustCompile(`must be at most`),
-		},
-		// Test basic creation with company-level roles
-		resource.TestStep{
-			Config: a.Config(`
-				role_names = ["Tenant Admin"]
+			Config: p.Config() + a.Config(`
+				project_id = `+p.Path()+`.id
 			`),
 			Check: a.Check(map[string]any{
-				"id":           testacc.AttributeIsSet,
-				"name":         a.Name,
-				"status":       "active",
-				"cleartext":    testacc.AttributeIsSet,
-				"client_id":    testacc.AttributeIsSet,
-				"role_names.#": "1",
+				"id":              testacc.AttributeIsSet,
+				"project_id":      testacc.AttributeIsSet,
+				"name":            a.Name,
+				"description":     "",
+				"status":          "active",
+				"expire_time":     "0",
+				"roles.#":         "0",
+				"tenants.#":       "0",
+				"permitted_ips.#": "0",
+				"client_id":       testacc.AttributeIsSet,
+				"cleartext":       testacc.AttributeIsSet,
 			}),
 		},
-		// Test status update
+		// Test update of mutable fields
 		resource.TestStep{
-			Config: a.Config(`
-				status = "inactive"
-				role_names = ["Tenant Admin"]
+			Config: p.Config(`
+				authorization = {
+					roles = [
+						{ name = "Viewer" }
+					]
+				}
+			`) + a.Config(`
+				project_id = `+p.Path()+`.id
+				description = "Updated description"
+				permitted_ips = ["10.0.0.0/8"]
+				roles = ["Viewer"]
 			`),
 			Check: a.Check(map[string]any{
-				"id":     testacc.AttributeIsSet,
-				"name":   a.Name,
+				"description":     "Updated description",
+				"permitted_ips.#": "1",
+				"permitted_ips.0": "10.0.0.0/8",
+				"roles.#":         "1",
+				"roles.0":         "Viewer",
+			}),
+		},
+		// Test tenants attribute with non-existent tenant
+		resource.TestStep{
+			Config: p.Config() + a.Config(`
+				project_id = `+p.Path()+`.id
+				tenants = [
+					{
+						tenant_id = "T2foo"
+						roles = ["Viewer", "Editor"]
+					},
+				]
+			`),
+			ExpectError: regexp.MustCompile(`Tenant .* does not exist in project`),
+		},
+		// Test roles attribute with non-existent role
+		resource.TestStep{
+			Config: p.Config() + a.Config(`
+				project_id = `+p.Path()+`.id
+				roles = ["Quux"]
+			`),
+			ExpectError: regexp.MustCompile(`Role .* does not exist in project`),
+		},
+		// Test custom claims as JSON string
+		resource.TestStep{
+			Config: p.Config() + a.Config(`
+				project_id = `+p.Path()+`.id
+				custom_claims = jsonencode({ env = "staging" })
+			`),
+			Check: a.Check(map[string]any{
+				"custom_claims": testacc.AttributeIsSet,
+			}),
+		},
+		// Test deactivate via status update
+		resource.TestStep{
+			Config: p.Config() + a.Config(`
+				project_id = `+p.Path()+`.id
+				status = "inactive"
+			`),
+			Check: a.Check(map[string]any{
 				"status": "inactive",
 			}),
 		},
-		// Test import
+		// Test reactivate
 		resource.TestStep{
-			ResourceName: a.Path(),
-			ImportState:  true,
-		},
-		// Test with description, permitted_ips, and custom_claims
-		resource.TestStep{
-			Config: a.Config(`
-				description = "Test access key"
-				permitted_ips = ["192.168.1.0/24"]
-				role_names = ["Tenant Admin"]
-				custom_claims = {
-					"claim1" = "value1"
-				}
+			Config: p.Config() + a.Config(`
+				project_id = `+p.Path()+`.id
+				status = "active"
 			`),
 			Check: a.Check(map[string]any{
-				"description":          "Test access key",
-				"permitted_ips.#":      "1",
-				"permitted_ips.0":      "192.168.1.0/24",
-				"custom_claims.%":      "1",
-				"custom_claims.claim1": "value1",
+				"status": "active",
 			}),
+		},
+		// Test expire_time triggers replacement (RequiresReplace)
+		resource.TestStep{
+			Config: p.Config() + a.Config(`
+				project_id = `+p.Path()+`.id
+				expire_time = 1924991999
+			`),
+			Check: a.Check(map[string]any{
+				"expire_time": "1924991999",
+				"cleartext":   testacc.AttributeIsSet,
+			}),
+		},
+		// Test import with composite ID
+		resource.TestStep{
+			ResourceName:      a.Path(),
+			ImportState:       true,
+			ImportStateIdFunc: testacc.GenerateImportStateID(a.Path(), "project_id", "id"),
 		},
 		// Destroy resource
 		resource.TestStep{
-			Config: a.Config(`
-				role_names = ["Tenant Admin"]
-			`),
+			Config:  p.Config() + a.Config(`project_id = `+p.Path()+`.id`),
 			Destroy: true,
 		},
 	)

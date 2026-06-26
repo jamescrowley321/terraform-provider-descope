@@ -52,6 +52,18 @@ func TestApplications(t *testing.T) {
 							login_page_url = "https://example.com/login"
 							claims = ["email", "name"]
 							force_authentication = true
+
+							client_id = "my-custom-oidc-client"
+							client_secret = "my-custom-oidc-secret-0123456789"
+							client_type = "confidential"
+							approved_redirect_urls = ["https://example.com/cb", "https://example.com/cb2"]
+							authorization_code_disabled = false
+							client_credentials_disabled = true
+							refresh_token_disabled = false
+							jwt_bearer_disabled = true
+							device_code_disabled = true
+							force_pkce = true
+							default_audience = "clientId"
 						}
 					]
 				}
@@ -67,6 +79,20 @@ func TestApplications(t *testing.T) {
 					"login_page_url":       "https://example.com/login",
 					"claims":               []string{"email", "name"},
 					"force_authentication": true,
+					"client_id":            "my-custom-oidc-client",
+					"client_secret":        testacc.AttributeIsSet,
+					"client_type":          "confidential",
+					"approved_redirect_urls": []string{
+						"https://example.com/cb",
+						"https://example.com/cb2",
+					},
+					"authorization_code_disabled": false,
+					"client_credentials_disabled": true,
+					"refresh_token_disabled":      false,
+					"jwt_bearer_disabled":         true,
+					"device_code_disabled":        true,
+					"force_pkce":                  true,
+					"default_audience":            "clientId",
 				},
 			}),
 		},
@@ -302,6 +328,10 @@ func TestApplications(t *testing.T) {
 
 							realm = "https://example.com/realm"
 							reply_url = "https://example.com/reply"
+							reply_allowed_callback_urls = [
+								"https://qa.example.com/reply",
+								"https://*.staging.example.com/reply",
+							]
 							login_page_url = "https://example.com/login"
 							logout_redirect_url = "https://example.com/logout"
 							error_redirect_url = "https://example.com/error"
@@ -332,13 +362,17 @@ func TestApplications(t *testing.T) {
 			Check: p.Check(map[string]any{
 				"applications.wsfed_applications.#": 1,
 				"applications.wsfed_applications.0": map[string]any{
-					"id":                   testacc.AttributeHasPrefix("SA"),
-					"name":                 "foo",
-					"description":          "bar",
-					"logo":                 "https://example.com/logo.png",
-					"disabled":             true,
-					"realm":                "https://example.com/realm",
-					"reply_url":            "https://example.com/reply",
+					"id":          testacc.AttributeHasPrefix("SA"),
+					"name":        "foo",
+					"description": "bar",
+					"logo":        "https://example.com/logo.png",
+					"disabled":    true,
+					"realm":       "https://example.com/realm",
+					"reply_url":   "https://example.com/reply",
+					"reply_allowed_callback_urls": []string{
+						"https://qa.example.com/reply",
+						"https://*.staging.example.com/reply",
+					},
 					"login_page_url":       "https://example.com/login",
 					"logout_redirect_url":  "https://example.com/logout",
 					"error_redirect_url":   "https://example.com/error",
@@ -407,5 +441,7 @@ func TestApplications(t *testing.T) {
 				"applications.wsfed_applications.#": 0,
 			}),
 		},
+		// per-app permissions/roles apply-stage coverage will be added once the
+		// backend project update endpoint accepts the new fields (descope/descope#436)
 	)
 }
