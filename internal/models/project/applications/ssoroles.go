@@ -131,26 +131,40 @@ func (m *SSOAppRoleModel) SetValues(h *helpers.Handler, data map[string]any) {
 	stringattr.Set(&m.Description, data, "description")
 
 	if raw, ok := data["permissions"].([]any); ok {
-		names := make([]any, 0, len(raw))
-		for _, item := range raw {
-			if perm, ok := item.(map[string]any); ok {
-				if name, ok := perm["name"].(string); ok && name != "" {
-					names = append(names, name)
-				}
-			}
-		}
+		names := ssoAppPermissionNames(raw)
 		strsetattr.Set(&m.Permissions, map[string]any{"permissions": names}, "permissions", h)
 	}
 
 	if raw, ok := data["roleMappings"].([]any); ok {
-		values := make([]any, 0, len(raw))
-		for _, item := range raw {
-			if v, ok := item.(string); ok && v != "" {
-				values = append(values, v)
-			}
-		}
+		values := ssoAppRoleMappingValues(raw)
 		strsetattr.Set(&m.RoleMappings, map[string]any{"roleMappings": values}, "roleMappings", h)
 	}
+}
+
+// ssoAppPermissionNames extracts the non-empty "name" field from a list of permission objects.
+func ssoAppPermissionNames(raw []any) []any {
+	names := make([]any, 0, len(raw))
+	for _, item := range raw {
+		perm, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		if name, ok := perm["name"].(string); ok && name != "" {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+// ssoAppRoleMappingValues extracts non-empty string identifiers from a raw list.
+func ssoAppRoleMappingValues(raw []any) []any {
+	values := make([]any, 0, len(raw))
+	for _, item := range raw {
+		if v, ok := item.(string); ok && v != "" {
+			values = append(values, v)
+		}
+	}
+	return values
 }
 
 func (m *SSOAppRoleModel) GetName() stringattr.Type {

@@ -15,6 +15,9 @@ import (
 	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
+// logResourceSuffix is appended to lifecycle log messages, e.g. "Creating access_key resource".
+const logResourceSuffix = " resource"
+
 // Creates a new resource with the given name. If the schema contains a `project_id` attribute then
 // the resource will be assumed to be a project-level resource (like a connector or flow), otherwise
 // it'll be assumed to be a company-level resource.
@@ -50,7 +53,7 @@ func (r *baseResource[T, M]) Schema(_ context.Context, _ resource.SchemaRequest,
 }
 
 func (r *baseResource[T, M]) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	tflog.Info(ctx, "Creating "+r.name+" resource")
+	tflog.Info(ctx, "Creating "+r.name+logResourceSuffix)
 
 	model := M(new(T))
 	resp.Diagnostics.Append(req.Plan.Get(ctx, model)...)
@@ -78,11 +81,11 @@ func (r *baseResource[T, M]) Create(ctx context.Context, req resource.CreateRequ
 	model.SetValues(handler, res.Data)
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 
-	tflog.Info(ctx, "Created "+r.name+" resource")
+	tflog.Info(ctx, "Created "+r.name+logResourceSuffix)
 }
 
 func (r *baseResource[T, M]) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Info(ctx, "Reading "+r.name+" resource")
+	tflog.Info(ctx, "Reading "+r.name+logResourceSuffix)
 	ctx = helpers.ContextWithImportState(ctx, req, resp)
 
 	model := M(new(T))
@@ -101,11 +104,11 @@ func (r *baseResource[T, M]) Read(ctx context.Context, req resource.ReadRequest,
 	model.SetValues(handler, res.Data)
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 
-	tflog.Info(ctx, "Read "+r.name+" resource")
+	tflog.Info(ctx, "Read "+r.name+logResourceSuffix)
 }
 
 func (r *baseResource[T, M]) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	tflog.Info(ctx, "Updating "+r.name+" resource")
+	tflog.Info(ctx, "Updating "+r.name+logResourceSuffix)
 
 	model := M(new(T))
 	resp.Diagnostics.Append(req.Plan.Get(ctx, model)...)
@@ -132,11 +135,11 @@ func (r *baseResource[T, M]) Update(ctx context.Context, req resource.UpdateRequ
 	model.SetValues(handler, res.Data)
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 
-	tflog.Info(ctx, "Updated "+r.name+" resource")
+	tflog.Info(ctx, "Updated "+r.name+logResourceSuffix)
 }
 
 func (r *baseResource[T, M]) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	tflog.Info(ctx, "Deleting "+r.name+" resource")
+	tflog.Info(ctx, "Deleting "+r.name+logResourceSuffix)
 
 	model := M(new(T))
 	resp.Diagnostics.Append(req.State.Get(ctx, model)...)
@@ -150,11 +153,11 @@ func (r *baseResource[T, M]) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	tflog.Info(ctx, "Deleted "+r.name+" resource")
+	tflog.Info(ctx, "Deleted "+r.name+logResourceSuffix)
 }
 
 func (r *baseResource[T, M]) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	tflog.Info(ctx, "Importing "+r.name+" resource")
+	tflog.Info(ctx, "Importing "+r.name+logResourceSuffix)
 	helpers.MarkImportState(ctx, resp)
 
 	if _, ok := r.schema.Attributes["project_id"]; !ok {
