@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.2.0...v1.2.1) (2026-06-29)
+
+
+### Miscellaneous Chores
+
+* release v1.2.1 ([#172](https://github.com/jamescrowley321/terraform-provider-descope/issues/172)) ([ad08d0f](https://github.com/jamescrowley321/terraform-provider-descope/commit/ad08d0f352080d1a19a7010b8c8f979e71b11e34))
+
 ## [1.2.0](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.1.5...v1.2.0) (2026-06-29)
 
 
