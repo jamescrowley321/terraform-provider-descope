@@ -2,16 +2,25 @@ variable "name" {
   type = string
 }
 
+resource "descope_project" "test" {
+  name = "${var.name}-proj"
+
+  authorization = {
+    roles = [
+      { name = "Viewer" }
+    ]
+  }
+}
+
 resource "descope_access_key" "test" {
+  project_id  = descope_project.test.id
   name        = var.name
   description = "Test access key"
-  role_names  = ["Tenant Admin"]
+  roles       = ["Viewer"]
 
   permitted_ips = ["192.168.1.0/24"]
 
-  custom_claims = {
-    "claim1" = "value1"
-  }
+  custom_claims = jsonencode({ claim1 = "value1" })
 }
 
 output "id" {
@@ -20,4 +29,8 @@ output "id" {
 
 output "status" {
   value = descope_access_key.test.status
+}
+
+output "project_id" {
+  value = descope_access_key.test.project_id
 }

@@ -2,9 +2,13 @@ variable "name" {
   type = string
 }
 
+resource "descope_project" "test" {
+  name = "${var.name}-proj"
+}
+
 resource "descope_access_key" "test" {
+  project_id = descope_project.test.id
   name       = var.name
-  role_names = ["Tenant Admin"]
 }
 
 output "id" {
@@ -13,4 +17,8 @@ output "id" {
 
 output "status" {
   value = descope_access_key.test.status
+}
+
+output "project_id" {
+  value = descope_access_key.test.project_id
 }

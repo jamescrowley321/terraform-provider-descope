@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/accesskey"
 	"github.com/jamescrowley321/terraform-provider-descope/internal/models/descoper"
 	"github.com/jamescrowley321/terraform-provider-descope/internal/models/inboundapp"
 	"github.com/jamescrowley321/terraform-provider-descope/internal/models/managementkey"
@@ -25,6 +26,8 @@ import (
 )
 
 func InjectModels() {
+	inject(accesskey.AccessKeyAttributes, docsAccessKey)
+	inject(accesskey.AccessKeyTenantAttributes, docsAccessKeyTenant)
 	inject(descoper.DescoperAttributes, docsDescoper)
 	inject(descoper.DescoperProjectRoleAttributes, docsDescoperProjectRole)
 	inject(descoper.RBacAttributes, docsRBac)
@@ -120,6 +123,7 @@ func InjectModels() {
 	inject(connectors.SalesforceAttributes, docsSalesforce)
 	inject(connectors.SalesforceMarketingCloudAttributes, docsSalesforceMarketingCloud)
 	inject(connectors.SardineAttributes, docsSardine)
+	inject(connectors.SCIMAttributes, docsSCIM)
 	inject(connectors.SegmentAttributes, docsSegment)
 	inject(connectors.SendGridAttributes, docsSendGrid)
 	inject(connectors.SendGridAuthFieldAttributes, docsSendGridAuthField)

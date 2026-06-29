@@ -102,10 +102,12 @@ func LoadListViaSDK(t *testing.T, id string) *descope.List {
 	return list
 }
 
-// LoadAccessKeyViaSDK loads an access key directly from the Descope API.
-func LoadAccessKeyViaSDK(t *testing.T, id string) *descope.AccessKeyResponse {
+// LoadAccessKeyViaSDK loads an access key directly from the Descope API. The
+// SDK client must be scoped to the project the key was created in, so the
+// project ID is passed explicitly rather than read from the environment.
+func LoadAccessKeyViaSDK(t *testing.T, projectID, id string) *descope.AccessKeyResponse {
 	t.Helper()
-	client := newProjectSDKClient(t)
+	client := newSDKClientWithProject(t, projectID)
 	key, err := client.Management.AccessKey().Load(context.Background(), id)
 	require.NoError(t, err, "loading access key %s via SDK", id)
 	return key
