@@ -19,8 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    outputs:
-      hashes: ${{ steps.hash.outputs.hashes }}
+      id-token: write # keyless signing of the build provenance attestation
+      attestations: write # write the build provenance attestation
     steps:
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -46,21 +46,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
 
-      - name: Generate SLSA Subject Hashes
-        id: hash
-        run: |
-          cd dist
-          sha256sum *.zip *.json > checksums.txt
-          echo "hashes=$(base64 -w0 checksums.txt)" >> "$GITHUB_OUTPUT"
-
-  provenance:
-    name: Generate SLSA Provenance
-    needs: goreleaser
-    permissions:
-      actions: read
-      contents: write
-      id-token: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@f7dd8c54c2067bafc12ca7a55595d5ee9b75204a # v2.1.0
-    with:
-      base64-subjects: "${{ needs.goreleaser.outputs.hashes }}"
-      upload-assets: true
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: dist/*.zip
