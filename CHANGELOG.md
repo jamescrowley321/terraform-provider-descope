@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.2.0](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.1.5...v1.2.0) (2026-06-29)
+
+
+### Features
+
+* **applications:** add reply_allowed_callback_urls to WS-Fed ([#307](https://github.com/jamescrowley321/terraform-provider-descope/issues/307)) ([0cd2fd7](https://github.com/jamescrowley321/terraform-provider-descope/commit/0cd2fd749dcc6d287e8d187d36dc2590f617bfd6))
+* **authentication:** disallowed_characters + disallow_email_match ([#301](https://github.com/jamescrowley321/terraform-provider-descope/issues/301)) ([db5492b](https://github.com/jamescrowley321/terraform-provider-descope/commit/db5492b2c64b2857a4fed43fe5ca921b28aa66cb))
+* **connectors:** add Outbound SCIM connector ([#302](https://github.com/jamescrowley321/terraform-provider-descope/issues/302)) ([097dace](https://github.com/jamescrowley321/terraform-provider-descope/commit/097dace86cedbc6048096f6f6e98565b737bee28))
+* **isolation:** add tenant_user_isolation to descope_project settings ([#285](https://github.com/jamescrowley321/terraform-provider-descope/issues/285)) ([9d2f809](https://github.com/jamescrowley321/terraform-provider-descope/commit/9d2f8094bdad1b7bc9a0245d3a2ce78a0d5c7c76))
+* **passkeys:** add configurable display_name attribute ([#315](https://github.com/jamescrowley321/terraform-provider-descope/issues/315)) ([242bb2c](https://github.com/jamescrowley321/terraform-provider-descope/commit/242bb2ce77b9f13a29b4fdcebf5832b77a4acf03))
+* **password:** add setting for any case letter requirement ([#292](https://github.com/jamescrowley321/terraform-provider-descope/issues/292)) ([5b3e224](https://github.com/jamescrowley321/terraform-provider-descope/commit/5b3e224de0a7d96247672b52a15ccdb5db962adc))
+* per-app roles and permissions for federated apps ([#298](https://github.com/jamescrowley321/terraform-provider-descope/issues/298)) ([64c4737](https://github.com/jamescrowley321/terraform-provider-descope/commit/64c473788f6f4369be1094c8cfb44ce9412a837f))
+* SSO OIDC dedicated-client attributes for descope_project + force_pkce ([#313](https://github.com/jamescrowley321/terraform-provider-descope/issues/313)) ([74fb320](https://github.com/jamescrowley321/terraform-provider-descope/commit/74fb320c4670d9236bc44e111d73ecee72fba0b4))
+* **sso:** add WS-Fed SSO application resource ([#282](https://github.com/jamescrowley321/terraform-provider-descope/issues/282)) ([822c470](https://github.com/jamescrowley321/terraform-provider-descope/commit/822c47070967e2f0395addf3ac2d51c4a7b610eb))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/descope/go-sdk to v1.15.0 ([#279](https://github.com/jamescrowley321/terraform-provider-descope/issues/279)) ([560b315](https://github.com/jamescrowley321/terraform-provider-descope/commit/560b315a4e76d5382249e7479e8894a2b177e20b))
+* **deps:** update module github.com/descope/go-sdk to v1.23.0 ([#284](https://github.com/jamescrowley321/terraform-provider-descope/issues/284)) ([a947468](https://github.com/jamescrowley321/terraform-provider-descope/commit/a9474685a2c081a9ca4b25a46abe762ea43b5b58))
+* **deps:** update module github.com/descope/go-sdk to v1.24.0 ([#318](https://github.com/jamescrowley321/terraform-provider-descope/issues/318)) ([b53ed03](https://github.com/jamescrowley321/terraform-provider-descope/commit/b53ed03bf0b539c24f701ace62ef1368646fc98a))
+
 ## [1.1.5](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.1.4...v1.1.5) (2026-03-30)
 
 
