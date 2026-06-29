@@ -81,15 +81,22 @@ jobs:
       - name: Install Snyk CLI
         uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
 
+      # Fail loudly if the token is missing rather than silently skipping the
+      # scan, which would leave this required check as a no-op pass.
+      - name: Verify Snyk token is configured
+        run: |
+          if [ -z "$SNYK_TOKEN" ]; then
+            echo "::error::SNYK_TOKEN secret is not set — Snyk scanning is disabled. Add the SNYK_TOKEN repository secret to enable it."
+            exit 1
+          fi
+
       - name: Snyk Open Source (SCA)
-        if: env.SNYK_TOKEN != ''
         run: snyk test --severity-threshold=high
 
       - name: Snyk Code (SAST)
-        if: env.SNYK_TOKEN != ''
         run: snyk code test
 
       - name: Snyk Monitor
-        if: env.SNYK_TOKEN != '' && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         run: snyk monitor
 

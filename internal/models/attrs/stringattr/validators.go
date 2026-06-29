@@ -14,6 +14,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+// logValidatingString is the trace message emitted at the start of each string validator.
+const logValidatingString = "Validating string"
+
 var TimeUnitValidator = stringvalidator.OneOf("seconds", "minutes", "hours", "days", "weeks")
 
 var StandardLenValidator = stringvalidator.LengthAtMost(254)
@@ -44,7 +47,7 @@ func (v nonEmptyValidator) MarkdownDescription(ctx context.Context) string {
 }
 
 func (v nonEmptyValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	tflog.Trace(ctx, "Validating string", map[string]any{"path": req.Path.String()})
+	tflog.Trace(ctx, logValidatingString, map[string]any{"path": req.Path.String()})
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
@@ -70,7 +73,7 @@ func (v jsonValidator) MarkdownDescription(ctx context.Context) string {
 }
 
 func (v jsonValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	tflog.Trace(ctx, "Validating string", map[string]any{"path": req.Path.String()})
+	tflog.Trace(ctx, logValidatingString, map[string]any{"path": req.Path.String()})
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
@@ -107,7 +110,7 @@ func (v emailValidator) MarkdownDescription(ctx context.Context) string {
 }
 
 func (v emailValidator) ValidateString(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
-	tflog.Trace(ctx, "Validating string", map[string]any{"path": req.Path.String()})
+	tflog.Trace(ctx, logValidatingString, map[string]any{"path": req.Path.String()})
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
