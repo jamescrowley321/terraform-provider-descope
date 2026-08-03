@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.2](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.2.1...v1.2.2) (2026-08-03)
+
+
+### Bug Fixes
+
+* **deps:** bump google.golang.org/grpc to v1.82.1 (GO-2026-6061) ([057096c](https://github.com/jamescrowley321/terraform-provider-descope/commit/057096c1c5b5690687f43be3e318ad12f6b16c39))
+* **deps:** bump grpc to v1.82.1 (GO-2026-6061) ([45db743](https://github.com/jamescrowley321/terraform-provider-descope/commit/45db743af4ee551e7984747c66b748d8a9f46f9e))
+
 ## [1.2.1](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.2.0...v1.2.1) (2026-06-29)
 
 
