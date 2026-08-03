@@ -36,6 +36,13 @@ archives:
   - format: zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
+# SPDX SBOM per release archive (syft's default format; syft is installed in
+# the release workflow before GoReleaser runs). Emitted alongside the provider
+# archives so consumers get a bill of materials. The Terraform Registry ingests
+# only the zips + SHA256SUMS + manifest and ignores the extra .sbom.json files.
+sboms:
+  - artifacts: archive
+
 checksum:
   extra_files:
     - glob: "terraform-registry-manifest.json"
