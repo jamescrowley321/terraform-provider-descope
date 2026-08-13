@@ -8,7 +8,7 @@ description: |-
 
 The [Descope](https://www.descope.com) Terraform Provider lets you manage your Descope project configuration as infrastructure-as-code. Configure authentication methods, define roles and permissions, set up third-party connectors, manage flows, and more—all declaratively in Terraform.
 
-Descope is an authentication and user management platform. The Terraform provider manages _project configuration_ (how your project behaves), not users or tenants (use the [Descope Management API](https://docs.descope.com/api/openapi) or [SDKs](https://docs.descope.com) for those).
+Descope is an authentication and user management platform. This provider manages your Descope project configuration as infrastructure — projects, tenants, roles, permissions, SSO, connectors, applications, and access keys. It intentionally does **not** manage end users, which are runtime entities created through authentication flows (use the [Descope Management API](https://docs.descope.com/api/openapi) or [SDKs](https://docs.descope.com) for those).
 
 ## Requirements
 
