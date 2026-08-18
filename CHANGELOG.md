@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.3](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.2.2...v1.2.3) (2026-08-18)
+
+
+### Bug Fixes
+
+* bump Go toolchain to 1.26.6 to patch stdlib vulnerabilities ([705c88f](https://github.com/jamescrowley321/terraform-provider-descope/commit/705c88ff8ebb2748b6218f0c6e13f7c61681815f))
+* bump Go toolchain to 1.26.6 to patch stdlib vulnerabilities ([67fa8be](https://github.com/jamescrowley321/terraform-provider-descope/commit/67fa8bee54edc8e991be2878a1f095b600fe5d28))
+
 ## [1.2.2](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.2.1...v1.2.2) (2026-08-03)
 
 
