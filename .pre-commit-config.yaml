@@ -3,6 +3,7 @@ repos:
     rev: v8.30.0
     hooks:
       - id: gitleaks
+        args: ["--config", ".github/actions/ci/leaks/gitleaks.toml"]
   - repo: https://github.com/TekWizely/pre-commit-golang
     rev: v1.0.0-rc.4
     hooks:

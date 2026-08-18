@@ -18,6 +18,9 @@ ifneq ($(wildcard $(env)),)
   ifeq ($(DESCOPE_TEMPLATES_PATH),)
     export DESCOPE_TEMPLATES_PATH = $(shell cat $(env) | grep DESCOPE_TEMPLATES_PATH | sed 's/^.*=//')
   endif
+  ifeq ($(DESCOPE_TESTACC_PREFIX),)
+    export DESCOPE_TESTACC_PREFIX = $(shell cat $(env) | grep DESCOPE_TESTACC_PREFIX | sed 's/^.*=//')
+  endif
 endif
 
 help: Makefile ## this help message
@@ -96,6 +99,12 @@ ensure-descope: ensure-brew
 	if ! command -v descope &> /dev/null; then \
 	    echo Installing the $$'\e[33m'descope$$'\e[0m' CLI tool... ;\
 	    brew install descope ;\
+	fi
+
+ensure-jq: ensure-brew
+	if ! command -v jq &> /dev/null; then \
+	    echo Installing the $$'\e[33m'jq$$'\e[0m' tool... ;\
+	    brew install jq ;\
 	fi
 
 ensure-courtney: ensure-go
