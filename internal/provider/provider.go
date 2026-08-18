@@ -143,5 +143,6 @@ func (p *descopeProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewThirdPartyAppResource,
 		resources.NewFGASchemaResource,
 		resources.NewListResource,
+		resources.NewEngineResource,
 	}
 }

@@ -20,10 +20,13 @@ var DatadogAttributes = map[string]schema.Attribute{
 
 	"api_key":                  stringattr.SecretRequired(),
 	"site":                     stringattr.Default(""),
+	"source":                   stringattr.Default(""),
+	"tags":                     stringattr.Default(""),
 	"audit_enabled":            boolattr.Default(true),
 	"audit_filters":            listattr.Default[AuditFilterFieldModel](AuditFilterFieldAttributes),
 	"troubleshoot_log_enabled": boolattr.Default(false),
 	"mask_pii":                 boolattr.Default(false),
+	"engine_id":                stringattr.Default(""),
 }
 
 // Model
@@ -35,21 +38,26 @@ type DatadogModel struct {
 
 	APIKey                 stringattr.Type                      `tfsdk:"api_key"`
 	Site                   stringattr.Type                      `tfsdk:"site"`
+	Source                 stringattr.Type                      `tfsdk:"source"`
+	Tags                   stringattr.Type                      `tfsdk:"tags"`
 	AuditEnabled           boolattr.Type                        `tfsdk:"audit_enabled"`
 	AuditFilters           listattr.Type[AuditFilterFieldModel] `tfsdk:"audit_filters"`
 	TroubleshootLogEnabled boolattr.Type                        `tfsdk:"troubleshoot_log_enabled"`
 	MaskPII                boolattr.Type                        `tfsdk:"mask_pii"`
+	EngineID               stringattr.Type                      `tfsdk:"engine_id"`
 }
 
 func (m *DatadogModel) Values(h *helpers.Handler) map[string]any {
 	data := connectorValues(m.ID, m.Name, m.Description, h)
 	data["type"] = "datadog"
 	data["configuration"] = m.ConfigurationValues(h)
+	setConnectorEngine(data, m.EngineID)
 	return data
 }
 
 func (m *DatadogModel) SetValues(h *helpers.Handler, data map[string]any) {
 	setConnectorValues(&m.ID, &m.Name, &m.Description, data, h)
+	getConnectorEngine(data, &m.EngineID)
 	if c, ok := data["configuration"].(map[string]any); ok {
 		m.SetConfigurationValues(c, h)
 	}
@@ -67,6 +75,8 @@ func (m *DatadogModel) ConfigurationValues(h *helpers.Handler) map[string]any {
 	c := map[string]any{}
 	stringattr.Get(m.APIKey, c, "apiKey")
 	stringattr.Get(m.Site, c, "site")
+	stringattr.Get(m.Source, c, "source")
+	stringattr.Get(m.Tags, c, "tags")
 	boolattr.Get(m.AuditEnabled, c, "auditEnabled")
 	listattr.Get(m.AuditFilters, c, "auditFilters", h)
 	boolattr.Get(m.TroubleshootLogEnabled, c, "troubleshootLogEnabled")
@@ -77,6 +87,8 @@ func (m *DatadogModel) ConfigurationValues(h *helpers.Handler) map[string]any {
 func (m *DatadogModel) SetConfigurationValues(c map[string]any, h *helpers.Handler) {
 	stringattr.Nil(&m.APIKey)
 	stringattr.Set(&m.Site, c, "site")
+	stringattr.Set(&m.Source, c, "source")
+	stringattr.Set(&m.Tags, c, "tags")
 	boolattr.Set(&m.AuditEnabled, c, "auditEnabled")
 	listattr.Set(&m.AuditFilters, c, "auditFilters", h)
 	boolattr.Set(&m.TroubleshootLogEnabled, c, "troubleshootLogEnabled")

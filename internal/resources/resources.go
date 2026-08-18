@@ -4,6 +4,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/jamescrowley321/terraform-provider-descope/internal/models/accesskey"
 	"github.com/jamescrowley321/terraform-provider-descope/internal/models/descoper"
+	"github.com/jamescrowley321/terraform-provider-descope/internal/models/engine"
 	"github.com/jamescrowley321/terraform-provider-descope/internal/models/inboundapp"
 	"github.com/jamescrowley321/terraform-provider-descope/internal/models/managementkey"
 )
@@ -22,4 +23,8 @@ func NewManagementKeyResource() resource.Resource {
 
 func NewInboundAppResource() resource.Resource {
 	return newResource[inboundapp.InboundAppModel]("inbound_app", inboundapp.Schema)
+}
+
+func NewEngineResource() resource.Resource {
+	return newResource[engine.EngineModel]("engine", engine.Schema)
 }

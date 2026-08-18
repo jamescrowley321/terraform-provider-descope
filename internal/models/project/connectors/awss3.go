@@ -29,6 +29,8 @@ var AWSS3Attributes = map[string]schema.Attribute{
 	"audit_enabled":            boolattr.Default(true),
 	"audit_filters":            listattr.Default[AuditFilterFieldModel](AuditFilterFieldAttributes),
 	"troubleshoot_log_enabled": boolattr.Default(false),
+	"mask_pii":                 boolattr.Default(false),
+	"engine_id":                stringattr.Default(""),
 }
 
 // Model
@@ -48,17 +50,21 @@ type AWSS3Model struct {
 	AuditEnabled           boolattr.Type                        `tfsdk:"audit_enabled"`
 	AuditFilters           listattr.Type[AuditFilterFieldModel] `tfsdk:"audit_filters"`
 	TroubleshootLogEnabled boolattr.Type                        `tfsdk:"troubleshoot_log_enabled"`
+	MaskPII                boolattr.Type                        `tfsdk:"mask_pii"`
+	EngineID               stringattr.Type                      `tfsdk:"engine_id"`
 }
 
 func (m *AWSS3Model) Values(h *helpers.Handler) map[string]any {
 	data := connectorValues(m.ID, m.Name, m.Description, h)
 	data["type"] = "aws-s3"
 	data["configuration"] = m.ConfigurationValues(h)
+	setConnectorEngine(data, m.EngineID)
 	return data
 }
 
 func (m *AWSS3Model) SetValues(h *helpers.Handler, data map[string]any) {
 	setConnectorValues(&m.ID, &m.Name, &m.Description, data, h)
+	getConnectorEngine(data, &m.EngineID)
 	if c, ok := data["configuration"].(map[string]any); ok {
 		m.SetConfigurationValues(c, h)
 	}
@@ -108,6 +114,7 @@ func (m *AWSS3Model) ConfigurationValues(h *helpers.Handler) map[string]any {
 	boolattr.Get(m.AuditEnabled, c, "auditEnabled")
 	listattr.Get(m.AuditFilters, c, "auditFilters", h)
 	boolattr.Get(m.TroubleshootLogEnabled, c, "troubleshootLogEnabled")
+	boolattr.Get(m.MaskPII, c, "maskPII")
 	return c
 }
 
@@ -122,6 +129,7 @@ func (m *AWSS3Model) SetConfigurationValues(c map[string]any, h *helpers.Handler
 	boolattr.Set(&m.AuditEnabled, c, "auditEnabled")
 	listattr.Set(&m.AuditFilters, c, "auditFilters", h)
 	boolattr.Set(&m.TroubleshootLogEnabled, c, "troubleshootLogEnabled")
+	boolattr.Set(&m.MaskPII, c, "maskPII")
 }
 
 // Matching
