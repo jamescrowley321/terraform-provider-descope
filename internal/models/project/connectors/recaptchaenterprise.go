@@ -3,6 +3,7 @@
 package connectors
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/boolattr"
 	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/floatattr"
@@ -21,11 +22,12 @@ var RecaptchaEnterpriseAttributes = map[string]schema.Attribute{
 	"project_id":          stringattr.Required(),
 	"site_key":            stringattr.Required(),
 	"api_key":             stringattr.SecretRequired(),
-	"base_url":            stringattr.Default(""),
+	"base_url":            stringattr.Default("https://www.google.com", stringvalidator.OneOf("", "https://www.google.com", "https://www.recaptcha.net")),
 	"action":              stringattr.Default(""),
 	"override_assessment": boolattr.Default(false),
 	"bot_threshold":       floatattr.Default(0.5),
 	"assessment_score":    floatattr.Default(0.5),
+	"engine_id":           stringattr.Default(""),
 }
 
 // Model
@@ -43,17 +45,20 @@ type RecaptchaEnterpriseModel struct {
 	OverrideAssessment boolattr.Type   `tfsdk:"override_assessment"`
 	BotThreshold       floatattr.Type  `tfsdk:"bot_threshold"`
 	AssessmentScore    floatattr.Type  `tfsdk:"assessment_score"`
+	EngineID           stringattr.Type `tfsdk:"engine_id"`
 }
 
 func (m *RecaptchaEnterpriseModel) Values(h *helpers.Handler) map[string]any {
 	data := connectorValues(m.ID, m.Name, m.Description, h)
 	data["type"] = "recaptcha-enterprise"
 	data["configuration"] = m.ConfigurationValues(h)
+	setConnectorEngine(data, m.EngineID)
 	return data
 }
 
 func (m *RecaptchaEnterpriseModel) SetValues(h *helpers.Handler, data map[string]any) {
 	setConnectorValues(&m.ID, &m.Name, &m.Description, data, h)
+	getConnectorEngine(data, &m.EngineID)
 	if c, ok := data["configuration"].(map[string]any); ok {
 		m.SetConfigurationValues(c, h)
 	}

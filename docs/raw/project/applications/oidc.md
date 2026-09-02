@@ -78,21 +78,42 @@ the user to authenticate via the Descope flow, regardless of the SP's request.
 
 
 
+backchannel_logout_url
+----------------------
+
+- Type: `string`
+
+The URL that Descope notifies with a logout token when the user's session ends,
+as per the [OIDC Back-Channel Logout](https://openid.net/specs/openid-connect-backchannel-1_0.html)
+specification. Leave empty to disable back-channel logout notifications for this application.
+
+
+
+custom_idp_initiated_login_page_url
+-----------------------------------
+
+- Type: `string`
+
+A custom login page URL to redirect users to on IdP-initiated login flows,
+instead of the default login page.
+
+
+
 client_id
 ---------
 
 - Type: `string`
 
-A dedicated OIDC `client_id` to import for this application. Optional and **immutable** — changing it
-forces the application to be recreated. When omitted, the `client_id` is computed by the server; when
-set, it must be unique within the project. Mirrors the inbound third-party application `client_id`.
+A dedicated OIDC `client_id` to import for this application. When omitted, the `client_id` is computed
+by the server; when set, it must be unique within the project. Can only be set when the application is
+created, and attempting to change it on an existing application will fail.
 
 
 
 client_secret
 -------------
 
-- Type: `string` (sensitive)
+- Type: `secret`
 
 A dedicated OIDC `client_secret` to import for this application, applied on creation only. When omitted,
 a secret is generated server-side. The value is sensitive and is not returned on subsequent reads.
@@ -112,7 +133,7 @@ OAuth client confidentiality. One of `""` (default — legacy access-key authent
 approved_redirect_urls
 ----------------------
 
-- Type: `list` of `string`
+- Type: `set` of `string`
 
 A list of approved redirect URLs for this application (supports `*` wildcards). When set,
 redirect URIs are validated against this per-app list; when empty, validation falls back to
@@ -179,4 +200,33 @@ default_audience
 
 - Type: `string`
 
-Controls the default `aud` claim of tokens issued for this application. One of `"projectId"` (the project ID only), `"clientId"` (the dedicated client ID only), or `""` (default — both). Only applies to modern apps that set a `client_type`; legacy apps always use the project ID, so the empty default leaves their behavior unchanged.
+Controls the default `aud` claim of tokens issued for this application. One of `"projectId"` (the project ID only), `"clientId"` (the dedicated client ID only), `"appId"` (the application ID only), `"empty"` (no `aud` claim at all), or `""` (default — both the project ID and the client ID). Only applies to modern apps that set a `client_type`; legacy apps always use the project ID, so the empty default leaves their behavior unchanged.
+
+
+
+trusted_apps_audience
+---------------------
+
+- Type: `string`
+
+Controls the audience values appended to the issued token's `aud` claim for trusted sibling
+applications. One of `"projectId"`, `"clientId"`, `"appId"`, `"empty"` (add none), or `""`
+(default — both the project ID and the client ID). Independent of `default_audience`.
+
+
+
+permissions
+-----------
+
+- Type: `list` of `applications.SSOAppPermission`
+
+// description for permissions
+
+
+
+roles
+-----
+
+- Type: `list` of `applications.SSOAppRole`
+
+// description for roles

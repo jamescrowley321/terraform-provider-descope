@@ -1,0 +1,20 @@
+# gitleaks configuration for terraform-provider-descope.
+#
+# Keeps the full default ruleset for all real source, and scopes a narrow
+# allowlist to the connector *acceptance-test* fixtures. Those files embed
+# throwaway placeholder credentials inside `resource.TestStep{ Config: ... }`
+# HCL blocks (e.g. `secret_access_key = "xiyuadzk4w64hog"`) so the provider can
+# round-trip connector schemas in tests. They are not real secrets, and new
+# ones arrive with every upstream sync — without this scope, gitleaks blocks
+# routine connector updates. The allowlist is deliberately limited to
+# `*_test.go` under the connectors package; production code stays fully scanned.
+title = "terraform-provider-descope"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Placeholder credentials in connector acceptance-test fixtures (not real secrets)"
+paths = [
+  '''internal/models/project/connectors/.*_test\.go$''',
+]
