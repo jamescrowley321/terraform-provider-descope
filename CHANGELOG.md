@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.3.0](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.2.2...v1.3.0) (2026-09-02)
+
+
+### Features
+
+* **sso-suite:** add hide_sso to sso_suite_settings ([#364](https://github.com/jamescrowley321/terraform-provider-descope/issues/364)) ([db2d050](https://github.com/jamescrowley321/terraform-provider-descope/commit/db2d0507d83210344fb0648d9e8ea27bb7803198))
+* **sso-suite:** add hide_xaa to sso_suite_settings ([#367](https://github.com/jamescrowley321/terraform-provider-descope/issues/367)) ([7744a2a](https://github.com/jamescrowley321/terraform-provider-descope/commit/7744a2aa5bc4a11a66dd337f02f133c4b33d291b))
+* **sso-suite:** replace hide_xaa with show_xaa ([#374](https://github.com/jamescrowley321/terraform-provider-descope/issues/374)) ([e067adb](https://github.com/jamescrowley321/terraform-provider-descope/commit/e067adbf69b8261f677593c16befe855f40181f0))
+* **sso:** add allow_merge_users_with_multiple_tenants SSO attribute ([#332](https://github.com/jamescrowley321/terraform-provider-descope/issues/332)) ([49544bf](https://github.com/jamescrowley321/terraform-provider-descope/commit/49544bf891509d8f0c4bccfc71f54bcc3c364749))
+* **sso:** add SSO Suite OIDC login ID attribute setting ([#373](https://github.com/jamescrowley321/terraform-provider-descope/issues/373)) ([973ed7f](https://github.com/jamescrowley321/terraform-provider-descope/commit/973ed7f80a93c966d9635aa08d7832efe24ffe05))
+
+
+### Bug Fixes
+
+* bump Go toolchain to 1.26.6 to patch stdlib vulnerabilities ([705c88f](https://github.com/jamescrowley321/terraform-provider-descope/commit/705c88ff8ebb2748b6218f0c6e13f7c61681815f))
+* bump Go toolchain to 1.26.6 to patch stdlib vulnerabilities ([67fa8be](https://github.com/jamescrowley321/terraform-provider-descope/commit/67fa8bee54edc8e991be2878a1f095b600fe5d28))
+* **deps:** update module github.com/descope/go-sdk to v1.29.0 ([#362](https://github.com/jamescrowley321/terraform-provider-descope/issues/362)) ([88089ab](https://github.com/jamescrowley321/terraform-provider-descope/commit/88089ab56e83ad96d71326f877915b3d3c48be59))
+* **deps:** update module github.com/descope/go-sdk to v1.29.1 ([#366](https://github.com/jamescrowley321/terraform-provider-descope/issues/366)) ([de4876f](https://github.com/jamescrowley321/terraform-provider-descope/commit/de4876f444502d975dcd52557648841b0740554d))
+* **deps:** update module github.com/descope/go-sdk to v1.30.0 ([#369](https://github.com/jamescrowley321/terraform-provider-descope/issues/369)) ([e499533](https://github.com/jamescrowley321/terraform-provider-descope/commit/e4995337d7a7c9cb4da9b94112f1dadb481f23ec))
+* **deps:** update module github.com/descope/go-sdk to v1.31.0 ([#372](https://github.com/jamescrowley321/terraform-provider-descope/issues/372)) ([e1dd103](https://github.com/jamescrowley321/terraform-provider-descope/commit/e1dd103281aadff7ac70117cae03d64d32909fb6))
+* **deps:** update module github.com/descope/go-sdk to v1.32.0 ([#376](https://github.com/jamescrowley321/terraform-provider-descope/issues/376)) ([1781c6d](https://github.com/jamescrowley321/terraform-provider-descope/commit/1781c6d05051a8c2c1c22ba351c3554f32351d61))
+* **deps:** update module github.com/stretchr/testify to v1.12.0 ([#368](https://github.com/jamescrowley321/terraform-provider-descope/issues/368)) ([3caeac5](https://github.com/jamescrowley321/terraform-provider-descope/commit/3caeac5c7a4e1a1aae6b4fd8ca7cab418ed5eb07))
+* **oauth:** validate system provider own-account attributes on initial create ([#360](https://github.com/jamescrowley321/terraform-provider-descope/issues/360)) ([3102f1c](https://github.com/jamescrowley321/terraform-provider-descope/commit/3102f1c6050db8e2f188bc775ce6edaf53218262))
+
 ## [1.2.2](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.2.1...v1.2.2) (2026-08-03)
 
 
