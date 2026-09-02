@@ -58,6 +58,7 @@ func TestReferencesMap_Add_Get(t *testing.T) {
 		ref := refs.Get(ConnectorReferenceKey, "MyConnector")
 		if ref == nil {
 			t.Fatal("expected reference, got nil")
+			return
 		}
 		if ref.ID != "id-123" {
 			t.Fatalf("expected ID 'id-123', got %q", ref.ID)
@@ -80,6 +81,7 @@ func TestReferencesMap_Add_Get(t *testing.T) {
 		ref := refs.Get(ConnectorReferenceKey, DescopeConnector)
 		if ref == nil {
 			t.Fatal("expected Descope connector reference, got nil")
+			return
 		}
 		if ref.Key != DescopeConnector {
 			t.Fatalf("expected Key %q, got %q", DescopeConnector, ref.Key)
@@ -93,6 +95,7 @@ func TestReferencesMap_Add_Get(t *testing.T) {
 		ref := refs.Get(RoleReferenceKey, "MyRole")
 		if ref == nil {
 			t.Fatal("expected reference, got nil")
+			return
 		}
 		if ref.Key == "" {
 			t.Fatal("expected generated key, got empty string")
