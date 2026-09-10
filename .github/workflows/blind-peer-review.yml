@@ -77,7 +77,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Wait for deterministic checks
-        uses: jamescrowley321/blind-peer-review@b17dc0c0de28ef42595498f03074353d89475785 # v2.0.0
+        uses: jamescrowley321/blind-peer-review@9cf7e5a77cb7372122571feb9741049d7b5f94dc # v3.0.0
         with:
           mode: preflight
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -93,7 +93,7 @@ jobs:
       matrix: ${{ fromJSON(needs.config.outputs.matrix) }}
     steps:
       - name: ${{ matrix.name }}
-        uses: jamescrowley321/blind-peer-review@b17dc0c0de28ef42595498f03074353d89475785 # v2.0.0
+        uses: jamescrowley321/blind-peer-review@9cf7e5a77cb7372122571feb9741049d7b5f94dc # v3.0.0
         with:
           mode: lens
           lens: ${{ matrix.lens }}
@@ -137,7 +137,7 @@ jobs:
           exit 1
       - name: Adjudicate lenses
         if: needs.review.result == 'success'
-        uses: jamescrowley321/blind-peer-review@b17dc0c0de28ef42595498f03074353d89475785 # v2.0.0
+        uses: jamescrowley321/blind-peer-review@9cf7e5a77cb7372122571feb9741049d7b5f94dc # v3.0.0
         with:
           mode: gate
           lenses: ${{ needs.config.outputs.csv }}
