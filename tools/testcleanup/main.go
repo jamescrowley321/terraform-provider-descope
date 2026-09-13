@@ -7,11 +7,13 @@
 // It requires DESCOPE_MANAGEMENT_KEY and DESCOPE_BASE_URL environment variables.
 // Usage: source .env && go run ./tools/testcleanup
 //
-// The tenant pass reaches inside every project the management key can see,
-// including production ones, so -dry-run prints exactly what would be deleted
-// without deleting anything:
+// The tenant pass sweeps only testacc- projects by default. -all-projects
+// widens it to every project the management key can see, production included,
+// which is how stray tenants left behind in real projects get cleaned up.
+// -dry-run prints exactly what would be deleted without deleting anything:
 //
 //	source .env && go run ./tools/testcleanup -dry-run
+//	source .env && go run ./tools/testcleanup -all-projects -dry-run
 package main
 
 import (
@@ -40,6 +42,8 @@ type projectClientFn func(projectID string) (sdk.Management, error)
 
 func main() {
 	dryRun := flag.Bool("dry-run", false, "list what would be deleted without deleting anything")
+	allProjects := flag.Bool("all-projects", false,
+		"sweep tenants in every project, not just testacc- ones (reaches production)")
 	flag.Parse()
 
 	managementKey := os.Getenv("DESCOPE_MANAGEMENT_KEY")
@@ -144,7 +148,7 @@ func main() {
 		},
 	}
 
-	td, tf := cleanupTenants(ctx, mgmt, newProjectClient, *dryRun)
+	td, tf := cleanupTenants(ctx, mgmt, newProjectClient, *dryRun, *allProjects)
 	totalDeleted += td
 	totalFailed += tf
 
@@ -173,10 +177,14 @@ func main() {
 // acceptance test dies before its own cleanup, which is precisely the case the
 // prefix-matching passes above never saw.
 //
-// That breadth is also the risk: every project the management key can see is
-// in scope, production included, and the name prefix is the only guard. The
-// scanned projects are printed before any deletion, and dryRun reports what
-// would go without touching anything.
+// That breadth is also the risk, so it is not the default. Without allProjects
+// the sweep covers only testacc- projects, mirroring the other passes, and a
+// tenant that merely happens to be named testacc- inside a production project
+// is never touched. Reaching those strays — the case this pass exists for — is
+// an explicit operator choice, because there the name prefix is the only guard
+// standing between a cascade delete and real users. The scanned projects are
+// printed before any deletion, and dryRun reports what would go without
+// touching anything.
 //
 // Deletion passes cascade=true, which removes users and keys associated only
 // with the tenant being deleted. Anything shared with another tenant survives.
@@ -184,16 +192,35 @@ func main() {
 // Neither ListProjects nor Tenant().LoadAll paginates in go-sdk v1.32.0 — both
 // issue a single request and return the whole set, with no cursor on the
 // request or the response — so a single call sees every project and tenant.
-func cleanupTenants(ctx context.Context, mgmt sdk.Management, newProjectClient projectClientFn, dryRun bool) (deleted, failed int) {
-	projects, err := mgmt.Project().ListProjects(ctx)
+func cleanupTenants(ctx context.Context, mgmt sdk.Management, newProjectClient projectClientFn, dryRun, allProjects bool) (deleted, failed int) {
+	listed, err := mgmt.Project().ListProjects(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to list projects for tenant cleanup: %v\n", err)
 		return 0, 1
 	}
 
+	projects := listed
+	if !allProjects {
+		projects = nil
+		var skipped int
+		for _, p := range listed {
+			if strings.HasPrefix(p.Name, testPrefix) {
+				projects = append(projects, p)
+				continue
+			}
+			skipped++
+		}
+		if skipped > 0 {
+			fmt.Printf("skipping %d non-%s project(s); pass -all-projects to sweep strays there too\n", skipped, testPrefix)
+		}
+	}
+
 	names := make([]string, 0, len(projects))
 	for _, p := range projects {
 		names = append(names, p.Name)
+	}
+	if allProjects {
+		fmt.Printf("-all-projects: EVERY project is in scope, production included\n")
 	}
 	fmt.Printf("scanning %d project(s) for %s tenants: %s\n", len(projects), testPrefix, strings.Join(names, ", "))
 

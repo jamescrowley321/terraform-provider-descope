@@ -62,7 +62,7 @@ func TestCleanupTenantsDeletesOnlyPrefixedTenantsAcrossEveryProject(t *testing.T
 		"P-empty": {},
 	})
 
-	deleted, failed := cleanupTenants(context.Background(), company, factory, false)
+	deleted, failed := cleanupTenants(context.Background(), company, factory, false, true)
 
 	require.Equal(t, 2, deleted)
 	require.Equal(t, 0, failed)
@@ -80,7 +80,7 @@ func TestCleanupTenantsDryRunDeletesNothing(t *testing.T) {
 		},
 	})
 
-	deleted, failed := cleanupTenants(context.Background(), company, factory, true)
+	deleted, failed := cleanupTenants(context.Background(), company, factory, true, true)
 
 	require.Equal(t, 1, deleted, "dry run still reports what it would delete")
 	require.Equal(t, 0, failed)
@@ -125,7 +125,7 @@ func TestCleanupTenantsCountsPerProjectFailuresWithoutAbandoningTheSweep(t *test
 		}
 	}
 
-	deleted, failed := cleanupTenants(context.Background(), company, factory, false)
+	deleted, failed := cleanupTenants(context.Background(), company, factory, false, true)
 
 	require.Equal(t, 1, deleted)
 	require.Equal(t, 3, failed)
@@ -142,7 +142,7 @@ func TestCleanupTenantsReportsOneFailureWhenProjectsCannotBeListed(t *testing.T)
 		return nil, nil
 	}
 
-	deleted, failed := cleanupTenants(context.Background(), company, factory, false)
+	deleted, failed := cleanupTenants(context.Background(), company, factory, false, true)
 
 	require.Equal(t, 0, deleted)
 	require.Equal(t, 1, failed)
@@ -160,4 +160,36 @@ func TestRunCleanupDryRunSkipsTheDeleteFunction(t *testing.T) {
 
 	require.Equal(t, len(listed), deleted)
 	require.Equal(t, 0, failed)
+}
+
+func TestCleanupTenantsSkipsNonTestaccProjectsUnlessAsked(t *testing.T) {
+	projects := map[string][]*descope.Tenant{
+		"identity-stack": {
+			{ID: "T-acme", Name: "Acme Corp"},
+			// A production tenant someone named carelessly. Only -all-projects
+			// may reach it; by default a name collision costs nothing.
+			{ID: "T-collision", Name: "testacc-demo"},
+		},
+		"testacc-project": {
+			{ID: "T-owned", Name: "testacc-TenantResource"},
+		},
+	}
+
+	company, factory, deletions := tenantFixture(t, projects)
+	deleted, failed := cleanupTenants(context.Background(), company, factory, false, false)
+
+	require.Equal(t, 1, deleted)
+	require.Equal(t, 0, failed)
+	require.Equal(t, []deletion{{projectID: "testacc-project", tenantID: "T-owned", cascade: true}}, *deletions,
+		"the default sweep must not reach into a project that is not itself testacc-")
+
+	company, factory, deletions = tenantFixture(t, projects)
+	deleted, failed = cleanupTenants(context.Background(), company, factory, false, true)
+
+	require.Equal(t, 2, deleted)
+	require.Equal(t, 0, failed)
+	require.ElementsMatch(t, []deletion{
+		{projectID: "identity-stack", tenantID: "T-collision", cascade: true},
+		{projectID: "testacc-project", tenantID: "T-owned", cascade: true},
+	}, *deletions, "-all-projects is what reaches strays in real projects")
 }
