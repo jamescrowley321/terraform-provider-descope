@@ -1,13 +1,22 @@
 // Command testcleanup deletes all Descope test resources whose names start with "testacc-".
 //
-// It cleans up projects, tenants, access keys, management keys, and descopers.
+// Passes run in this order: tenants first (cascade deletion there removes keys
+// bound only to the tenant, shrinking the access-key pass), then access keys,
+// management keys, descopers, and projects.
 //
 // It requires DESCOPE_MANAGEMENT_KEY and DESCOPE_BASE_URL environment variables.
 // Usage: source .env && go run ./tools/testcleanup
+//
+// The tenant pass reaches inside every project the management key can see,
+// including production ones, so -dry-run prints exactly what would be deleted
+// without deleting anything:
+//
+//	source .env && go run ./tools/testcleanup -dry-run
 package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -24,7 +33,15 @@ type resource struct {
 	id   string
 }
 
+// projectClientFn binds a management client to a single project. Tenant
+// operations resolve against whichever project the client carries, so the
+// company-scoped client the other passes share cannot reach them.
+type projectClientFn func(projectID string) (sdk.Management, error)
+
 func main() {
+	dryRun := flag.Bool("dry-run", false, "list what would be deleted without deleting anything")
+	flag.Parse()
+
 	managementKey := os.Getenv("DESCOPE_MANAGEMENT_KEY")
 	baseURL := os.Getenv("DESCOPE_BASE_URL")
 
@@ -43,6 +60,22 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create client: %v\n", err)
 		os.Exit(1)
+	}
+
+	newProjectClient := func(projectID string) (sdk.Management, error) {
+		projectClient, err := descopeclient.NewWithConfig(&descopeclient.Config{
+			ManagementKey:  managementKey,
+			DescopeBaseURL: baseURL,
+			ProjectID:      projectID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return projectClient.Management, nil
+	}
+
+	if *dryRun {
+		fmt.Println("dry run: nothing will be deleted")
 	}
 
 	mgmt := client.Management
@@ -102,34 +135,30 @@ func main() {
 				return collectResources(projects, func(p *descope.Project) (string, string) { return p.Name, p.ID }), nil
 			},
 			delFn: func(r resource) error {
-				projectClient, err := descopeclient.NewWithConfig(&descopeclient.Config{
-					ManagementKey:  managementKey,
-					DescopeBaseURL: baseURL,
-					ProjectID:      r.id,
-				})
+				projectMgmt, err := newProjectClient(r.id)
 				if err != nil {
 					return err
 				}
-				return projectClient.Management.Project().Delete(ctx)
+				return projectMgmt.Project().Delete(ctx)
 			},
 		},
 	}
 
-	// Tenants are project-scoped, so they need a client per project rather than
-	// the company-scoped one the table-driven cleanups share. Run them first:
-	// deleting a tenant with cascade also removes the access keys bound only to
-	// it, which shrinks the work the access-key pass has to do.
-	td, tf := cleanupTenants(ctx, managementKey, baseURL, mgmt)
+	td, tf := cleanupTenants(ctx, mgmt, newProjectClient, *dryRun)
 	totalDeleted += td
 	totalFailed += tf
 
 	for _, c := range cleanups {
-		d, f := runCleanup(c.name, c.listFn, c.delFn)
+		d, f := runCleanup(c.name, c.listFn, c.delFn, *dryRun)
 		totalDeleted += d
 		totalFailed += f
 	}
 
-	fmt.Printf("\ntotal: %d deleted, %d failed\n", totalDeleted, totalFailed)
+	verb := "deleted"
+	if *dryRun {
+		verb = "would delete"
+	}
+	fmt.Printf("\ntotal: %d %s, %d failed\n", totalDeleted, verb, totalFailed)
 	if totalFailed > 0 {
 		os.Exit(1)
 	}
@@ -144,28 +173,39 @@ func main() {
 // acceptance test dies before its own cleanup, which is precisely the case the
 // prefix-matching passes above never saw.
 //
+// That breadth is also the risk: every project the management key can see is
+// in scope, production included, and the name prefix is the only guard. The
+// scanned projects are printed before any deletion, and dryRun reports what
+// would go without touching anything.
+//
 // Deletion passes cascade=true, which removes users and keys associated only
 // with the tenant being deleted. Anything shared with another tenant survives.
-func cleanupTenants(ctx context.Context, managementKey, baseURL string, mgmt sdk.Management) (deleted, failed int) {
+//
+// Neither ListProjects nor Tenant().LoadAll paginates in go-sdk v1.32.0 — both
+// issue a single request and return the whole set, with no cursor on the
+// request or the response — so a single call sees every project and tenant.
+func cleanupTenants(ctx context.Context, mgmt sdk.Management, newProjectClient projectClientFn, dryRun bool) (deleted, failed int) {
 	projects, err := mgmt.Project().ListProjects(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to list projects for tenant cleanup: %v\n", err)
 		return 0, 1
 	}
 
+	names := make([]string, 0, len(projects))
 	for _, p := range projects {
-		projectClient, err := descopeclient.NewWithConfig(&descopeclient.Config{
-			ManagementKey:  managementKey,
-			DescopeBaseURL: baseURL,
-			ProjectID:      p.ID,
-		})
+		names = append(names, p.Name)
+	}
+	fmt.Printf("scanning %d project(s) for %s tenants: %s\n", len(projects), testPrefix, strings.Join(names, ", "))
+
+	for _, p := range projects {
+		projectMgmt, err := newProjectClient(p.ID)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to create client for project %s: %v\n", p.Name, err)
 			failed++
 			continue
 		}
 
-		tenants, err := projectClient.Management.Tenant().LoadAll(ctx)
+		tenants, err := projectMgmt.Tenant().LoadAll(ctx)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to list tenants in project %s: %v\n", p.Name, err)
 			failed++
@@ -176,8 +216,13 @@ func cleanupTenants(ctx context.Context, managementKey, baseURL string, mgmt sdk
 			if !strings.HasPrefix(t.Name, testPrefix) {
 				continue
 			}
+			if dryRun {
+				fmt.Printf("would delete tenant %s (%s) in project %s\n", t.Name, t.ID, p.Name)
+				deleted++
+				continue
+			}
 			fmt.Printf("deleting tenant %s (%s) in project %s...\n", t.Name, t.ID, p.Name)
-			if err := projectClient.Management.Tenant().Delete(ctx, t.ID, true); err != nil {
+			if err := projectMgmt.Tenant().Delete(ctx, t.ID, true); err != nil {
 				fmt.Fprintf(os.Stderr, "  failed: %v\n", err)
 				failed++
 				continue
@@ -187,7 +232,7 @@ func cleanupTenants(ctx context.Context, managementKey, baseURL string, mgmt sdk
 	}
 
 	if deleted > 0 || failed > 0 {
-		fmt.Printf("tenants: %d deleted, %d failed\n", deleted, failed)
+		fmt.Printf("tenants: %d %s, %d failed\n", deleted, deletedVerb(dryRun), failed)
 	}
 	return
 }
@@ -203,7 +248,7 @@ func collectResources[T any](items []T, extract func(T) (name, id string)) []res
 	return result
 }
 
-func runCleanup(typeName string, listFn func() ([]resource, error), delFn func(resource) error) (deleted, failed int) {
+func runCleanup(typeName string, listFn func() ([]resource, error), delFn func(resource) error, dryRun bool) (deleted, failed int) {
 	resources, err := listFn()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to list %ss: %v\n", typeName, err)
@@ -211,6 +256,11 @@ func runCleanup(typeName string, listFn func() ([]resource, error), delFn func(r
 	}
 
 	for _, r := range resources {
+		if dryRun {
+			fmt.Printf("would delete %s %s (%s)\n", typeName, r.name, r.id)
+			deleted++
+			continue
+		}
 		fmt.Printf("deleting %s %s (%s)...\n", typeName, r.name, r.id)
 		if err := delFn(r); err != nil {
 			fmt.Fprintf(os.Stderr, "  failed: %v\n", err)
@@ -221,7 +271,14 @@ func runCleanup(typeName string, listFn func() ([]resource, error), delFn func(r
 	}
 
 	if deleted > 0 || failed > 0 {
-		fmt.Printf("%ss: %d deleted, %d failed\n", typeName, deleted, failed)
+		fmt.Printf("%ss: %d %s, %d failed\n", typeName, deleted, deletedVerb(dryRun), failed)
 	}
 	return
+}
+
+func deletedVerb(dryRun bool) string {
+	if dryRun {
+		return "would delete"
+	}
+	return "deleted"
 }
