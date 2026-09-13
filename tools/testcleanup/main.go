@@ -1,6 +1,6 @@
 // Command testcleanup deletes all Descope test resources whose names start with "testacc-".
 //
-// It cleans up projects, access keys, management keys, and descopers.
+// It cleans up projects, tenants, access keys, management keys, and descopers.
 //
 // It requires DESCOPE_MANAGEMENT_KEY and DESCOPE_BASE_URL environment variables.
 // Usage: source .env && go run ./tools/testcleanup
@@ -14,6 +14,7 @@ import (
 
 	"github.com/descope/go-sdk/descope"
 	descopeclient "github.com/descope/go-sdk/descope/client"
+	"github.com/descope/go-sdk/descope/sdk"
 )
 
 const testPrefix = "testacc-"
@@ -114,6 +115,14 @@ func main() {
 		},
 	}
 
+	// Tenants are project-scoped, so they need a client per project rather than
+	// the company-scoped one the table-driven cleanups share. Run them first:
+	// deleting a tenant with cascade also removes the access keys bound only to
+	// it, which shrinks the work the access-key pass has to do.
+	td, tf := cleanupTenants(ctx, managementKey, baseURL, mgmt)
+	totalDeleted += td
+	totalFailed += tf
+
 	for _, c := range cleanups {
 		d, f := runCleanup(c.name, c.listFn, c.delFn)
 		totalDeleted += d
@@ -124,6 +133,63 @@ func main() {
 	if totalFailed > 0 {
 		os.Exit(1)
 	}
+}
+
+// cleanupTenants deletes testacc- tenants from every project.
+//
+// Tenants cannot be reached through the company-scoped client the other
+// cleanups use — tenant operations resolve against whichever project the
+// client is bound to — so this lists projects and rebinds a client to each one
+// in turn. Stray testacc- tenants accumulate inside *real* projects when an
+// acceptance test dies before its own cleanup, which is precisely the case the
+// prefix-matching passes above never saw.
+//
+// Deletion passes cascade=true, which removes users and keys associated only
+// with the tenant being deleted. Anything shared with another tenant survives.
+func cleanupTenants(ctx context.Context, managementKey, baseURL string, mgmt sdk.Management) (deleted, failed int) {
+	projects, err := mgmt.Project().ListProjects(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to list projects for tenant cleanup: %v\n", err)
+		return 0, 1
+	}
+
+	for _, p := range projects {
+		projectClient, err := descopeclient.NewWithConfig(&descopeclient.Config{
+			ManagementKey:  managementKey,
+			DescopeBaseURL: baseURL,
+			ProjectID:      p.ID,
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to create client for project %s: %v\n", p.Name, err)
+			failed++
+			continue
+		}
+
+		tenants, err := projectClient.Management.Tenant().LoadAll(ctx)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to list tenants in project %s: %v\n", p.Name, err)
+			failed++
+			continue
+		}
+
+		for _, t := range tenants {
+			if !strings.HasPrefix(t.Name, testPrefix) {
+				continue
+			}
+			fmt.Printf("deleting tenant %s (%s) in project %s...\n", t.Name, t.ID, p.Name)
+			if err := projectClient.Management.Tenant().Delete(ctx, t.ID, true); err != nil {
+				fmt.Fprintf(os.Stderr, "  failed: %v\n", err)
+				failed++
+				continue
+			}
+			deleted++
+		}
+	}
+
+	if deleted > 0 || failed > 0 {
+		fmt.Printf("tenants: %d deleted, %d failed\n", deleted, failed)
+	}
+	return
 }
 
 func collectResources[T any](items []T, extract func(T) (name, id string)) []resource {
