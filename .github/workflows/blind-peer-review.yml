@@ -1,27 +1,44 @@
-# Blind Peer Review — fresh-context, diff-only AI PR review that fails the merge
-# on real defects. https://github.com/jamescrowley321/blind-peer-review
+# Blind Peer Review — fresh-context, diff-only AI PR review. ON DEMAND ONLY.
+# https://github.com/jamescrowley321/blind-peer-review
 #
-# Setup: add repo secret OPENROUTER_API_KEY; then require the "Merge Gate" check
-# in branch protection. Toggle lenses in the ENABLED list below (one source of
-# truth for the matrix + gate). Action pinned to a commit SHA (v1.6.0).
+# This does NOT run automatically on pull requests, and "Merge Gate" is NOT a
+# required check. Routine review happens locally, before the push, running the
+# same lens library as isolated Claude Code subagents:
+#
+#     /plugin marketplace add jamescrowley321/blind-peer-review
+#     /plugin install blind-peer-review
+#     /blind-peer-review:check     # reviews the working diff against origin/main
+#
+# This workflow stays for the times a cloud second opinion is wanted on an open
+# PR: run it from the Actions tab with the PR number.
+#
+# Why it is not automatic: the action posts a GitHub review per lens on every
+# run, and a lens with zero findings still posts one — it anchors a synthetic
+# "See the review summary." inline comment on the first changed line (v3.0.0
+# action.yml, the `if (!comments.length)` fallback). There is no input that
+# suppresses posting, so six lenses times every push put review comments on
+# every PR regardless of whether anything was found. Nothing gated on them:
+# "Merge Gate" was never added to branch protection in this repo.
+#
+# Setup: repo secret OPENROUTER_API_KEY. Toggle lenses in the ENABLED list below
+# (one source of truth for the matrix + gate). Action pinned to a SHA (v3.0.0).
 
 name: Blind Peer Review
 
-# Security model: this is a `pull_request` (NOT pull_request_target) workflow, so
-# it never runs with secrets for fork PRs — GitHub withholds all secrets and makes
-# GITHUB_TOKEN read-only for forks. A forked PR that edits this file therefore
-# cannot read OPENROUTER_API_KEY or forge a check run. Combined with the owner-only
-# guard on `preflight` below, the secret-bearing lens jobs run only for the owner's
-# own PRs; everyone else fails closed at the gate.
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Number of the open PR to review'
+        required: true
+        type: string
 
+# Keyed on the PR, not github.ref: a dispatch always runs on a branch ref (main,
+# normally), so keying on the ref would make two reviews of two different PRs
+# cancel each other.
 concurrency:
-  group: blind-peer-review-${{ github.ref }}
+  group: blind-peer-review-${{ inputs.pr_number }}
   cancel-in-progress: true
-
 permissions:
   contents: read
   pull-requests: write
@@ -65,10 +82,11 @@ jobs:
     name: Preflight
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Auto-review runs ONLY for PRs authored by the repo owner. Collaborators,
-    # outside contributors, forks, and bots skip the paid lenses; the gate then
-    # fails closed (below), so those PRs require manual owner review + merge.
-    if: github.event.pull_request.author_association == 'OWNER'
+    # No owner/fork guard is needed any more: workflow_dispatch requires write
+    # access on this repo, so a fork, an outside contributor or a bot cannot
+    # start this workflow at all. The old guard read
+    # github.event.pull_request.author_association, which is empty on a dispatch
+    # — it would evaluate false and skip every lens.
     permissions:
       checks: read
       contents: read
@@ -79,6 +97,7 @@ jobs:
         with:
           mode: preflight
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          pr_number: ${{ inputs.pr_number }}
           # One check name per line — v3.0.0 stopped splitting this input on
           # commas, because a check name may legally contain one. The old comma
           # form parses as a SINGLE check literally named
@@ -106,6 +125,7 @@ jobs:
           mode: lens
           lens: ${{ matrix.lens }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          pr_number: ${{ inputs.pr_number }}
           api_key: ${{ secrets.OPENROUTER_API_KEY }}
           model: anthropic/claude-sonnet-5
           models_config: |
@@ -141,7 +161,7 @@ jobs:
       - name: Fail closed when review did not complete
         if: needs.review.result != 'success'
         run: |
-          echo "::error::Blind peer review did not complete (non-owner PR, or a lens failed: review=${{ needs.review.result }}). Only owner PRs are auto-reviewed; others require manual owner review + merge. The Merge Gate fails closed."
+          echo "::error::Blind peer review did not complete (review=${{ needs.review.result }}): preflight failed, or one or more lenses crashed. Nothing was adjudicated — re-run the dispatch, or review locally with /blind-peer-review:check."
           exit 1
       - name: Adjudicate lenses
         if: needs.review.result == 'success'
@@ -150,3 +170,4 @@ jobs:
           mode: gate
           lenses: ${{ needs.config.outputs.matrix }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          pr_number: ${{ inputs.pr_number }}
