@@ -95,6 +95,42 @@ Contributions that use AI tools (GitHub Copilot, Claude, ChatGPT, Cursor, etc.) 
 - **Human review is required** — All PRs require at least one human reviewer approval before merge.
 - **You are responsible** — The submitter is accountable for the correctness, security, and quality of the code, regardless of whether it was AI-generated.
 
+### Requesting a review from Claude
+
+Comment `@claude review this PR` on a pull request and Claude runs the
+[blind-peer-review](https://github.com/jamescrowley321/blind-peer-review) lenses
+against the diff — one fresh reviewer per lens (Cold Read, Edge Cases, Acceptance
+Criteria, Security Review, Red Team), adjudicated fail-closed into a PASS/BLOCK
+verdict. It is the same lens library the maintainers run locally, so CI and the
+laptop do not drift apart.
+
+It runs **only when asked**. There is no automatic review on every pull request;
+#215 removed that deliberately.
+
+**Only maintainers can trigger it.** The workflow runs with repository secrets on
+a public repo, so the job's `if:` requires the commenter's `author_association`
+to be `OWNER`, `MEMBER` or `COLLABORATOR`. GitHub evaluates that before
+scheduling anything, so a mention from anyone else never starts a job at all — it
+is not merely rejected after the fact. GitHub offers no "approve this run" prompt
+for comment-triggered workflows the way it does for pull requests from forks, so
+ask a maintainer to comment `@claude review this PR` on your pull request — a
+maintainer asking is the approval.
+
+**The verdict is advice, not approval.** Two limitations, stated plainly because
+a clean PASS is exactly when they matter most:
+
+- The lenses run as subagents of one session. Each starts from a clean context,
+  but they share a process, a model and a host — weaker than the upstream CI
+  adapter, which runs one job per lens. Upstream measured that batching lenses
+  into a single agent's context turned a MUST FIX finding into a clean PASS.
+- Claude reviews code that Claude often helped write, so the reviewer shares the
+  author's blind spots. Every run prints this caveat; leave it in the posted
+  findings rather than trimming it.
+
+**Human review is required** regardless, per the rule above: every PR needs at
+least one human reviewer's approval before merge. A lens verdict does not count
+as that approval and is not a required check.
+
 ### What We Look For
 
 - Code follows the existing architecture patterns (see `internal/README.md`)
