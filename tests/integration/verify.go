@@ -87,7 +87,18 @@ func LoadThirdPartyAppViaSDK(t *testing.T, id string) *descope.ThirdPartyApplica
 // LoadFGASchemaViaSDK loads the FGA schema directly from the Descope API.
 func LoadFGASchemaViaSDK(t *testing.T) *descope.FGASchema {
 	t.Helper()
-	client := newProjectSDKClient(t)
+	return loadFGASchema(t, newProjectSDKClient(t))
+}
+
+// LoadFGASchemaViaSDKInProject loads the FGA schema of a specific project,
+// rather than the one named by DESCOPE_PROJECT_ID.
+func LoadFGASchemaViaSDKInProject(t *testing.T, projectID string) *descope.FGASchema {
+	t.Helper()
+	return loadFGASchema(t, newSDKClientWithProject(t, projectID))
+}
+
+func loadFGASchema(t *testing.T, client *descopeclient.DescopeClient) *descope.FGASchema {
+	t.Helper()
 	schema, err := client.Management.FGA().LoadSchema(context.Background())
 	require.NoError(t, err, "loading FGA schema via SDK")
 	return schema
