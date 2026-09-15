@@ -89,6 +89,30 @@ func NewHarness(t *testing.T) *Harness {
 	return h
 }
 
+// NewHarnessInProject builds a harness whose terraform runs target the given
+// project instead of the shared DESCOPE_PROJECT_ID. Use it for resources that
+// are project-level singletons, where applying a fixture replaces the project's
+// existing configuration rather than adding to it.
+func NewHarnessInProject(t *testing.T, projectID string) *Harness {
+	t.Helper()
+	require.NotEmpty(t, projectID, "projectID must not be empty")
+
+	h := NewHarness(t)
+
+	// Drop any inherited DESCOPE_PROJECT_ID rather than relying on a later
+	// duplicate winning, so the override holds regardless of how exec resolves
+	// repeated keys.
+	filtered := h.env[:0:0]
+	for _, kv := range h.env {
+		if !strings.HasPrefix(kv, "DESCOPE_PROJECT_ID=") {
+			filtered = append(filtered, kv)
+		}
+	}
+	h.env = append(filtered, "DESCOPE_PROJECT_ID="+projectID)
+
+	return h
+}
+
 // LoadFixture copies a fixture from testdata/<path> to main.tf in the workspace,
 // replacing any previous fixture.
 func (h *Harness) LoadFixture(path string) {
