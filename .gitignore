@@ -46,3 +46,6 @@ website/vendor
 
 # Ralph orchestrator runtime state
 .ralph/
+
+# Pinned checkout of the blind-peer-review plugin (see .github/workflows/claude.yml)
+.review-plugin/
