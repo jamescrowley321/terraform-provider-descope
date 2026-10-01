@@ -36,7 +36,7 @@ make lint          # Run linting and security checks
    ```bash
    git checkout -b feat/my-feature main
    ```
-3. **Make your changes** — Follow the architecture patterns described in `internal/README.md`.
+3. **Make your changes** — Follow the architecture patterns described in `CLAUDE.md` and the relevant package’s `CLAUDE.md`.
 4. **Test** — Add or update unit tests and acceptance tests. All tests must pass.
 5. **Lint** — Run `make lint` before committing.
 6. **Commit** — Use [Conventional Commits](https://www.conventionalcommits.org/) (see below).
@@ -133,7 +133,7 @@ as that approval and is not a required check.
 
 ### What We Look For
 
-- Code follows the existing architecture patterns (see `internal/README.md`)
+- Code follows the existing architecture patterns (see `CLAUDE.md` and the relevant package’s `CLAUDE.md`)
 - No hallucinated APIs or invented SDK methods — verify against the [Descope Go SDK](https://github.com/descope/go-sdk)
 - Tests actually run and cover the new functionality
 - Documentation is accurate and complete
@@ -143,14 +143,14 @@ as that approval and is not a required check.
 When adding a new Terraform resource (e.g., `descope_tenant`), follow this checklist:
 
 1. [ ] Define the model in `internal/models/` following the existing patterns
-2. [ ] Implement the entity in `internal/entities/`
+2. [ ] Add dedicated CRUD operations in `internal/infra/` and wire the model through the shared handler
 3. [ ] Add the resource to the provider in `internal/resources/`
 4. [ ] Add unit tests
 5. [ ] Add acceptance tests
 6. [ ] Generate documentation with `make docs`
 7. [ ] Update the resource table in `README.md`
 
-See `internal/README.md` for detailed architecture documentation.
+See `CLAUDE.md` and the relevant package’s `CLAUDE.md` for detailed architecture documentation.
 
 ## Code of Conduct
 

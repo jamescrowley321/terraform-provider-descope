@@ -4,6 +4,9 @@ import (
 	"context"
 	"os"
 
+	"github.com/descope/terraform-provider-descope/internal/datasources"
+	"github.com/descope/terraform-provider-descope/internal/infra"
+	"github.com/descope/terraform-provider-descope/internal/resources"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -11,9 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/datasources"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/infra"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/resources"
 )
 
 var (
@@ -49,8 +49,7 @@ func (p *descopeProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
 				Optional:           true,
-				Description:        "The Descope project ID. Fallback for resources like descope_access_key that need a project ID without a descope_project resource. Can also be set via DESCOPE_PROJECT_ID.",
-				DeprecationMessage: "Set project_id at the resource level (or via the descope_project resource/data source) rather than on the provider block. The provider-level field will be removed in a future major version.",
+				DeprecationMessage: "The project_id attribute in the 'descope' provider block is no longer required and can be safely removed",
 			},
 			"management_key": schema.StringAttribute{
 				Optional:    true,
@@ -84,9 +83,8 @@ func (p *descopeProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	projectID := os.Getenv("DESCOPE_PROJECT_ID")
-	if !config.ProjectID.IsNull() {
-		projectID = config.ProjectID.ValueString()
+	if v := os.Getenv("DESCOPE_PROJECT_ID"); v != "" {
+		resp.Diagnostics.AddWarning("Redundant Descope Project ID", "The Descope provider no longer requires the DESCOPE_PROJECT_ID environment variable to be set and the value '"+v+"' will be ignored")
 	}
 
 	managementKey := os.Getenv("DESCOPE_MANAGEMENT_KEY")
@@ -106,43 +104,62 @@ func (p *descopeProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	providerData, err := infra.NewProviderData(p.version, managementKey, baseURL, projectID)
-	if err != nil {
-		resp.Diagnostics.AddError("Error creating Descope client", err.Error())
-		return
-	}
-	resp.DataSourceData = providerData
-	resp.ResourceData = providerData
+	client := infra.NewClient(p.version, managementKey, baseURL)
+	resp.DataSourceData = client
+	resp.ResourceData = client
 
 	tflog.Info(ctx, "Configured Descope provider")
 }
 
 func (p *descopeProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{
-		datasources.NewProjectDataSource,
-		datasources.NewPasswordSettingsDataSource,
-		datasources.NewProjectExportDataSource,
-		datasources.NewFGACheckDataSource,
-	}
+	return []func() datasource.DataSource{datasources.NewProjectDataSource, datasources.NewPasswordSettingsDataSource, datasources.NewProjectExportDataSource, datasources.NewFGACheckDataSource}
 }
 
 func (p *descopeProvider) Resources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{
+	list := []func() resource.Resource{
 		resources.NewProjectResource,
+		resources.NewTenantResource,
+		resources.NewSSOResource,
 		resources.NewDescoperResource,
 		resources.NewManagementKeyResource,
 		resources.NewAccessKeyResource,
-		resources.NewTenantResource,
 		resources.NewInboundAppResource,
+		resources.NewEngineResource,
+		resources.NewOAuthSettingsResource,
+		resources.NewOAuthProviderResource,
+		resources.NewEmailTemplateResource,
+		resources.NewTextTemplateResource,
+		resources.NewVoiceTemplateResource,
+		resources.NewUserAttributeResource,
+		resources.NewTenantAttributeResource,
+		resources.NewAccessKeyAttributeResource,
+		resources.NewPasskeySettingsResource,
+		resources.NewTOTPSettingsResource,
+		resources.NewAdminPortalResource,
+		resources.NewMagicLinkSettingsResource,
+		resources.NewInviteSettingsResource,
+		resources.NewProjectSettingsResource,
+		resources.NewSessionSettingsResource,
+		resources.NewSessionMigrationResource,
+		resources.NewOTPSettingsResource,
+		resources.NewEnchantedLinkSettingsResource,
+		resources.NewEmbeddedLinkSettingsResource,
 		resources.NewPasswordSettingsResource,
-		resources.NewPermissionResource,
+		resources.NewSSOSettingsResource,
 		resources.NewRoleResource,
-		resources.NewSSOResource,
+		resources.NewPermissionResource,
+		resources.NewOIDCAppResource,
+		resources.NewSAMLAppResource,
+		resources.NewWSFedAppResource,
 		resources.NewOutboundAppResource,
-		resources.NewSSOApplicationResource,
-		resources.NewThirdPartyAppResource,
+		resources.NewAppRoleResource,
+		resources.NewAppPermissionResource,
 		resources.NewFGASchemaResource,
 		resources.NewListResource,
-		resources.NewEngineResource,
+		resources.NewJWTTemplateResource,
+		resources.NewFlowResource,
+		resources.NewStylesResource,
+		resources.NewWidgetResource,
 	}
+	return append(list, resources.ConnectorResources()...)
 }

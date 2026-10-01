@@ -24,7 +24,7 @@ description: |-
 
 - `bound_user_id` (String) The ID of a user to bind this access key to. When the key is exchanged for a session JWT, the session acts on behalf of the bound user. Changing this value after creation will require the access key to be replaced.
 - `custom_attributes` (String) A JSON-encoded object of custom attribute values for the access key. The attributes must be defined in the project's access key custom attribute schema.
-- `custom_claims` (String) A JSON-encoded object of custom claims to add to the JWT created when the access key is exchanged.
+- `custom_claims` (String) A JSON-encoded object of custom claims to add to the JWT created when the access key is exchanged. Use `jsonencode({ ... })`; use `jsonencode({})` to remove all claims. Reads refresh API changes and preserve formatting when the JSON content is equivalent.
 - `description` (String) A description for the access key.
 - `expire_time` (Number) The expiration time of the access key as a Unix timestamp. If not set, the key will not expire. Changing this value after creation will require the access key to be replaced.
 - `permitted_ips` (List of String) A list of IP addresses or CIDR ranges that are allowed to use this access key. If not set, the key can be used from any IP address.

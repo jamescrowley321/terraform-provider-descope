@@ -1,0 +1,32 @@
+---
+page_title: "descope_project Data Source - descope"
+subcategory: ""
+description: |-
+  Reads a Descope project's configuration.
+---
+
+# descope_project (Data Source)
+
+Reads the full configuration of a Descope project, including authentication methods, roles, permissions, connectors, flows, and more.
+
+This data source is useful for referencing an existing project's settings without managing them, or for exporting configuration details for use in other resources or modules.
+
+## Example Usage
+
+```hcl
+data "descope_project" "current" {
+  id = "P2abc123def456"
+}
+
+output "project_name" {
+  value = data.descope_project.current.name
+}
+
+output "project_environment" {
+  value = data.descope_project.current.environment
+}
+```
+
+## Schema
+
+{{ .SchemaMarkdown | trimspace }}

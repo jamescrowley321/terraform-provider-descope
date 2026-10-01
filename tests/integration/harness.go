@@ -75,6 +75,7 @@ func NewHarness(t *testing.T) *Harness {
 
 	// Copy shared provider configuration
 	h.copyTestdata("provider.tf", "provider.tf")
+	h.env = append(h.env, "TF_VAR_project_id="+os.Getenv("DESCOPE_PROJECT_ID"))
 
 	// Best-effort cleanup: destroy any remaining resources when the test ends
 	t.Cleanup(func() {
@@ -104,11 +105,11 @@ func NewHarnessInProject(t *testing.T, projectID string) *Harness {
 	// repeated keys.
 	filtered := h.env[:0:0]
 	for _, kv := range h.env {
-		if !strings.HasPrefix(kv, "DESCOPE_PROJECT_ID=") {
+		if !strings.HasPrefix(kv, "DESCOPE_PROJECT_ID=") && !strings.HasPrefix(kv, "TF_VAR_project_id=") {
 			filtered = append(filtered, kv)
 		}
 	}
-	h.env = append(filtered, "DESCOPE_PROJECT_ID="+projectID)
+	h.env = append(filtered, "DESCOPE_PROJECT_ID="+projectID, "TF_VAR_project_id="+projectID)
 
 	return h
 }

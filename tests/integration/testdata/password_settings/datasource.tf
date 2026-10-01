@@ -1,18 +1,14 @@
-resource "descope_password_settings" "test" {
-  enabled          = true
-  min_length       = 12
-  lowercase        = true
-  uppercase        = true
-  number           = true
-  non_alphanumeric = true
-  expiration       = true
-  expiration_weeks = 26
-  reuse            = true
-  reuse_amount     = 5
-  lock             = true
-  lock_attempts    = 5
+variable "name" { type = string }
+resource "descope_project" "test" {
+  name                = var.name
+  deletion_protection = false
 }
-
+resource "descope_password_settings" "test" {
+  project_id       = descope_project.test.id
+  min_length       = 10
+  non_alphanumeric = false
+}
 data "descope_password_settings" "test" {
+  project_id = descope_project.test.id
   depends_on = [descope_password_settings.test]
 }
