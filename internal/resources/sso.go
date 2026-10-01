@@ -266,6 +266,11 @@ func (r *ssoResource) refreshModel(ctx context.Context, model *sso.Model, tenant
 	model.TenantID = types.StringValue(tenantID)
 	model.SSOID = types.StringValue(result.SSOID)
 	model.ID = types.StringValue(ssoCompositeID(tenantID, result.SSOID))
+	if result.Tenant != nil {
+		domains, domainDiags := types.SetValueFrom(ctx, types.StringType, append([]string{}, result.Tenant.Domains...))
+		diags.Append(domainDiags...)
+		model.Domains.SetValue = domains
+	}
 
 	// Determine if this is an import (no type blocks set yet)
 	isImport := model.OIDC == nil && model.SAML == nil && model.SAMLMetadata == nil

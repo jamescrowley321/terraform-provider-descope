@@ -82,7 +82,10 @@ func ssoAppCreate(kind string, read readFunc) createFunc {
 		}
 		id, _ := body["id"].(string)
 		entity, err := read(ctx, c, projectID, id)
-		return id, entity, err
+		if err != nil {
+			return id, entity, &partialCreateError{cause: err}
+		}
+		return id, entity, nil
 	}
 }
 

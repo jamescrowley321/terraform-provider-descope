@@ -1646,7 +1646,10 @@ var docsProvider = map[string]string{
 	"user_info_endpoint":     "The URL where the application retrieves user information from the OAuth provider.",
 	"jwks_endpoint":          "The URL where the application can retrieve JSON Web Key Sets (JWKS) for the OAuth provider.",
 	"use_client_assertion":   "Use private key JWT (client assertion) instead of client secret.",
-	"claim_mapping":          "Maps OAuth provider claims to Descope user attributes.",
+	"claim_mapping": "Maps OAuth provider claims to Descope user attributes. Omitted or null entries inherit " +
+		"Descope's standard claim defaults. Imports omit these inherited defaults and include " +
+		"`loginId` when custom mappings require it. Setting an empty map restores the default " +
+		"mapping. Refresh detects changes to explicit mappings and custom attributes.",
 }
 
 var docsAppleKeyGeneratorModel = map[string]string{

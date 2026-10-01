@@ -141,3 +141,8 @@ func newConnectorResource[T any, M helpers.ResourceModel[T]](name, wireType stri
 		})
 	}
 }
+
+type partialCreateError struct{ cause error }
+
+func (e *partialCreateError) Error() string { return e.cause.Error() }
+func (e *partialCreateError) Unwrap() error { return e.cause }

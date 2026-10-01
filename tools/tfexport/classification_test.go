@@ -22,10 +22,7 @@ var publicByDesign = map[string]bool{
 }
 
 // knownMisclassified carry real secret material but are not marked sensitive - each entry is an open bug that must go once its template is fixed.
-var knownMisclassified = map[string]string{
-	"descope_eight_by_eight_viber_connector.api_key":    "8x8 api keys are bearer credentials",
-	"descope_eight_by_eight_whatsapp_connector.api_key": "8x8 api keys are bearer credentials",
-}
+var knownMisclassified = map[string]string{}
 
 func TestSecretClassification(t *testing.T) {
 	ctx := context.Background()

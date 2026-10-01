@@ -228,6 +228,9 @@ func (c *Connector) Prepare() {
 	c.expandSecretObjectFields()
 
 	for _, f := range c.Fields {
+		if (c.ID == "eight-by-eight-viber" || c.ID == "eight-by-eight-whatsapp") && f.Name == "apiKey" {
+			f.Type = FieldTypeSecret
+		}
 		// treat these types as regular string fields for now
 		if f.Type == "readonly-string" {
 			f.Type = FieldTypeString

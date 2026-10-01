@@ -47,9 +47,7 @@ func SetModelFromTenant(model *TenantModel, t *descope.Tenant) {
 		model.AuthType = types.StringValue("")
 	}
 
-	if len(t.CustomAttributes) > 0 {
-		model.CustomAttributes = strmapattr.Value(convert.AnyMapToStringMap(t.CustomAttributes))
-	}
+	model.CustomAttributes = strmapattr.Value(convert.AnyMapToStringMap(t.CustomAttributes))
 }
 
 // ModelToSettings converts the SettingsModel to an SDK TenantSettings.
@@ -77,7 +75,7 @@ func ModelToSettings(ctx context.Context, model *TenantModel, diags *diag.Diagno
 
 // RefreshModelFromAPI updates the model with fresh data from the API while
 // preserving fields that aren't returned by Tenant.Load (TenantID, DefaultRoles,
-// CascadeDelete, ParentTenantID, and optionally CustomAttributes).
+// CascadeDelete, and ParentTenantID).
 // Returns the previously saved Settings pointer so the caller can decide whether
 // to load settings from the API.
 func RefreshModelFromAPI(model *TenantModel, t *descope.Tenant) *SettingsModel {
@@ -85,7 +83,6 @@ func RefreshModelFromAPI(model *TenantModel, t *descope.Tenant) *SettingsModel {
 	savedCascadeDelete := model.CascadeDelete
 	savedParentTenantID := model.ParentTenantID
 	savedTenantID := model.TenantID
-	savedCustomAttrs := model.CustomAttributes
 	savedSettings := model.Settings
 
 	SetModelFromTenant(model, t)
@@ -93,9 +90,6 @@ func RefreshModelFromAPI(model *TenantModel, t *descope.Tenant) *SettingsModel {
 	model.CascadeDelete = savedCascadeDelete
 	model.ParentTenantID = savedParentTenantID
 	model.TenantID = savedTenantID
-	if len(t.CustomAttributes) == 0 {
-		model.CustomAttributes = savedCustomAttrs
-	}
 
 	return savedSettings
 }

@@ -38,3 +38,11 @@ func (m *StylesModel) SetValues(h *helpers.Handler, data map[string]any) {
 func (m *StylesModel) GetID() stringattr.Type        { return m.ID }
 func (m *StylesModel) SetID(id stringattr.Type)      { m.ID = id }
 func (m *StylesModel) GetProjectID() stringattr.Type { return m.ProjectID }
+
+func (m *StylesModel) RefreshValues(h *helpers.Handler, data map[string]any) {
+	jsonattr.Refresh(&m.Data, data, "componentsVersion")
+}
+
+func (m *StylesModel) JSONFingerprint(data map[string]any) ([]byte, error) {
+	return jsonattr.Fingerprint(data, "componentsVersion")
+}

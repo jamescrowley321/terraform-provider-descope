@@ -46,3 +46,12 @@ func (m *FlowModel) SetValues(h *helpers.Handler, data map[string]any) {
 func (m *FlowModel) GetID() stringattr.Type        { return m.ID }
 func (m *FlowModel) SetID(id stringattr.Type)      { m.ID = id }
 func (m *FlowModel) GetProjectID() stringattr.Type { return m.ProjectID }
+
+func (m *FlowModel) RefreshValues(h *helpers.Handler, data map[string]any) {
+	jsonattr.Refresh(&m.Data, data, "metadata", "componentsVersion")
+	m.SetValues(h, data)
+}
+
+func (m *FlowModel) JSONFingerprint(data map[string]any) ([]byte, error) {
+	return jsonattr.Fingerprint(data, "metadata", "componentsVersion")
+}

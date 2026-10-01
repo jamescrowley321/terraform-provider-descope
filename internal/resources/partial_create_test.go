@@ -133,3 +133,70 @@ resource "descope_sso" "test" {
 		Steps:                    []resource.TestStep{{Config: config, PlanOnly: true, ExpectError: regexp.MustCompile("Invalid Attribute Combination")}},
 	})
 }
+
+func TestSSOAppPartialCreateRetainsOwnership(t *testing.T) {
+	for _, kind := range []string{"oidc", "saml", "wsfed"} {
+		for _, failAt := range []string{"load", "secret"} {
+			if failAt == "secret" && kind != "oidc" {
+				continue
+			}
+			t.Run(kind+"/"+failAt, func(t *testing.T) {
+				var mu sync.Mutex
+				fail := true
+				created, deleted := 0, 0
+				id := ""
+				var data map[string]any
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					mu.Lock()
+					defer mu.Unlock()
+					w.Header().Set("Content-Type", "application/json")
+					var result any = map[string]any{}
+					switch {
+					case strings.HasSuffix(r.URL.Path, "/create"):
+						created++
+						id = fmt.Sprintf("app-%d", created)
+						if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+							t.Error(err)
+							return
+						}
+						result = map[string]any{"id": id}
+					case strings.HasSuffix(r.URL.Path, "/"+failAt) && fail:
+						http.Error(w, `{"errorCode":"E999999","errorDescription":"injected app read failure"}`, http.StatusBadRequest)
+						return
+					case strings.HasSuffix(r.URL.Path, "/load"):
+						result = map[string]any{"id": id, "name": "test", "appType": kind, kind + "Settings": data}
+					case strings.HasSuffix(r.URL.Path, "/secret"):
+						result = map[string]any{"cleartext": "mock-secret"}
+					case strings.HasSuffix(r.URL.Path, "/delete"):
+						deleted++
+						id = ""
+					}
+					_ = json.NewEncoder(w).Encode(result)
+				}))
+				defer server.Close()
+				config := fmt.Sprintf(`provider "descope" {
+ management_key = "mock-management"
+ base_url = %q
+}
+resource "descope_%s_app" "test" {
+ project_id = "Pmock"
+ name = "test"
+ deletion_protection = false
+}`, server.URL, kind)
+				if kind == "saml" {
+					config = strings.TrimSuffix(config, "}") + `manual_configuration = { acs_url = "https://sp.example.com/acs", entity_id = "sp-entity" }
+}`
+				}
+				resource.UnitTest(t, resource.TestCase{ProtoV6ProviderFactories: testacc.ProviderFactories, Steps: []resource.TestStep{
+					{Config: config, ExpectError: regexp.MustCompile("injected app read failure")},
+					{Config: config, PreConfig: func() { mu.Lock(); fail = false; mu.Unlock() }, Check: resource.TestCheckResourceAttr("descope_"+kind+"_app.test", "id", "app-2")},
+				}})
+				mu.Lock()
+				defer mu.Unlock()
+				require.Equal(t, 2, created)
+				require.Equal(t, 2, deleted)
+				require.Empty(t, id)
+			})
+		}
+	}
+}

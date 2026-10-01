@@ -17,7 +17,7 @@ Manages a 8x8 for WhatsApp connector and its configuration in a Descope project.
 
 ### Required
 
-- `api_key` (String) The 8x8 API key for authentication.
+- `api_key` (String, Sensitive) The 8x8 API key for authentication.
 - `name` (String) A custom name for your connector.
 - `project_id` (String) The ID of the Descope project that the connector belongs to. Changing this value will require the resource to be deleted and recreated.
 - `sub_account_id` (String) The 8x8 sub-account ID is required for the Messaging API.

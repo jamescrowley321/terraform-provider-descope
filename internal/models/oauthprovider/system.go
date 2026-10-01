@@ -41,3 +41,9 @@ func (v systemCasingValidator) ValidateString(_ context.Context, req validator.S
 		}
 	}
 }
+
+var defaultClaimMapping = map[string]string{
+	"loginId": "sub", "email": "email", "name": "name", "phoneNumber": "phone_number",
+	"givenName": "given_name", "middleName": "middle_name", "familyName": "family_name",
+	"verifiedEmail": "email_verified", "verifiedPhone": "phone_number_verified",
+}

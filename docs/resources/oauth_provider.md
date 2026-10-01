@@ -26,7 +26,7 @@ Manages a single OAuth provider in a Descope project, either the custom configur
 - `apple_key_generator` (Attributes) The apple key generator object describing how to create a dynamic apple client secret for applications. (see [below for nested schema](#nestedatt--apple_key_generator))
 - `authorization_endpoint` (String) The URL that users are redirected to for authorization with the OAuth provider.
 - `callback_domain` (String) Use a custom domain in your OAuth verification screen.
-- `claim_mapping` (Map of String) Maps OAuth provider claims to Descope user attributes.
+- `claim_mapping` (Map of String) Maps OAuth provider claims to Descope user attributes. Omitted or null entries inherit Descope's standard claim defaults. Imports omit these inherited defaults and include `loginId` when custom mappings require it. Setting an empty map restores the default mapping. Refresh detects changes to explicit mappings and custom attributes.
 - `client_auth_method` (String) The token endpoint client authentication method: `client_secret_basic` (credentials in the HTTP Basic auth header) or `client_secret_post` (credentials in the request body). Empty defaults to `client_secret_post`.
 - `client_id` (String) The client ID for the OAuth provider, used to identify the application to the provider.
 - `client_secret` (String, Sensitive) The client secret for the OAuth provider, used to authenticate the application with the provider.

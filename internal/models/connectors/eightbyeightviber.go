@@ -25,7 +25,7 @@ var EightByEightViberConnectorAttributes = map[string]schema.Attribute{
 	"disabled":    boolattr.Default(false),
 
 	"sub_account_id": stringattr.Required(),
-	"api_key":        stringattr.Required(),
+	"api_key":        stringattr.SecretRequired(),
 	"country":        stringattr.Default(""),
 	"use_static_ips": boolattr.Default(false),
 }
@@ -85,7 +85,7 @@ func (m *EightByEightViberConnectorModel) ConfigurationValues(h *helpers.Handler
 
 func (m *EightByEightViberConnectorModel) SetConfigurationValues(c map[string]any, h *helpers.Handler) {
 	stringattr.Set(&m.SubAccountID, c, "subAccountId")
-	stringattr.Set(&m.APIKey, c, "apiKey")
+	stringattr.SetSecret(&m.APIKey, c, "apiKey", h)
 	stringattr.Set(&m.Country, c, "country")
 	boolattr.Set(&m.UseStaticIPs, c, "useStaticIps")
 }

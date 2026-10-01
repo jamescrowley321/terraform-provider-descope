@@ -254,7 +254,10 @@ claim_mapping
 
 - Type: `map` of `string`
 
-Maps OAuth provider claims to Descope user attributes.
+Maps OAuth provider claims to Descope user attributes. Omitted or null entries inherit
+Descope's standard claim defaults. Imports omit these inherited defaults and include
+`loginId` when custom mappings require it. Setting an empty map restores the default
+mapping. Refresh detects changes to explicit mappings and custom attributes.
 
 
 

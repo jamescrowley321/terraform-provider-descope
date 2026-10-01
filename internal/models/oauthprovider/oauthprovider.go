@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var Schema = schema.Schema{
@@ -181,7 +182,51 @@ func (m *OAuthProviderModel) SetValues(h *helpers.Handler, data map[string]any) 
 	stringattr.Nil(&m.NativeClientSecret)
 	objattr.Set(&m.AppleKeyGenerator, data, "appleKeyGenerator", h)
 	objattr.Set(&m.NativeAppleKeyGenerator, data, "nativeAppleKeyGenerator", h)
-	strmapattr.Nil(&m.ClaimMapping, h) // empty defaults are added by the backend
+	configuredMapping := m.ClaimMapping.Elements()
+	mapping := map[string]any{}
+	if !slices.Contains(systemProviderNames, m.ID.ValueString()) {
+		if claims, ok := data["userDataClaimsMapping"].(map[string]any); ok {
+			for _, key := range systemClaimMapping {
+				if value, ok := claims[key].(string); ok {
+					configured, exists := configuredMapping[key]
+					inherited := value == "" || value == defaultClaimMapping[key]
+					if !inherited {
+						mapping[key] = value
+					} else if exists && !configured.IsUnknown() && !configured.IsNull() {
+						if str, ok := configured.(types.String); ok && (str.ValueString() == value || (str.ValueString() == "" && value == defaultClaimMapping[key])) {
+							mapping[key] = str.ValueString()
+						}
+					}
+				}
+			}
+			if custom, ok := claims["customAttributes"].(map[string]any); ok {
+				for key, value := range custom {
+					if !slices.Contains(systemClaimMapping, key) {
+						mapping[key] = value
+					}
+				}
+			}
+			if len(mapping) > 0 {
+				if _, present := mapping["loginId"]; !present {
+					if loginID, ok := claims["loginId"].(string); ok && loginID != "" {
+						mapping["loginId"] = loginID
+					}
+				}
+			}
+		}
+	}
+	strmapattr.Set(&m.ClaimMapping, map[string]any{"mapping": mapping}, "mapping", h)
+	if !slices.Contains(systemProviderNames, m.ID.ValueString()) {
+		elements := m.ClaimMapping.Elements()
+		for key, configured := range configuredMapping {
+			if value, exists := elements[key]; configured.IsNull() && (!exists || value.Equal(types.StringValue("")) || value.Equal(types.StringValue(defaultClaimMapping[key]))) {
+				elements[key] = configured
+			}
+		}
+		refreshed, diagnostics := types.MapValue(types.StringType, elements)
+		h.Diagnostics.Append(diagnostics...)
+		m.ClaimMapping.MapValue = refreshed
+	}
 
 	// the backend omits the custom-only fields on system provider reads, so nulls are coerced to empty values to match the state an apply produces
 	if id, ok := data["id"].(string); ok && slices.Contains(systemProviderNames, id) {

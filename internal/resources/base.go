@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -64,6 +66,13 @@ func (r *baseResource[T, M]) CheckDestroyed(ctx context.Context, client *infra.C
 type validatableModel interface {
 	Validate(*helpers.Handler)
 }
+
+type refreshableJSONModel interface {
+	RefreshValues(*helpers.Handler, map[string]any)
+	JSONFingerprint(map[string]any) ([]byte, error)
+}
+
+const jsonBaselineKey = "jsonReadBaseline"
 
 type stateUpgradeReporter interface {
 	ReportDroppedState(h *helpers.Handler)
@@ -201,6 +210,24 @@ func (r *baseResource[T, M]) Create(ctx context.Context, req resource.CreateRequ
 	} else {
 		id, data, err = r.ops.Create(ctx, r.client, projectID, values)
 	}
+	if err != nil {
+		var partial *partialCreateError
+		if id != "" && errors.As(err, &partial) {
+			model.SetID(types.StringValue(id))
+			resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+			known, stateErr := tftypes.Transform(resp.State.Raw, func(_ *tftypes.AttributePath, value tftypes.Value) (tftypes.Value, error) {
+				if !value.IsKnown() {
+					return tftypes.NewValue(value.Type(), nil), nil
+				}
+				return value, nil
+			})
+			if stateErr != nil {
+				resp.Diagnostics.AddError("Error saving created resource", stateErr.Error())
+			} else {
+				resp.State.Raw = known
+			}
+		}
+	}
 	if failure, ok := infra.AsValidationError(err); ok {
 		resp.Diagnostics.AddError("Invalid "+r.name+" configuration", failure)
 		return
@@ -213,6 +240,14 @@ func (r *baseResource[T, M]) Create(ctx context.Context, req resource.CreateRequ
 	model.SetID(types.StringValue(id))
 	model.SetValues(handler, data)
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	if jsonModel, ok := any(model).(refreshableJSONModel); ok {
+		fingerprint, fingerprintErr := jsonModel.JSONFingerprint(data)
+		if fingerprintErr != nil {
+			resp.Diagnostics.AddError("Error recording JSON state", fingerprintErr.Error())
+		} else {
+			resp.Diagnostics.Append(resp.Private.SetKey(ctx, jsonBaselineKey, fingerprint)...)
+		}
+	}
 
 	tflog.Info(ctx, "Created "+r.name+" resource")
 }
@@ -252,7 +287,23 @@ func (r *baseResource[T, M]) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	handler := helpers.NewHandler(ctx, &resp.Diagnostics)
-	model.SetValues(handler, data)
+	if jsonModel, ok := any(model).(refreshableJSONModel); ok {
+		fingerprint, fingerprintErr := jsonModel.JSONFingerprint(data)
+		if fingerprintErr != nil {
+			resp.Diagnostics.AddError("Error reading JSON state", fingerprintErr.Error())
+			return
+		}
+		baseline, privateDiags := req.Private.GetKey(ctx, jsonBaselineKey)
+		resp.Diagnostics.Append(privateDiags...)
+		if string(baseline) != string(fingerprint) || helpers.IsImportState(ctx) {
+			jsonModel.RefreshValues(handler, data)
+		} else {
+			model.SetValues(handler, data)
+		}
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, jsonBaselineKey, fingerprint)...)
+	} else {
+		model.SetValues(handler, data)
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 
 	tflog.Info(ctx, "Read "+r.name+" resource")
@@ -285,6 +336,14 @@ func (r *baseResource[T, M]) Update(ctx context.Context, req resource.UpdateRequ
 
 	model.SetValues(handler, data)
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	if jsonModel, ok := any(model).(refreshableJSONModel); ok {
+		fingerprint, fingerprintErr := jsonModel.JSONFingerprint(data)
+		if fingerprintErr != nil {
+			resp.Diagnostics.AddError("Error recording JSON state", fingerprintErr.Error())
+		} else {
+			resp.Diagnostics.Append(resp.Private.SetKey(ctx, jsonBaselineKey, fingerprint)...)
+		}
+	}
 
 	tflog.Info(ctx, "Updated "+r.name+" resource")
 }
