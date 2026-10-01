@@ -3,22 +3,23 @@ package tenant
 import (
 	"context"
 
+	"github.com/descope/terraform-provider-descope/internal/attrs/boolattr"
+	"github.com/descope/terraform-provider-descope/internal/attrs/intattr"
+	"github.com/descope/terraform-provider-descope/internal/attrs/stringattr"
+	"github.com/descope/terraform-provider-descope/internal/attrs/strmapattr"
+	"github.com/descope/terraform-provider-descope/internal/attrs/strsetattr"
+	"github.com/descope/terraform-provider-descope/internal/attrs/types/valuesettype"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/boolattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/intattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strmapattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strsetattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/types/valuesettype"
 )
 
-var TenantAttributes = map[string]schema.Attribute{
-	"id": stringattr.Identifier(),
+var TenantFields = map[string]schema.Attribute{
+	"project_id": stringattr.Required(stringplanmodifier.RequiresReplace()),
+	"id":         stringattr.Identifier(),
 	"tenant_id": schema.StringAttribute{
 		Optional:      true,
 		Computed:      true,
@@ -49,11 +50,12 @@ var TenantAttributes = map[string]schema.Attribute{
 	},
 	"settings": schema.SingleNestedAttribute{
 		Optional:   true,
-		Attributes: SettingsAttributes,
+		Attributes: SettingsFields,
 	},
 }
 
 type TenantModel struct {
+	ProjectID               stringattr.Type `tfsdk:"project_id"`
 	ID                      stringattr.Type `tfsdk:"id"`
 	TenantID                stringattr.Type `tfsdk:"tenant_id"`
 	Name                    stringattr.Type `tfsdk:"name"`

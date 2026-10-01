@@ -16,7 +16,6 @@ erDiagram
     Project ||--o{ List : manages
     Project ||--|| FGASchema : "has one"
     Project ||--o{ InboundApp : registers
-    Project ||--o{ ThirdPartyApp : registers
     Project ||--o{ OutboundApp : registers
     Project ||--o{ SSOConfig : configures
     Project ||--o{ ManagementKey : issues
@@ -33,7 +32,6 @@ erDiagram
     User }o--o{ Tenant : "belongs to"
 
     InboundApp ||--o{ Scope : exposes
-    ThirdPartyApp ||--o{ Scope : exposes
 ```
 
 ## Entity Categories
@@ -49,8 +47,7 @@ These entities represent project configuration and are the natural domain of inf
 | Role | `descope_role` | Authorization role. Can be project-level or tenant-level. |
 | Permission | `descope_permission` | Atomic authorization unit. Assigned to roles. |
 | Inbound Application | `descope_inbound_app` | OIDC/OAuth client registered to use Descope as IdP. |
-| Third-Party Application | `descope_third_party_application` | External OAuth client authenticating against Descope. |
-| Outbound Application | `descope_outbound_application` | OAuth client config for Descope to connect to external services. |
+| Outbound Application | `descope_outbound_app` | OAuth client config for Descope to connect to external services. |
 | SSO Configuration | `descope_sso` | OIDC or SAML SSO provider configuration per tenant. |
 | Password Settings | `descope_password_settings` | Password policy (min length, complexity, lockout, expiration). |
 | Management Key | `descope_management_key` | API key for management operations. |
@@ -58,12 +55,19 @@ These entities represent project configuration and are the natural domain of inf
 | Descoper | `descope_descoper` | Admin user with management console access. |
 | FGA Schema | `descope_fga_schema` | Fine-grained authorization schema (ReBAC relations). |
 | List | `descope_list` | IP allowlist/denylist or text-based filter list. |
+| JWT Template | `descope_jwt_template` | Token claim templates selected by session settings. |
+| Session Settings | `descope_session_settings` | Session lifetimes and token template selection. |
+| Flow | `descope_flow` | Authentication flow definition. |
+| Connector | `descope_*_connector` | Separate resources for supported connector types. |
+| OIDC / SAML Application | `descope_oidc_app`, `descope_saml_app` | Applications using Descope as an identity provider. |
+| User / Access Key Attribute | `descope_user_attribute`, `descope_access_key_attribute` | Custom attribute definitions. |
 
 ### Infrastructure (Data Sources)
 
 | Entity | Terraform Data Source | Description |
 |--------|----------------------|-------------|
-| Project Export | `descope_project_export` | Full project configuration snapshot as JSON. |
+| Project | `descope_project` | Read project metadata. |
+| Project Export | `descope_project_export` | API-supported configuration snapshot as JSON; licensing may restrict export. |
 | Password Settings | `descope_password_settings` | Read current password policy. |
 | FGA Check | `descope_fga_check` | Query FGA authorization for a relation tuple. |
 
@@ -74,9 +78,6 @@ These entities are created and managed at application runtime, not during infras
 | Entity | Why Not Terraform | How to Manage |
 |--------|------------------|---------------|
 | Users | Runtime data created by user signups/logins. Managing users as TF resources would be like managing database rows in Terraform. | Descope SDKs, Management API, Console |
-| Flows | Visual authentication flows (screens, widgets, logic). Designed for the Descope console's drag-and-drop editor. | Descope Console, `descopecli` |
-| JWT Templates | Nested within project configuration. Already managed by the `descope_project` resource. | `descope_project` resource |
-| Connectors | Nested within project configuration (HTTP, SMTP, Twilio, etc.). Already managed by the `descope_project` resource. | `descope_project` resource |
 | Audit Events | Read-only operational log. Not infrastructure. | Management API, Console |
 
 ## Key Relationships
@@ -102,7 +103,6 @@ A user can belong to multiple tenants with different roles in each. Project-leve
 ### Application Model
 
 - **Inbound Apps**: External applications that use Descope as an identity provider (IdP). Descope acts as the OAuth 2.0 Authorization Server.
-- **Third-Party Apps**: Similar to inbound apps but registered as third-party OAuth clients with consent flows.
 - **Outbound Apps**: Descope acts as an OAuth client to connect to external services (e.g., GitHub, Google) on behalf of users.
 
 ### Authorization Layers

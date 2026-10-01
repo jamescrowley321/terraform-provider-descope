@@ -1,16 +1,16 @@
 package tenant
 
 import (
+	"github.com/descope/terraform-provider-descope/internal/attrs/boolattr"
+	"github.com/descope/terraform-provider-descope/internal/attrs/intattr"
+	"github.com/descope/terraform-provider-descope/internal/attrs/stringattr"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/boolattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/intattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
 )
 
 var timeUnitValidator = stringvalidator.OneOf("", "seconds", "minutes", "hours", "days", "weeks")
 
-var SettingsAttributes = map[string]schema.Attribute{
+var SettingsFields = map[string]schema.Attribute{
 	"session_settings_enabled":      boolattr.Default(false),
 	"refresh_token_expiration":      intattr.Default(0),
 	"refresh_token_expiration_unit": stringattr.Default("", timeUnitValidator),

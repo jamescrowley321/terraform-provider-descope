@@ -4,8 +4,8 @@ import (
 	_ "embed"
 	"path/filepath"
 
-	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/schema"
-	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/utils"
+	"github.com/descope/terraform-provider-descope/tools/terragen/schema"
+	"github.com/descope/terraform-provider-descope/tools/terragen/utils"
 )
 
 //go:embed docs.gotmpl
@@ -15,6 +15,9 @@ var docsTemplateData []byte
 var modelsTemplateData []byte
 
 func GenerateSources(root string, schema *schema.Schema) {
+	schema.ComputeDocsVars()
+	schema.ResolveModelImports()
+
 	tpl := utils.LoadTemplate("docs", docsTemplateData)
 	path := filepath.Join(root, "docs.go")
 	utils.WriteGoSource(path, schema, tpl, true)

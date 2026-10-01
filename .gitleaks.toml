@@ -16,5 +16,12 @@ useDefault = true
 [[allowlists]]
 description = "Placeholder credentials in connector acceptance-test fixtures (not real secrets)"
 paths = [
-  '''internal/models/project/connectors/.*_test\.go$''',
+  '''internal/models/connectors/.*_test\.go$''',
 ]
+
+[[allowlists]]
+description = "Literal dummy SMTP password in tfexport test scenarios"
+condition = "AND"
+paths = ['tools/tfexport/testdata/scenarios/[^/]+/[12]\.tf$']
+regexTarget = "match"
+regexes = ['password\s*=\s*"not-a-real-password"']

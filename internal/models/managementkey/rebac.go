@@ -1,11 +1,11 @@
 package managementkey
 
 import (
+	"github.com/descope/terraform-provider-descope/internal/attrs/listattr"
+	"github.com/descope/terraform-provider-descope/internal/attrs/objattr"
+	"github.com/descope/terraform-provider-descope/internal/attrs/strsetattr"
+	"github.com/descope/terraform-provider-descope/internal/helpers"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/listattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/objattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strsetattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
 )
 
 var ReBacValidator = objattr.NewValidator[ReBacModel]("must have at least one role assignment")
@@ -38,7 +38,7 @@ func (m *ReBacModel) SetValues(h *helpers.Handler, data map[string]any) {
 
 func (m *ReBacModel) Validate(h *helpers.Handler) {
 	if helpers.HasUnknownValues(m.CompanyRoles, m.ProjectRoles, m.TagRoles) {
-		return // skip validation if there are unknown values
+		return
 	}
 
 	hasCompanyRoles := !m.CompanyRoles.IsEmpty()

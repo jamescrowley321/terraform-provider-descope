@@ -1,34 +1,70 @@
 package role
 
 import (
+	"github.com/descope/terraform-provider-descope/internal/attrs/boolattr"
+	"github.com/descope/terraform-provider-descope/internal/attrs/stringattr"
+	"github.com/descope/terraform-provider-descope/internal/attrs/strsetattr"
+	"github.com/descope/terraform-provider-descope/internal/helpers"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/boolattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strsetattr"
 )
 
-var Attributes = map[string]schema.Attribute{
-	"id":               stringattr.Identifier(),
-	"name":             stringattr.Required(),
-	"description":      stringattr.Default(""),
-	"permission_names": strsetattr.Default(),
-	"tenant_id": schema.StringAttribute{
-		Optional:      true,
-		Computed:      true,
-		PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace(), stringplanmodifier.UseStateForUnknown()},
-	},
-	"default_role": boolattr.Default(false),
-	"private":      boolattr.Default(false),
+var Schema = schema.Schema{
+	MarkdownDescription: "Manages a single role in a Descope project. Roles reference permissions by name, and the referenced permissions must exist when the role is applied.",
+	Attributes:          RoleAttributes,
 }
 
-type Model struct {
-	ID              stringattr.Type `tfsdk:"id"`
-	Name            stringattr.Type `tfsdk:"name"`
-	Description     stringattr.Type `tfsdk:"description"`
-	PermissionNames strsetattr.Type `tfsdk:"permission_names"`
-	TenantID        stringattr.Type `tfsdk:"tenant_id"`
-	DefaultRole     boolattr.Type   `tfsdk:"default_role"`
-	Private         boolattr.Type   `tfsdk:"private"`
+var RoleAttributes = map[string]schema.Attribute{
+	"id":          stringattr.Identifier(),
+	"tenant_id":   stringattr.Default("", stringplanmodifier.RequiresReplace()),
+	"project_id":  stringattr.Required(stringplanmodifier.RequiresReplace()),
+	"name":        stringattr.Required(stringvalidator.LengthBetween(1, 100)),
+	"description": stringattr.Default("", stringvalidator.LengthAtMost(1024)),
+	"permissions": strsetattr.Default(stringvalidator.LengthBetween(1, 100)),
+	"default":     boolattr.Default(false),
+	"private":     boolattr.Default(false),
+}
+
+type RoleModel struct {
+	ID          stringattr.Type `tfsdk:"id"`
+	TenantID    stringattr.Type `tfsdk:"tenant_id"`
+	ProjectID   stringattr.Type `tfsdk:"project_id"`
+	Name        stringattr.Type `tfsdk:"name"`
+	Description stringattr.Type `tfsdk:"description"`
+	Permissions strsetattr.Type `tfsdk:"permissions"`
+	Default     boolattr.Type   `tfsdk:"default"`
+	Private     boolattr.Type   `tfsdk:"private"`
+}
+
+func (m *RoleModel) Values(h *helpers.Handler) map[string]any {
+	data := map[string]any{}
+	stringattr.Get(m.TenantID, data, "tenantId")
+	stringattr.Get(m.Name, data, "name")
+	stringattr.Get(m.Description, data, "description")
+	strsetattr.Get(m.Permissions, data, "permissionNames", h)
+	boolattr.Get(m.Default, data, "default")
+	boolattr.Get(m.Private, data, "private")
+	return data
+}
+
+func (m *RoleModel) SetValues(h *helpers.Handler, data map[string]any) {
+	stringattr.SetDefault(&m.TenantID, data, "tenantId", "")
+	stringattr.Set(&m.Name, data, "name")
+	stringattr.Set(&m.Description, data, "description")
+	strsetattr.Set(&m.Permissions, data, "permissionNames", h)
+	boolattr.Set(&m.Default, data, "default")
+	boolattr.Set(&m.Private, data, "private")
+}
+
+func (m *RoleModel) GetID() stringattr.Type {
+	return m.ID
+}
+
+func (m *RoleModel) SetID(id stringattr.Type) {
+	m.ID = id
+}
+
+func (m *RoleModel) GetProjectID() stringattr.Type {
+	return m.ProjectID
 }

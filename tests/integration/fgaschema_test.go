@@ -3,22 +3,15 @@
 package integration
 
 import (
+	"context"
 	"testing"
+
+	"github.com/descope/go-sdk/descope"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TestFGASchemaCRUD runs against a throwaway project of its own, never the
-// shared DESCOPE_PROJECT_ID.
-//
-// descope_fga_schema is a PROJECT-LEVEL SINGLETON: the resource has no
-// project_id attribute and always targets the provider's project, and saving a
-// schema REPLACES that project's schema rather than adding to it. Applying this
-// fixture against the shared project therefore deleted every relation and
-// permission the project's real schema declared, leaving only the two lines the
-// fixture happens to name — silently breaking anything else that authorizes
-// against that project until someone restored it by hand.
 func TestFGASchemaCRUD(t *testing.T) {
 	// Provision a project to own the schema for the duration of the test. Its
 	// harness is created first so its cleanup runs last: t.Cleanup is LIFO, so
@@ -49,6 +42,16 @@ func TestFGASchemaCRUD(t *testing.T) {
 	sdkSchema := LoadFGASchemaViaSDKInProject(t, projectID)
 	assert.Contains(t, sdkSchema.Schema, "document")
 	assert.Contains(t, sdkSchema.Schema, "owner")
+
+	require.Equal(t, false, h.StateResource("data.descope_fga_check.owner")["allowed"])
+	management := newSDKClientWithProject(t, projectID).Management
+	relations := []*descope.FGARelation{{Resource: "document-1", ResourceType: "document", Relation: "owner", Target: "user-1", TargetType: "user"}}
+	require.NoError(t, management.FGA().CreateRelations(context.Background(), relations))
+	h.Apply(nameVar)
+	require.Equal(t, true, h.StateResource("data.descope_fga_check.owner")["allowed"])
+	require.NoError(t, management.FGA().DeleteRelations(context.Background(), relations))
+	h.Apply(nameVar)
+	require.Equal(t, false, h.StateResource("data.descope_fga_check.owner")["allowed"])
 
 	// Destroy
 	h.Destroy(nameVar)

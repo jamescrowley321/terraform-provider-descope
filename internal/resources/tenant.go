@@ -2,18 +2,18 @@ package resources
 
 import (
 	"context"
+	"strings"
 
 	"github.com/descope/go-sdk/descope"
-	"github.com/descope/go-sdk/descope/sdk"
+	"github.com/descope/terraform-provider-descope/internal/infra"
+	"github.com/descope/terraform-provider-descope/internal/models/convert"
+	"github.com/descope/terraform-provider-descope/internal/models/tenant"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/infra"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/convert"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/tenant"
 )
 
 var (
@@ -27,12 +27,12 @@ func NewTenantResource() resource.Resource {
 }
 
 type tenantResource struct {
-	management sdk.Management
+	client *infra.Client
 }
 
 func (r *tenantResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
-	if data, ok := req.ProviderData.(*infra.ProviderData); ok {
-		r.management = data.Management
+	if client, ok := req.ProviderData.(*infra.Client); ok {
+		r.client = client
 	}
 }
 
@@ -42,7 +42,7 @@ func (r *tenantResource) Metadata(_ context.Context, req resource.MetadataReques
 
 func (r *tenantResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Attributes: tenant.TenantAttributes,
+		Attributes: tenant.TenantFields,
 	}
 }
 
@@ -51,6 +51,11 @@ func (r *tenantResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	var model tenant.TenantModel
 	if resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...); resp.Diagnostics.HasError() {
+		return
+	}
+	management, clientErr := r.client.Management(model.ProjectID.ValueString())
+	if clientErr != nil {
+		resp.Diagnostics.AddError("Error configuring project client", clientErr.Error())
 		return
 	}
 
@@ -64,7 +69,7 @@ func (r *tenantResource) Create(ctx context.Context, req resource.CreateRequest,
 	customID := model.TenantID.ValueString()
 	if customID != "" {
 		err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-			return r.management.Tenant().CreateWithID(ctx, customID, tenantReq)
+			return management.Tenant().CreateWithID(ctx, customID, tenantReq)
 		})
 		if err != nil {
 			resp.Diagnostics.AddError("Error creating tenant", err.Error())
@@ -74,13 +79,20 @@ func (r *tenantResource) Create(ctx context.Context, req resource.CreateRequest,
 	} else {
 		var err error
 		id, err = infra.RetryOnRateLimit(ctx, func() (string, error) {
-			return r.management.Tenant().Create(ctx, tenantReq)
+			return management.Tenant().Create(ctx, tenantReq)
 		})
 		if err != nil {
 			resp.Diagnostics.AddError("Error creating tenant", err.Error())
 			return
 		}
 	}
+
+	model.ID = types.StringValue(id)
+	model.TenantID = types.StringValue(id)
+	model.CreatedTime = types.Int64Null()
+	model.AuthType = types.StringNull()
+	model.Domains.SetValue = types.SetNull(types.StringType)
+	defer func() { resp.Diagnostics.Append(resp.State.Set(ctx, &model)...) }()
 
 	r.configureSettings(ctx, &model, id, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -94,7 +106,7 @@ func (r *tenantResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	if len(defaultRoles) > 0 {
 		err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-			return r.management.Tenant().UpdateDefaultRoles(ctx, id, defaultRoles)
+			return management.Tenant().UpdateDefaultRoles(ctx, id, defaultRoles)
 		})
 		if err != nil {
 			resp.Diagnostics.AddError("Error updating tenant default roles", err.Error())
@@ -104,7 +116,7 @@ func (r *tenantResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	// Load the created tenant
 	t, err := infra.RetryOnRateLimit(ctx, func() (*descope.Tenant, error) {
-		return r.management.Tenant().Load(ctx, id)
+		return management.Tenant().Load(ctx, id)
 	})
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading tenant after create", err.Error())
@@ -118,7 +130,6 @@ func (r *tenantResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	tflog.Info(ctx, "Tenant resource created")
 }
 
@@ -129,10 +140,15 @@ func (r *tenantResource) Read(ctx context.Context, req resource.ReadRequest, res
 	if resp.Diagnostics.Append(req.State.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
+	management, clientErr := r.client.Management(model.ProjectID.ValueString())
+	if clientErr != nil {
+		resp.Diagnostics.AddError("Error configuring project client", clientErr.Error())
+		return
+	}
 
 	id := model.ID.ValueString()
 	t, err := infra.RetryOnRateLimit(ctx, func() (*descope.Tenant, error) {
-		return r.management.Tenant().Load(ctx, id)
+		return management.Tenant().Load(ctx, id)
 	})
 	if err != nil {
 		if infra.IsNotFoundError(err) {
@@ -160,6 +176,11 @@ func (r *tenantResource) Update(ctx context.Context, req resource.UpdateRequest,
 	if resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...); resp.Diagnostics.HasError() {
 		return
 	}
+	management, clientErr := r.client.Management(plan.ProjectID.ValueString())
+	if clientErr != nil {
+		resp.Diagnostics.AddError("Error configuring project client", clientErr.Error())
+		return
+	}
 
 	var state tenant.TenantModel
 	if resp.Diagnostics.Append(req.State.Get(ctx, &state)...); resp.Diagnostics.HasError() {
@@ -176,7 +197,7 @@ func (r *tenantResource) Update(ctx context.Context, req resource.UpdateRequest,
 	tenantReq.ParentTenantID = ""
 
 	err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-		return r.management.Tenant().Update(ctx, id, tenantReq)
+		return management.Tenant().Update(ctx, id, tenantReq)
 	})
 	if err != nil {
 		resp.Diagnostics.AddError("Error updating tenant", err.Error())
@@ -199,7 +220,7 @@ func (r *tenantResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 	if !rolesEqual(planRoles, stateRoles) {
 		err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-			return r.management.Tenant().UpdateDefaultRoles(ctx, id, planRoles)
+			return management.Tenant().UpdateDefaultRoles(ctx, id, planRoles)
 		})
 		if err != nil {
 			resp.Diagnostics.AddError("Error updating tenant default roles", err.Error())
@@ -209,7 +230,7 @@ func (r *tenantResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	// Re-load tenant
 	t, err := infra.RetryOnRateLimit(ctx, func() (*descope.Tenant, error) {
-		return r.management.Tenant().Load(ctx, id)
+		return management.Tenant().Load(ctx, id)
 	})
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading tenant after update", err.Error())
@@ -234,10 +255,15 @@ func (r *tenantResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.Append(req.State.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
+	management, clientErr := r.client.Management(model.ProjectID.ValueString())
+	if clientErr != nil {
+		resp.Diagnostics.AddError("Error configuring project client", clientErr.Error())
+		return
+	}
 
 	cascade := model.CascadeDelete.ValueBool()
 	err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-		return r.management.Tenant().Delete(ctx, model.ID.ValueString(), cascade)
+		return management.Tenant().Delete(ctx, model.ID.ValueString(), cascade)
 	})
 	if err != nil {
 		if infra.IsNotFoundError(err) {
@@ -252,20 +278,44 @@ func (r *tenantResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 func (r *tenantResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	tflog.Info(ctx, "Importing tenant resource")
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	parts := strings.Split(req.ID, "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		resp.Diagnostics.AddError("Invalid import identifier", "Expected project_id/id")
+		return
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("project_id"), parts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
 }
 
 // configureSettings pushes the model's settings to the API if settings are present.
 func (r *tenantResource) configureSettings(ctx context.Context, model *tenant.TenantModel, id string, diags *diag.Diagnostics) {
+	management, err := r.client.Management(model.ProjectID.ValueString())
+	if err != nil {
+		diags.AddError("Error configuring project client", err.Error())
+		return
+	}
+
 	if model.Settings == nil {
 		return
 	}
+	t, err := infra.RetryOnRateLimit(ctx, func() (*descope.Tenant, error) { return management.Tenant().Load(ctx, id) })
+	if err != nil {
+		diags.AddError("Error reading tenant before settings update", err.Error())
+		return
+	}
+	domains, setDiags := types.SetValueFrom(ctx, types.StringType, t.Domains)
+	diags.Append(setDiags...)
+	if diags.HasError() {
+		return
+	}
+	model.Domains.SetValue = domains
+	model.AuthType = types.StringValue(t.AuthType)
 	settings := tenant.ModelToSettings(ctx, model, diags)
 	if diags.HasError() {
 		return
 	}
-	err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-		return r.management.Tenant().ConfigureSettings(ctx, id, settings)
+	err = infra.RetryOnRateLimitNoResult(ctx, func() error {
+		return management.Tenant().ConfigureSettings(ctx, id, settings)
 	})
 	if err != nil {
 		diags.AddError("Error configuring tenant settings", err.Error())
@@ -274,11 +324,17 @@ func (r *tenantResource) configureSettings(ctx context.Context, model *tenant.Te
 
 // refreshSettings loads tenant settings from the API if the model previously had settings.
 func (r *tenantResource) refreshSettings(ctx context.Context, model *tenant.TenantModel, id string, hadSettings *tenant.SettingsModel, diags *diag.Diagnostics) {
+	management, err := r.client.Management(model.ProjectID.ValueString())
+	if err != nil {
+		diags.AddError("Error configuring project client", err.Error())
+		return
+	}
+
 	if hadSettings == nil {
 		return
 	}
 	settings, err := infra.RetryOnRateLimit(ctx, func() (*descope.TenantSettings, error) {
-		return r.management.Tenant().GetSettings(ctx, id)
+		return management.Tenant().GetSettings(ctx, id)
 	})
 	if err != nil {
 		diags.AddError("Error reading tenant settings", err.Error())

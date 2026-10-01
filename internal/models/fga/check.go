@@ -1,11 +1,12 @@
 package fga
 
 import (
+	"github.com/descope/terraform-provider-descope/internal/attrs/stringattr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
 )
 
 type CheckModel struct {
+	ProjectID    types.String    `tfsdk:"project_id"`
 	ID           stringattr.Type `tfsdk:"id"`
 	Resource     stringattr.Type `tfsdk:"resource"`
 	ResourceType stringattr.Type `tfsdk:"resource_type"`

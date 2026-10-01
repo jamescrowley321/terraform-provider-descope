@@ -1,0 +1,82 @@
+---
+page_title: "descope_tenant Resource - descope"
+subcategory: ""
+description: |-
+  Manages a Descope tenant for multi-tenant authentication.
+---
+
+# descope_tenant (Resource)
+
+Manages a Descope tenant. Tenants are isolated environments within a Descope project for managing users, authentication methods, and configurations in multi-tenant applications.
+
+
+## Example Usage
+
+### Basic Tenant
+
+```hcl
+resource "descope_tenant" "example" {
+  project_id = var.project_id
+  name = "Acme Corp"
+}
+```
+
+### Tenant with Custom ID and Self-Provisioning
+
+```hcl
+resource "descope_tenant" "example" {
+  project_id = var.project_id
+  tenant_id                 = "acme-corp"
+  name                      = "Acme Corp"
+  self_provisioning_domains = ["acme.com", "acme.io"]
+  enforce_sso               = true
+  default_roles             = ["user"]
+}
+```
+
+### Tenant with Session Settings
+
+```hcl
+resource "descope_tenant" "example" {
+  project_id = var.project_id
+  name = "Acme Corp"
+
+  settings = {
+    session_settings_enabled      = true
+    refresh_token_expiration      = 30
+    refresh_token_expiration_unit = "days"
+    session_token_expiration      = 10
+    session_token_expiration_unit = "minutes"
+    enable_inactivity             = true
+    inactivity_time               = 30
+    inactivity_time_unit          = "minutes"
+  }
+}
+```
+
+### Child Tenant with Role Inheritance
+
+```hcl
+resource "descope_tenant" "parent" {
+  project_id = var.project_id
+  name = "Parent Org"
+}
+
+resource "descope_tenant" "child" {
+  project_id = var.project_id
+  name             = "Child Team"
+  parent_tenant_id = descope_tenant.parent.id
+  role_inheritance  = "userOnly"
+  default_roles     = ["developer"]
+}
+```
+
+## Schema
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Import
+
+```shell
+terraform import descope_tenant.example '<project_id>/<tenant_id>'
+```
