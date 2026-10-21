@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.1](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.3.0...v1.3.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **deps:** bump Go to 1.26.10 for GO-2026-6809 ([0a8698e](https://github.com/jamescrowley321/terraform-provider-descope/commit/0a8698e96a03bcb255cf6a011a2f89b7372c7b4a))
+* **deps:** bump Go to 1.26.9 and golang.org/x/net to v0.60.0 ([4ec21f5](https://github.com/jamescrowley321/terraform-provider-descope/commit/4ec21f560fecace5320a94bb398a4eb7e40f4467))
+
 ## [1.3.0](https://github.com/jamescrowley321/terraform-provider-descope/compare/v1.2.2...v1.3.0) (2026-09-02)
 
 
