@@ -47,7 +47,7 @@ jobs:
           terraform_version: "1.10.4"
           terraform_wrapper: false
       - name: Install Descope CLI
-        uses: descope/descopecli/.github/actions/install@76722efc17408640a42340cbdae1528c363e9dc2 # v0.8.15
+        uses: descope/descopecli/.github/actions/install@4e4f74c639e12ba56a68c0faaeacca6fe9345ff9 # v0.8.16
       - name: Run Integration Tests
         shell: bash
         env:
@@ -78,7 +78,7 @@ jobs:
           terraform_version: "1.10.4"
           terraform_wrapper: false
       - name: Install Descope CLI
-        uses: descope/descopecli/.github/actions/install@76722efc17408640a42340cbdae1528c363e9dc2 # v0.8.15
+        uses: descope/descopecli/.github/actions/install@4e4f74c639e12ba56a68c0faaeacca6fe9345ff9 # v0.8.16
       - name: Run Fork Tests
         shell: bash
         env:
