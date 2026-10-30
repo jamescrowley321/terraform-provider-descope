@@ -3,8 +3,9 @@ variable "name" {
 }
 
 resource "descope_project" "test" {
-  name = var.name
-  tags = ["integration-test"]
+  deletion_protection = false
+  name                = var.name
+  tags                = ["integration-test"]
 }
 
 output "id" {

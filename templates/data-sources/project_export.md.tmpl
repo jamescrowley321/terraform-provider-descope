@@ -1,0 +1,33 @@
+---
+page_title: "descope_project_export Data Source - descope"
+subcategory: ""
+description: |-
+  Exports a snapshot of the current Descope project configuration.
+---
+
+# descope_project_export (Data Source)
+
+Exports a snapshot of all settings and configurations for the current Descope project. The snapshot is returned as a JSON string containing all project files.
+
+This data source is useful for backing up project configurations, comparing environments, or feeding into project import operations.
+
+## Example Usage
+
+```hcl
+data "descope_project_export" "current" {
+  project_id = var.project_id}
+
+output "project_config" {
+  value     = data.descope_project_export.current.files
+  sensitive = true
+}
+
+# Access a specific configuration file
+locals {
+  config = jsondecode(data.descope_project_export.current.files)
+}
+```
+
+## Schema
+
+{{ .SchemaMarkdown | trimspace }}

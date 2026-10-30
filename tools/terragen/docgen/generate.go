@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/schema"
-	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/utils"
+	"github.com/descope/terraform-provider-descope/tools/terragen/schema"
+	"github.com/descope/terraform-provider-descope/tools/terragen/utils"
 )
 
 //go:embed docfile.gotmpl
@@ -33,7 +33,7 @@ func GenerateDocs(root string, schema *schema.Schema) {
 
 		path := utils.EnsurePath(root, filepath.Join(file.Dirs...))
 		file := filepath.Join(path, file.Name+".md")
-		if err := os.WriteFile(file, data, 0600); err != nil {
+		if err := os.WriteFile(file, data, 0644); err != nil {
 			log.Fatalf("error writing documentation file: %s", err.Error())
 		}
 	}

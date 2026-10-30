@@ -39,7 +39,7 @@ func TestTenantCRUD(t *testing.T) {
 	assert.Equal(t, []string{name + ".example.com"}, sdkTenant.SelfProvisioningDomains)
 
 	// Import
-	attrs = h.ReimportResource("tenant/update.tf", address, id, nameVar)
+	attrs = h.ReimportResource("tenant/update.tf", address, StringAttr(attrs, "project_id")+"/"+id, nameVar)
 	assert.Equal(t, id, StringAttr(attrs, "id"))
 	assert.Equal(t, name, attrs["name"])
 

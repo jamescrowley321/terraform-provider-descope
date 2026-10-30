@@ -1,15 +1,15 @@
 package sso
 
 import (
+	"github.com/descope/terraform-provider-descope/internal/attrs/boolattr"
+	"github.com/descope/terraform-provider-descope/internal/attrs/stringattr"
+	"github.com/descope/terraform-provider-descope/internal/attrs/strsetattr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/boolattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/stringattr"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/attrs/strsetattr"
 )
 
-var samlAttributeMappingAttributes = map[string]schema.Attribute{
+var samlAttributeMappingFields = map[string]schema.Attribute{
 	"name":         stringattr.Default(""),
 	"given_name":   stringattr.Default(""),
 	"middle_name":  stringattr.Default(""),
@@ -20,8 +20,9 @@ var samlAttributeMappingAttributes = map[string]schema.Attribute{
 	"group":        stringattr.Default(""),
 }
 
-var Attributes = map[string]schema.Attribute{
-	"id": stringattr.Identifier(),
+var Fields = map[string]schema.Attribute{
+	"project_id": stringattr.Required(stringplanmodifier.RequiresReplace()),
+	"id":         stringattr.Identifier(),
 	"tenant_id": schema.StringAttribute{
 		Required:      true,
 		PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
@@ -31,23 +32,23 @@ var Attributes = map[string]schema.Attribute{
 		Computed:      true,
 		PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace(), stringplanmodifier.UseStateForUnknown()},
 	},
-	"display_name": stringattr.Default(""),
+	"display_name": stringattr.Required(stringplanmodifier.RequiresReplace()),
 	"domains":      strsetattr.Default(),
 	"oidc": schema.SingleNestedAttribute{
 		Optional:   true,
-		Attributes: oidcAttributes,
+		Attributes: oidcFields,
 	},
 	"saml": schema.SingleNestedAttribute{
 		Optional:   true,
-		Attributes: samlAttributes,
+		Attributes: samlFields,
 	},
 	"saml_metadata": schema.SingleNestedAttribute{
 		Optional:   true,
-		Attributes: samlMetadataAttributes,
+		Attributes: samlMetadataFields,
 	},
 }
 
-var oidcAttributeMappingAttributes = map[string]schema.Attribute{
+var oidcAttributeMappingFields = map[string]schema.Attribute{
 	"login_id":       stringattr.Default(""),
 	"name":           stringattr.Default(""),
 	"given_name":     stringattr.Default(""),
@@ -61,7 +62,7 @@ var oidcAttributeMappingAttributes = map[string]schema.Attribute{
 	"picture":        stringattr.Default(""),
 }
 
-var oidcAttributes = map[string]schema.Attribute{
+var oidcFields = map[string]schema.Attribute{
 	"name":      stringattr.Required(),
 	"client_id": stringattr.Required(),
 	"client_secret": schema.StringAttribute{
@@ -80,11 +81,11 @@ var oidcAttributes = map[string]schema.Attribute{
 	"manage_provider_tokens": boolattr.Default(false),
 	"attribute_mapping": schema.SingleNestedAttribute{
 		Optional:   true,
-		Attributes: oidcAttributeMappingAttributes,
+		Attributes: oidcAttributeMappingFields,
 	},
 }
 
-var samlAttributes = map[string]schema.Attribute{
+var samlFields = map[string]schema.Attribute{
 	"idp_url":       stringattr.Required(),
 	"idp_entity_id": stringattr.Required(),
 	"idp_cert":      stringattr.Required(),
@@ -93,22 +94,23 @@ var samlAttributes = map[string]schema.Attribute{
 	"sp_acs_url":    stringattr.Identifier(),
 	"attribute_mapping": schema.SingleNestedAttribute{
 		Optional:   true,
-		Attributes: samlAttributeMappingAttributes,
+		Attributes: samlAttributeMappingFields,
 	},
 }
 
-var samlMetadataAttributes = map[string]schema.Attribute{
+var samlMetadataFields = map[string]schema.Attribute{
 	"idp_metadata_url": stringattr.Required(),
 	"redirect_url":     stringattr.Default(""),
 	"sp_entity_id":     stringattr.Identifier(),
 	"sp_acs_url":       stringattr.Identifier(),
 	"attribute_mapping": schema.SingleNestedAttribute{
 		Optional:   true,
-		Attributes: samlAttributeMappingAttributes,
+		Attributes: samlAttributeMappingFields,
 	},
 }
 
 type Model struct {
+	ProjectID    stringattr.Type `tfsdk:"project_id"`
 	ID           stringattr.Type `tfsdk:"id"`
 	TenantID     stringattr.Type `tfsdk:"tenant_id"`
 	SSOID        stringattr.Type `tfsdk:"sso_id"`

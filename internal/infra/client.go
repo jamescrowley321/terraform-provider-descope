@@ -3,23 +3,22 @@ package infra
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/descope/go-sdk/descope/api"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-const (
-	NoProjectID  = ""
-	infraAPIPath = "/v1/mgmt/infra"
-)
+const NoProjectID = ""
 
 type Response struct {
-	Entity string         `json:"entity"`
-	ID     string         `json:"id"`
-	Data   map[string]any `json:"data"`
+	ID   string         `json:"id"`
+	Data map[string]any `json:"data"`
 }
 
 type Client struct {
@@ -47,15 +46,15 @@ func (c *Client) Create(ctx context.Context, projectID, entity string, data map[
 	}
 
 	tflog.Info(ctx, "Starting CREATE request", map[string]any{"body": debugRequest(httpBody)})
-	httpRes, err := RetryOnRateLimit(ctx, func() (*api.HTTPResponse, error) {
-		return c.getAPIClient(projectID).DoPostRequest(ctx, infraAPIPath, httpBody, nil, c.managementKey)
+	httpRes, err := retrying(ctx, func() (*api.HTTPResponse, error) {
+		return c.getAPIClient(projectID).DoPostRequest(ctx, "/v1/mgmt/infra", httpBody, nil, c.managementKey)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	res := &Response{}
-	if err := json.Unmarshal([]byte(httpRes.BodyStr), res); err != nil {
+	if err := decodeResponse(httpRes.BodyStr, res); err != nil {
 		return nil, err
 	}
 
@@ -70,15 +69,15 @@ func (c *Client) Read(ctx context.Context, projectID, entity, entityID string) (
 	}
 
 	tflog.Info(ctx, "Starting READ request", map[string]any{"query": debugRequest(httpQuery)})
-	httpRes, err := RetryOnRateLimit(ctx, func() (*api.HTTPResponse, error) {
-		return c.getAPIClient(projectID).DoGetRequest(ctx, infraAPIPath, &api.HTTPRequest{QueryParams: httpQuery}, c.managementKey)
+	httpRes, err := retrying(ctx, func() (*api.HTTPResponse, error) {
+		return c.getAPIClient(projectID).DoGetRequest(ctx, "/v1/mgmt/infra", &api.HTTPRequest{QueryParams: httpQuery}, c.managementKey)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	res := &Response{}
-	if err := json.Unmarshal([]byte(httpRes.BodyStr), res); err != nil {
+	if err := decodeResponse(httpRes.BodyStr, res); err != nil {
 		return nil, err
 	}
 
@@ -94,15 +93,15 @@ func (c *Client) Update(ctx context.Context, projectID, entity, entityID string,
 	}
 
 	tflog.Info(ctx, "Starting UPDATE request", map[string]any{"body": debugRequest(httpBody)})
-	httpRes, err := RetryOnRateLimit(ctx, func() (*api.HTTPResponse, error) {
-		return c.getAPIClient(projectID).DoPutRequest(ctx, infraAPIPath, httpBody, nil, c.managementKey)
+	httpRes, err := retrying(ctx, func() (*api.HTTPResponse, error) {
+		return c.getAPIClient(projectID).DoPutRequest(ctx, "/v1/mgmt/infra", httpBody, nil, c.managementKey)
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	res := &Response{}
-	if err := json.Unmarshal([]byte(httpRes.BodyStr), res); err != nil {
+	if err := decodeResponse(httpRes.BodyStr, res); err != nil {
 		return nil, err
 	}
 
@@ -117,20 +116,95 @@ func (c *Client) Delete(ctx context.Context, projectID, entity, entityID string)
 	}
 
 	tflog.Info(ctx, "Starting DELETE request", map[string]any{"query": debugRequest(httpQuery)})
-	httpRes, err := RetryOnRateLimit(ctx, func() (*api.HTTPResponse, error) {
-		return c.getAPIClient(projectID).DoDeleteRequest(ctx, infraAPIPath, &api.HTTPRequest{QueryParams: httpQuery}, c.managementKey)
-	})
-	if err != nil {
-		return err
-	}
-
-	res := &Response{}
-	if err := json.Unmarshal([]byte(httpRes.BodyStr), res); err != nil {
+	if _, err := retrying(ctx, func() (*api.HTTPResponse, error) {
+		return c.getAPIClient(projectID).DoDeleteRequest(ctx, "/v1/mgmt/infra", &api.HTTPRequest{QueryParams: httpQuery}, c.managementKey)
+	}); err != nil {
 		return err
 	}
 
 	tflog.Info(ctx, "Finished DELETE request")
 	return nil
+}
+
+// Post/PostData/PutData/Get/Del are thin helpers for dedicated per-resource endpoints: unlike the entity
+// methods above they take a full path and send the resource's JSON directly, not an {entity,id,data} envelope.
+
+func (c *Client) Post(ctx context.Context, projectID, path string, body map[string]any) error {
+	tflog.Info(ctx, "Starting POST request", map[string]any{"path": path, "body": debugRequest(body)})
+	_, err := retrying(ctx, func() (*api.HTTPResponse, error) {
+		return c.getAPIClient(projectID).DoPostRequest(ctx, path, body, nil, c.managementKey)
+	})
+	return err
+}
+
+func (c *Client) PostData(ctx context.Context, projectID, path string, body map[string]any) (map[string]any, error) {
+	tflog.Info(ctx, "Starting POST request", map[string]any{"path": path, "body": debugRequest(body)})
+	httpRes, err := retrying(ctx, func() (*api.HTTPResponse, error) {
+		return c.getAPIClient(projectID).DoPostRequest(ctx, path, body, nil, c.managementKey)
+	})
+	if err != nil {
+		return nil, err
+	}
+	data := map[string]any{}
+	if httpRes.BodyStr != "" {
+		if err := decodeResponse(httpRes.BodyStr, &data); err != nil {
+			return nil, err
+		}
+	}
+	tflog.Info(ctx, "Finished POST request", map[string]any{"response": debugResponse(httpRes.BodyStr)})
+	return data, nil
+}
+
+func (c *Client) PutData(ctx context.Context, projectID, path string, body map[string]any) (map[string]any, error) {
+	tflog.Info(ctx, "Starting PUT request", map[string]any{"path": path, "body": debugRequest(body)})
+	httpRes, err := retrying(ctx, func() (*api.HTTPResponse, error) {
+		return c.getAPIClient(projectID).DoPutRequest(ctx, path, body, nil, c.managementKey)
+	})
+	if err != nil {
+		return nil, err
+	}
+	data := map[string]any{}
+	if httpRes.BodyStr != "" {
+		if err := decodeResponse(httpRes.BodyStr, &data); err != nil {
+			return nil, err
+		}
+	}
+	tflog.Info(ctx, "Finished PUT request", map[string]any{"response": debugResponse(httpRes.BodyStr)})
+	return data, nil
+}
+
+func (c *Client) Get(ctx context.Context, projectID, path string, query map[string]string) (map[string]any, error) {
+	var req *api.HTTPRequest
+	if query != nil {
+		req = &api.HTTPRequest{QueryParams: query}
+	}
+	tflog.Info(ctx, "Starting GET request", map[string]any{"path": path, "query": debugRequest(query)})
+	httpRes, err := retrying(ctx, func() (*api.HTTPResponse, error) {
+		return c.getAPIClient(projectID).DoGetRequest(ctx, path, req, c.managementKey)
+	})
+	if err != nil {
+		return nil, err
+	}
+	data := map[string]any{}
+	if httpRes.BodyStr != "" {
+		if err := decodeResponse(httpRes.BodyStr, &data); err != nil {
+			return nil, err
+		}
+	}
+	tflog.Info(ctx, "Finished GET request", map[string]any{"response": debugResponse(httpRes.BodyStr)})
+	return data, nil
+}
+
+func (c *Client) Del(ctx context.Context, projectID, path string, query map[string]string) error {
+	var req *api.HTTPRequest
+	if query != nil {
+		req = &api.HTTPRequest{QueryParams: query}
+	}
+	tflog.Info(ctx, "Starting DELETE request", map[string]any{"path": path, "query": debugRequest(query)})
+	_, err := retrying(ctx, func() (*api.HTTPResponse, error) {
+		return c.getAPIClient(projectID).DoDeleteRequest(ctx, path, req, c.managementKey)
+	})
+	return err
 }
 
 func (c *Client) getAPIClient(projectID string) *api.Client {
@@ -148,7 +222,9 @@ func (c *Client) getAPIClient(projectID string) *api.Client {
 
 func makeAPIClient(version, projectID, baseURL string) *api.Client {
 	headers := map[string]string{
-		"user-agent": makeUserAgent(version),
+		"user-agent":               makeUserAgent(version),
+		"x-descope-client-name":    "terraform",
+		"x-descope-client-version": version,
 	}
 
 	params := api.ClientParams{
@@ -165,4 +241,17 @@ func makeUserAgent(version string) string {
 		return v
 	}
 	return fmt.Sprintf("terraform-provider-descope/%s", version)
+}
+
+func decodeResponse(body string, value any) error {
+	decoder := json.NewDecoder(strings.NewReader(body))
+	decoder.UseNumber()
+	if err := decoder.Decode(value); err != nil {
+		return err
+	}
+	var extra any
+	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
+		return errors.New("unexpected content after the API response")
+	}
+	return nil
 }

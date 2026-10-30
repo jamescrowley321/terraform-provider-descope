@@ -90,6 +90,8 @@ custom_claims
 - Default: `"{}"`
 
 A JSON-encoded object of custom claims to add to the JWT created when the access key is exchanged.
+Use `jsonencode({ ... })`; use `jsonencode({})` to remove all claims. Reads refresh API changes
+and preserve formatting when the JSON content is equivalent.
 
 
 

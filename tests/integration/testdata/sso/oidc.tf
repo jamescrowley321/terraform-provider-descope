@@ -1,10 +1,13 @@
+variable "project_id" { type = string }
 variable "name" { type = string }
 
 resource "descope_tenant" "test" {
-  name = var.name
+  project_id = var.project_id
+  name       = var.name
 }
 
 resource "descope_sso" "test" {
+  project_id   = var.project_id
   tenant_id    = descope_tenant.test.id
   display_name = "Test OIDC SSO"
 

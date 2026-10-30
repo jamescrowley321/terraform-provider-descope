@@ -8,12 +8,13 @@ description: |-
 
 The [Descope](https://www.descope.com) Terraform Provider lets you manage your Descope project configuration as infrastructure-as-code. Configure authentication methods, define roles and permissions, set up third-party connectors, manage flows, and more—all declaratively in Terraform.
 
-Descope is an authentication and user management platform. This provider manages your Descope project configuration as infrastructure — projects, tenants, roles, permissions, SSO, connectors, applications, and access keys. It intentionally does **not** manage end users, which are runtime entities created through authentication flows (use the [Descope Management API](https://docs.descope.com/api/openapi) or [SDKs](https://docs.descope.com) for those).
+Descope is an authentication and user management platform. This community provider manages project configuration, service access keys, and tenants. It follows upstream standalone resource schemas and retains tenant SSO, tenant roles, and four data sources.
 
 ## Requirements
 
-- [Terraform](https://developer.hashicorp.com/terraform/install) 1.0 or later
-- A Descope account (Community tier works; some features require a **Pro or Enterprise** plan)
+- [Terraform](https://developer.hashicorp.com/terraform/install) 1.0 or later, or 1.5 or later to adopt an existing project
+  with `import` blocks
+- A Descope **Pro or Enterprise** plan
 - A **Management Key** from [Company Settings](https://app.descope.com/settings/company) in the Descope console
 
 ## Authentication
@@ -43,7 +44,7 @@ terraform {
   required_providers {
     descope = {
       source  = "jamescrowley321/descope"
-      version = "~> 1.0"
+      version = ">= 2.0"
     }
   }
 }
@@ -71,7 +72,7 @@ terraform {
   required_providers {
     descope = {
       source  = "jamescrowley321/descope"
-      version = "~> 1.0"
+      version = ">= 2.0"
     }
   }
 }
@@ -88,36 +89,28 @@ provider "descope" {
 
 ## Resources
 
-| Resource | Description |
-|----------|-------------|
-| [`descope_project`](resources/project) | Full project configuration: authentication, RBAC, connectors, flows, and more |
-| [`descope_access_key`](resources/access_key) | API access keys for programmatic authentication |
-| [`descope_management_key`](resources/management_key) | Programmatic management keys with scoped permissions |
-| [`descope_tenant`](resources/tenant) | Multi-tenant environments with session and SSO configuration |
-| [`descope_permission`](resources/permission) | Standalone permissions for role-based access control |
-| [`descope_role`](resources/role) | Roles that group permissions for RBAC |
-| [`descope_descoper`](resources/descoper) | Descope console user accounts with role assignments |
-| [`descope_sso`](resources/sso) | SSO configuration for a project |
-| [`descope_sso_application`](resources/sso_application) | SSO application definitions |
-| [`descope_inbound_app`](resources/inbound_app) | Inbound application integrations |
-| [`descope_outbound_application`](resources/outbound_application) | Outbound application integrations |
-| [`descope_third_party_application`](resources/third_party_application) | Third-party application integrations |
-| [`descope_password_settings`](resources/password_settings) | Password authentication policy configuration |
-| [`descope_fga_schema`](resources/fga_schema) | Fine-grained authorization schema |
-| [`descope_list`](resources/list) | Custom lists (IP allowlists, text lists, JSON data) |
+`descope_project` manages the project itself: its name, environment, tags and deletion protection. Everything inside
+the project is managed by its own resource, which references the project with a `project_id` attribute.
 
-## Data Sources
-
-| Data Source | Description |
-|-------------|-------------|
-| [`descope_project`](data-sources/project) | Read an existing project's full configuration |
-| [`descope_password_settings`](data-sources/password_settings) | Read current password authentication settings |
-| [`descope_project_export`](data-sources/project_export) | Export a project's configuration |
-| [`descope_fga_check`](data-sources/fga_check) | Check fine-grained authorization permissions |
+| Area | Resources |
+|------|-----------|
+| Project | [`descope_project`](resources/project), [`descope_project_settings`](resources/project_settings), [`descope_session_settings`](resources/session_settings), [`descope_session_migration`](resources/session_migration), [`descope_invite_settings`](resources/invite_settings), [`descope_admin_portal`](resources/admin_portal) |
+| Authentication methods | [`descope_password_settings`](resources/password_settings), [`descope_otp_settings`](resources/otp_settings), [`descope_magiclink_settings`](resources/magiclink_settings), [`descope_enchantedlink_settings`](resources/enchantedlink_settings), [`descope_embeddedlink_settings`](resources/embeddedlink_settings), [`descope_passkey_settings`](resources/passkey_settings), [`descope_totp_settings`](resources/totp_settings), [`descope_sso_settings`](resources/sso_settings), [`descope_oauth_settings`](resources/oauth_settings), [`descope_oauth_provider`](resources/oauth_provider) |
+| Messaging | [`descope_email_template`](resources/email_template), [`descope_text_template`](resources/text_template), [`descope_voice_template`](resources/voice_template) |
+| Authorization | [`descope_role`](resources/role), [`descope_permission`](resources/permission), [`descope_fga_schema`](resources/fga_schema) |
+| Attributes | [`descope_user_attribute`](resources/user_attribute), [`descope_tenant_attribute`](resources/tenant_attribute), [`descope_access_key_attribute`](resources/access_key_attribute) |
+| Applications | [`descope_oidc_app`](resources/oidc_app), [`descope_saml_app`](resources/saml_app), [`descope_wsfed_app`](resources/wsfed_app), [`descope_inbound_app`](resources/inbound_app), [`descope_outbound_app`](resources/outbound_app), [`descope_app_role`](resources/app_role), [`descope_app_permission`](resources/app_permission) |
+| Flows and styles | [`descope_flow`](resources/flow), [`descope_widget`](resources/widget), [`descope_styles`](resources/styles) |
+| Access keys, tokens and lists | [`descope_access_key`](resources/access_key), [`descope_jwt_template`](resources/jwt_template), [`descope_list`](resources/list) |
+| Connectors | One resource per connector type, named after it, e.g. [`descope_http_connector`](resources/http_connector) or [`descope_sendgrid_connector`](resources/sendgrid_connector), and [`descope_engine`](resources/engine) to run connector actions inside your own network |
+| Tenants | [`descope_tenant`](resources/tenant), [`descope_sso`](resources/sso), tenant scope on [`descope_role`](resources/role) |
+| Data sources | [`descope_project`](data-sources/project), [`descope_password_settings`](data-sources/password_settings), [`descope_project_export`](data-sources/project_export), [`descope_fga_check`](data-sources/fga_check) |
+| Company | [`descope_management_key`](resources/management_key), [`descope_descoper`](resources/descoper) |
 
 ## Guides
 
-- [Quickstart](guides/quickstart) – Set up the provider and manage your first project
+- [Quickstart](guides/quickstart) - Set up the provider and manage your first project
+- [Upgrading from v0.3.x](guides/upgrading-from-v0.3) - Adopt a project managed by v0.3.x into the standalone resources
 
 <!-- schema generated by tfplugindocs -->
 ## Schema
@@ -129,3 +122,5 @@ provider "descope" {
 - `project_id` (String, Deprecated)
 
 
+
+See the [M2M guide](guides/m2m) for service keys and custom token claims. Tenant records and tenant SSO are outside project snapshot export.

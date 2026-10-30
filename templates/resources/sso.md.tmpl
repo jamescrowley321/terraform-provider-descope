@@ -1,0 +1,85 @@
+---
+page_title: "descope_sso Resource - descope"
+subcategory: ""
+description: |-
+  Manages SSO configuration for a Descope tenant.
+---
+
+# descope_sso (Resource)
+
+Manages SSO configuration for a Descope tenant. Each SSO configuration is scoped to a tenant and supports either OIDC or SAML authentication. Multiple SSO configurations per tenant are supported via `sso_id`.
+
+
+Changing `display_name` replaces the SSO configuration. The SDK does not expose the slot display name on reads, so an imported slot will also need replacement when `display_name` is configured. Specify at most one of `oidc`, `saml`, and `saml_metadata`.
+
+## Example Usage
+
+### OIDC SSO
+
+```hcl
+resource "descope_tenant" "acme" {
+  project_id = var.project_id
+  name = "Acme Corp"
+}
+
+resource "descope_sso" "acme_oidc" {
+  project_id = var.project_id
+  tenant_id    = descope_tenant.acme.id
+  display_name = "Acme OIDC"
+
+  oidc = {
+    name          = "Acme SSO"
+    client_id     = "my-client-id"
+    client_secret = var.oidc_client_secret
+    auth_url      = "https://idp.acme.com/authorize"
+    token_url     = "https://idp.acme.com/token"
+    user_data_url = "https://idp.acme.com/userinfo"
+    scope         = ["openid", "profile", "email"]
+  }
+}
+```
+
+### SAML SSO (manual)
+
+```hcl
+resource "descope_sso" "partner_saml" {
+  project_id = var.project_id
+  tenant_id    = descope_tenant.partner.id
+  display_name = "Partner SAML"
+
+  saml = {
+    idp_url       = "https://idp.partner.com/sso"
+    idp_entity_id = "https://idp.partner.com"
+    idp_cert      = file("idp-cert.pem")
+
+    attribute_mapping = {
+      email = "user.email"
+      name  = "user.name"
+    }
+  }
+}
+```
+
+### SAML SSO (metadata URL)
+
+```hcl
+resource "descope_sso" "vendor_saml" {
+  project_id = var.project_id
+  tenant_id    = descope_tenant.vendor.id
+  display_name = "Vendor SAML"
+
+  saml_metadata = {
+    idp_metadata_url = "https://idp.vendor.com/metadata"
+  }
+}
+```
+
+## Schema
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Import
+
+```shell
+terraform import descope_sso.example '<project_id>/<tenant_id>/<sso_id>'
+```

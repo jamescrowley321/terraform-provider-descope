@@ -33,6 +33,7 @@ func TestProjectCRUD(t *testing.T) {
 	// Import
 	attrs = h.ReimportResource("project/create.tf", address, id, nameVar)
 	assert.Equal(t, id, StringAttr(attrs, "id"))
+	h.Apply(nameVar)
 
 	// Destroy
 	h.Destroy(nameVar)

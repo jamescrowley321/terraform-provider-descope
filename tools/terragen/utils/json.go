@@ -3,11 +3,10 @@ package utils
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
 )
 
 func ReadJSON[T any](path string, target *T) error {
-	b, err := os.ReadFile(filepath.Clean(path))
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -20,5 +19,5 @@ func WriteJSON[T any](path string, target *T) error {
 		return err
 	}
 	b = append(b, '\n')
-	return os.WriteFile(path, b, 0600)
+	return os.WriteFile(path, b, 0644)
 }

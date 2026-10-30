@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 
 	"github.com/descope/go-sdk/descope"
-	"github.com/descope/go-sdk/descope/sdk"
+	"github.com/descope/terraform-provider-descope/internal/infra"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/infra"
 )
 
 var (
@@ -23,17 +23,18 @@ func NewProjectExportDataSource() datasource.DataSource {
 }
 
 type projectExportDataSource struct {
-	management sdk.Management
+	client *infra.Client
 }
 
 type projectExportModel struct {
-	ID    types.String `tfsdk:"id"`
-	Files types.String `tfsdk:"files"`
+	ProjectID types.String `tfsdk:"project_id"`
+	ID        types.String `tfsdk:"id"`
+	Files     types.String `tfsdk:"files"`
 }
 
 func (d *projectExportDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
-	if data, ok := req.ProviderData.(*infra.ProviderData); ok {
-		d.management = data.Management
+	if client, ok := req.ProviderData.(*infra.Client); ok {
+		d.client = client
 	}
 }
 
@@ -45,6 +46,7 @@ func (d *projectExportDataSource) Schema(_ context.Context, _ datasource.SchemaR
 	resp.Schema = dsschema.Schema{
 		Description: "Exports a snapshot of the current Descope project configuration. Returns the full project settings and configurations as a JSON string.",
 		Attributes: map[string]dsschema.Attribute{
+			"project_id": dsschema.StringAttribute{Required: true},
 			"id": dsschema.StringAttribute{
 				Computed:    true,
 				Description: "Static identifier for the project export data source.",
@@ -58,16 +60,26 @@ func (d *projectExportDataSource) Schema(_ context.Context, _ datasource.SchemaR
 	}
 }
 
-func (d *projectExportDataSource) Read(ctx context.Context, _ datasource.ReadRequest, resp *datasource.ReadResponse) {
+func (d *projectExportDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	tflog.Info(ctx, "Reading project export data source")
 
-	if d.management == nil {
+	if d.client == nil {
 		resp.Diagnostics.AddError("Provider not configured", "The provider has not been configured. Ensure the provider block is present and valid.")
 		return
 	}
 
+	var pid types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("project_id"), &pid)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	management, clientErr := d.client.Management(pid.ValueString())
+	if clientErr != nil {
+		resp.Diagnostics.AddError("Error configuring project client", clientErr.Error())
+		return
+	}
 	snapshot, err := infra.RetryOnRateLimit(ctx, func() (*descope.ExportSnapshotResponse, error) {
-		return d.management.Project().ExportSnapshot(ctx, &descope.ExportSnapshotRequest{})
+		return management.Project().ExportSnapshot(ctx, &descope.ExportSnapshotRequest{})
 	})
 	if err != nil {
 		resp.Diagnostics.AddError("Error exporting project snapshot", err.Error())
@@ -86,8 +98,9 @@ func (d *projectExportDataSource) Read(ctx context.Context, _ datasource.ReadReq
 	}
 
 	model := projectExportModel{
-		ID:    types.StringValue("project_export"),
-		Files: types.StringValue(string(filesJSON)),
+		ProjectID: pid,
+		ID:        types.StringValue("project_export"),
+		Files:     types.StringValue(string(filesJSON)),
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 
