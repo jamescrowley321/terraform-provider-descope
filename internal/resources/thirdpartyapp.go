@@ -146,7 +146,7 @@ func (r *thirdPartyAppResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	plan.ID = state.ID
-	appReq := thirdpartyapp.ModelToRequest(ctx, &plan, &resp.Diagnostics)
+	appReq := thirdpartyapp.ModelToPatchRequest(ctx, &plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

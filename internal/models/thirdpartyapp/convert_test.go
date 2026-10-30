@@ -59,6 +59,33 @@ func TestModelToRequestEmpty(t *testing.T) {
 	assert.Empty(t, req.ApprovedCallbackUrls)
 }
 
+func TestModelToPatchRequest(t *testing.T) {
+	ctx := context.Background()
+	diags := diag.Diagnostics{}
+
+	model := &Model{
+		ID:                   types.StringValue("app-123"),
+		Name:                 types.StringValue("Test App"),
+		Description:          types.StringValue(""),
+		Logo:                 types.StringValue("https://example.com/logo.png"),
+		LoginPageURL:         types.StringValue("https://example.com/login"),
+		ApprovedCallbackUrls: strsetattr.Value([]string{"https://example.com/callback"}),
+	}
+
+	req := ModelToPatchRequest(ctx, model, &diags)
+
+	require.False(t, diags.HasError())
+	callbacks := []string{"https://example.com/callback"}
+	assert.Equal(t, &descope.PatchThirdPartyApplicationRequest{
+		ID:                   "app-123",
+		Name:                 new("Test App"),
+		Description:          new(""),
+		Logo:                 new("https://example.com/logo.png"),
+		LoginPageURL:         new("https://example.com/login"),
+		ApprovedCallbackUrls: &callbacks,
+	}, req)
+}
+
 func TestRefreshModelFromResponse(t *testing.T) {
 	ctx := context.Background()
 
