@@ -21,6 +21,19 @@ func ModelToRequest(ctx context.Context, model *Model, diags *diag.Diagnostics) 
 	}
 }
 
+// ModelToPatchRequest builds a patch request that sets every field the provider manages.
+func ModelToPatchRequest(ctx context.Context, model *Model, diags *diag.Diagnostics) *descope.PatchThirdPartyApplicationRequest {
+	req := ModelToRequest(ctx, model, diags)
+	return &descope.PatchThirdPartyApplicationRequest{
+		ID:                   req.ID,
+		Name:                 &req.Name,
+		Description:          &req.Description,
+		Logo:                 &req.Logo,
+		LoginPageURL:         &req.LoginPageURL,
+		ApprovedCallbackUrls: &req.ApprovedCallbackUrls,
+	}
+}
+
 func RefreshModelFromResponse(ctx context.Context, model *Model, app *descope.ThirdPartyApplication) {
 	model.ID = types.StringValue(app.ID)
 	model.Name = types.StringValue(app.Name)
