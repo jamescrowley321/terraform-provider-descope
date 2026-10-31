@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -64,18 +65,20 @@ func seedStateResources(t *testing.T, seedDir string, env []string) []stateResou
 func ExportFiles(t *testing.T, exportDir string) (configs map[string]string, payloads map[string]string) {
 	t.Helper()
 	configs, payloads = map[string]string{}, map[string]string{}
-	err := filepath.Walk(exportDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
+	root, err := os.OpenRoot(exportDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = root.Close() }()
+	err = fs.WalkDir(root.FS(), ".", func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || entry.IsDir() {
 			return err
 		}
-		relative, err := filepath.Rel(exportDir, path)
-		if err != nil {
-			return err
-		}
+		relative := filepath.FromSlash(path)
 		if relative == "terraform.tfvars" || relative == "plan.bin" || strings.HasPrefix(relative, ".terraform") || strings.HasSuffix(relative, ".tfstate") || strings.HasSuffix(relative, ".backup") {
 			return nil
 		}
-		content, err := os.ReadFile(path)
+		content, err := root.ReadFile(relative)
 		if err != nil {
 			return err
 		}

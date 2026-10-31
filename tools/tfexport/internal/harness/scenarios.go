@@ -53,7 +53,7 @@ func loadSteps(t *testing.T, dir string) []Step {
 		if err != nil {
 			t.Fatalf("scenario step %s must be named <number>.tf", filepath.Join(dir, name))
 		}
-		content, err := os.ReadFile(filepath.Join(dir, name))
+		content, err := os.ReadFile(filepath.Clean(filepath.Join(dir, name)))
 		if err != nil {
 			t.Fatalf("reading scenario step: %s", err)
 		}

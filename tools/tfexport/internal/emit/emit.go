@@ -36,7 +36,7 @@ type Plan struct {
 }
 
 func Write(ctx context.Context, outDir string, plan *Plan) error {
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
+	if err := os.MkdirAll(outDir, 0o750); err != nil {
 		return err
 	}
 
@@ -111,7 +111,7 @@ func Write(ctx context.Context, outDir string, plan *Plan) error {
 		if name != "provider.tf" {
 			name = prefixed(plan.NamePrefix, name)
 		}
-		if err := os.WriteFile(filepath.Join(outDir, name), content, 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(outDir, name), content, 0o600); err != nil {
 			return err
 		}
 	}

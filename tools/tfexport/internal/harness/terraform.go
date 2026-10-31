@@ -26,14 +26,15 @@ func Env(t *testing.T) []string {
 			terraformErr = err
 			return
 		}
-		build := exec.Command("go", "build", "-o", filepath.Join(dir, "terraform-provider-descope"), "github.com/descope/terraform-provider-descope")
+		build := exec.Command("go", "install", "github.com/descope/terraform-provider-descope")
+		build.Env = append(os.Environ(), "GOBIN="+dir)
 		if output, err := build.CombinedOutput(); err != nil {
 			terraformErr = fmt.Errorf("provider build failed: %w\n%s", err, output)
 			return
 		}
 		terraformRC = filepath.Join(dir, "terraform.tfrc")
 		overrides := fmt.Sprintf("provider_installation {\n  dev_overrides {\n    %q = %q\n  }\n  direct {}\n}\n", "descope/descope", dir)
-		terraformErr = os.WriteFile(terraformRC, []byte(overrides), 0o644)
+		terraformErr = os.WriteFile(terraformRC, []byte(overrides), 0o600)
 	})
 	if terraformErr != nil {
 		t.Fatal(terraformErr)
@@ -41,26 +42,33 @@ func Env(t *testing.T) []string {
 	return append(os.Environ(), "TF_CLI_CONFIG_FILE="+terraformRC, "TF_IN_AUTOMATION=1")
 }
 
-func Try(dir string, env []string, args ...string) ([]byte, error) {
+// terraformCommand builds a terraform invocation from the binary on PATH. The arguments are terraform subcommands and
+// flags chosen by the test code in this package, never external input.
+func terraformCommand(dir string, env []string, args ...string) (*exec.Cmd, error) {
 	terraform, err := exec.LookPath("terraform")
 	if err != nil {
 		return nil, err
 	}
-	command := exec.Command(terraform, args...)
+	command := exec.Command(terraform, args...) // #nosec G204 -- terraform resolved via LookPath; args are test-defined terraform subcommands
 	command.Dir = dir
 	command.Env = env
+	return command, nil
+}
+
+func Try(dir string, env []string, args ...string) ([]byte, error) {
+	command, err := terraformCommand(dir, env, args...)
+	if err != nil {
+		return nil, err
+	}
 	return command.CombinedOutput()
 }
 
 func Run(t *testing.T, dir string, env []string, args ...string) []byte {
 	t.Helper()
-	terraform, err := exec.LookPath("terraform")
+	command, err := terraformCommand(dir, env, args...)
 	if err != nil {
 		t.Skip("terraform is not installed")
 	}
-	command := exec.Command(terraform, args...)
-	command.Dir = dir
-	command.Env = env
 	output, err := command.CombinedOutput()
 	if err != nil {
 		t.Fatalf("terraform %s failed: %s\n%s", strings.Join(args, " "), err, output)
@@ -85,13 +93,10 @@ func PlanJSON(t *testing.T, dir string, env []string) []Change {
 	planFile := filepath.Join(dir, "plan.bin")
 	Run(t, dir, env, "plan", "-input=false", "-out="+planFile)
 
-	terraform, err := exec.LookPath("terraform")
+	show, err := terraformCommand(dir, env, "show", "-json", planFile)
 	if err != nil {
 		t.Skip("terraform is not installed")
 	}
-	show := exec.Command(terraform, "show", "-json", planFile)
-	show.Dir = dir
-	show.Env = env
 	output, err := show.Output()
 	if err != nil {
 		t.Fatalf("terraform show failed: %s", err)
@@ -151,8 +156,13 @@ func AssertNoopPlan(t *testing.T, changes []Change) {
 
 func WriteVariables(t *testing.T, outDir, projectID string) {
 	t.Helper()
+	root, err := os.OpenRoot(outDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = root.Close() }()
 	// the file is absent when the export declares no variables at all, which happens once the project supplies the id
-	variables, err := os.ReadFile(filepath.Join(outDir, "variables.tf"))
+	variables, err := root.ReadFile("variables.tf")
 	if err != nil && !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
@@ -168,7 +178,7 @@ func WriteVariables(t *testing.T, outDir, projectID string) {
 	if len(lines) == 0 {
 		return
 	}
-	if err := os.WriteFile(filepath.Join(outDir, "terraform.tfvars"), []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+	if err := root.WriteFile("terraform.tfvars", []byte(strings.Join(lines, "\n")+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 }

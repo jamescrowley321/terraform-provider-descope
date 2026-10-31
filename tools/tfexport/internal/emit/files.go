@@ -36,11 +36,11 @@ func extractFiles(ctx context.Context, outDir, prefix string, resource *Resource
 				content = indented.Bytes()
 			}
 		}
-		if err := os.MkdirAll(filepath.Join(outDir, dir), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Join(outDir, dir), 0o750); err != nil {
 			return err
 		}
 		relative := filepath.Join(dir, filename)
-		if err := os.WriteFile(filepath.Join(outDir, relative), content, 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(outDir, relative), content, 0o600); err != nil {
 			return err
 		}
 		extracted[name] = filepath.ToSlash(relative)

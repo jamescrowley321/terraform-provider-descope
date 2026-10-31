@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -15,7 +16,7 @@ import (
 // Returns the JSON fixture at path as a compacted quoted HCL string, applying old/new replacement pairs first and escaping
 // the template interpolation sequences that are meaningful inside quoted HCL strings.
 func FixtureJSON(t *testing.T, path string, replacements ...string) string {
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(filepath.Clean(path))
 	require.NoError(t, err)
 	s := string(b)
 	for i := 0; i+1 < len(replacements); i += 2 {

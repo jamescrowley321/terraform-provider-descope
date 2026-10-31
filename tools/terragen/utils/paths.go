@@ -66,7 +66,7 @@ func PreparePaths() *Paths {
 func EnsurePath(path string, subdirs ...string) string {
 	for _, d := range subdirs {
 		path = filepath.Join(path, d)
-		if err := os.Mkdir(path, 0755); err != nil && !os.IsExist(err) {
+		if err := os.Mkdir(path, 0750); err != nil && !os.IsExist(err) {
 			log.Fatalf("failed to create subdirectory %s: %s", path, err.Error())
 		}
 	}
@@ -76,7 +76,7 @@ func EnsurePath(path string, subdirs ...string) string {
 func requireDir(path string, subdirs ...string) string {
 	path = filepath.Join(path, filepath.Join(subdirs...))
 	if info, err := os.Stat(path); os.IsNotExist(err) || !info.IsDir() {
-		log.Fatalf("expected to find directory at path: %s", path)
+		log.Fatalf("expected to find directory at path: %s", strings.ReplaceAll(path, "\n", ""))
 	}
 	return path
 }

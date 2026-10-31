@@ -67,15 +67,20 @@ func RunScenario(t *testing.T, scenario Scenario) {
 	client := infra.NewClient("tfexport-test", os.Getenv("DESCOPE_MANAGEMENT_KEY"), os.Getenv("DESCOPE_BASE_URL"))
 
 	seedDir := t.TempDir()
+	seedRoot, err := os.OpenRoot(seedDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = seedRoot.Close() })
 	projectName := fmt.Sprintf("testacc-tfexport-%s-%d", scenario.Name, time.Now().UnixNano()%1000000)
 	preamble := fmt.Sprintf(SeedPreamble, projectName)
 
 	for _, file := range scenario.Files {
-		content, err := os.ReadFile(filepath.Join("testdata", file))
+		content, err := os.ReadFile(filepath.Clean(filepath.Join("testdata", file)))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(seedDir, file), content, 0o644); err != nil {
+		if err := seedRoot.WriteFile(file, content, 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -103,7 +108,7 @@ func RunScenario(t *testing.T, scenario Scenario) {
 
 	for i, step := range scenario.Steps {
 		stepName := fmt.Sprintf("step%d", i+1)
-		if err := os.WriteFile(filepath.Join(seedDir, "main.tf"), []byte(preamble+step.Config), 0o644); err != nil {
+		if err := seedRoot.WriteFile("main.tf", []byte(preamble+step.Config), 0o600); err != nil {
 			t.Fatal(err)
 		}
 		Run(t, seedDir, env, "apply", "-auto-approve", "-input=false")
@@ -212,7 +217,7 @@ func assertCoverage(t *testing.T, stepName, seedDir, exportDir string, env []str
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".tf") {
 			continue
 		}
-		content, err := os.ReadFile(filepath.Join(exportDir, entry.Name()))
+		content, err := os.ReadFile(filepath.Clean(filepath.Join(exportDir, entry.Name())))
 		if err != nil {
 			t.Fatal(err)
 		}
