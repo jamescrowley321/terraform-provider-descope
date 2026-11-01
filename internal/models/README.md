@@ -272,5 +272,5 @@ See existing models for reference:
 - **Simple attributes**: `authorization/permission.go`
 - **Complex nested models**: `authentication/password.go`
 - **Lists with matching**: `attributes/attributes.go`
-- **Validators and modifiers**: `authorization/role.go`
+- **Validators and modifiers**: `authorization/authorization.go`
 - **Reference management**: `connectors/connectors.go`
