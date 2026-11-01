@@ -160,28 +160,31 @@ graph LR
         Perm[descope_permission]
         SSO[descope_sso]
         InApp[descope_inbound_app]
-        TPA[descope_third_party_application]
-        OutApp[descope_outbound_application]
+        OutApp[descope_outbound_app]
         PwdSettings[descope_password_settings]
         FGA[descope_fga_schema]
         List[descope_list]
         AK[descope_access_key]
         MK[descope_management_key]
+        Flows[descope_flow]
+        JWT[descope_jwt_template]
+        SessionSettings[descope_session_settings]
     end
 
     subgraph "Runtime / Console-Managed"
         Users[Users]
-        Flows[Auth Flows]
         Sessions[Sessions]
     end
 
+    Project --> Flows
+    Project --> JWT
+    Project --> SessionSettings
     Project --> Tenant
     Project --> Role
     Project --> Perm
     Tenant --> SSO
     Role --> Perm
     Project --> InApp
-    Project --> TPA
     Project --> OutApp
     Project --> PwdSettings
     Project --> FGA

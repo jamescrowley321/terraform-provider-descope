@@ -2,100 +2,59 @@ package infra
 
 import (
 	"context"
-	"net/http"
+	"slices"
 	"time"
 
 	"github.com/descope/go-sdk/descope"
+	"github.com/descope/go-sdk/descope/api"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-const (
-	maxRetries             = 3
-	defaultRetryWait       = 10 * time.Second
-	maxRetryWait           = 60 * time.Second
-	transientRetryBaseWait = 2 * time.Second
-)
+// Transient races with the backend's async post-creation work: E111009 = management key ReBAC tuples not yet
+// written, E111604 = theme version conflict with the creation handler republishing it. Both clear on the next apply.
+var retryableErrorCodes = []string{"E111009", "E111604"}
 
-// RetryOnRateLimit wraps an SDK call with retry logic for transient errors.
-// It retries up to maxRetries times when the Descope SDK returns a rate limit
-// error or a server error (5xx), using appropriate backoff for each case.
-func RetryOnRateLimit[T any](ctx context.Context, fn func() (T, error)) (T, error) {
-	for attempt := range uint(maxRetries) {
-		result, err := fn()
-		if err == nil {
-			return result, nil
-		}
+var retryDelays = []time.Duration{500 * time.Millisecond, time.Second, 2 * time.Second, 4 * time.Second}
 
-		de, retryable := isRetryableError(err)
-		if !retryable {
-			return result, err
-		}
-
-		wait := retryWaitDuration(de, attempt)
-
-		tflog.Warn(ctx, "Transient Descope API error, retrying", map[string]any{
-			"attempt": attempt + 1,
-			"max":     maxRetries,
-			"wait":    wait.String(),
-			"code":    de.Code,
-		})
-
-		select {
-		case <-time.After(wait):
-		case <-ctx.Done():
-			var zero T
-			return zero, ctx.Err()
-		}
-	}
-
-	return fn()
+// Safe to replay: the backend returns these codes before the request has any effect.
+func retrying(ctx context.Context, call func() (*api.HTTPResponse, error)) (*api.HTTPResponse, error) {
+	return RetryOnRateLimit(ctx, call)
 }
 
-// RetryOnRateLimitNoResult wraps an SDK call that returns only an error.
-func RetryOnRateLimitNoResult(ctx context.Context, fn func() error) error {
-	_, err := RetryOnRateLimit(ctx, func() (struct{}, error) {
-		return struct{}{}, fn()
-	})
+func RetryOnRateLimit[T any](ctx context.Context, call func() (T, error)) (T, error) {
+	res, err := call()
+	for _, delay := range retryDelays {
+		de := descope.AsError(err)
+		if de == nil {
+			break
+		}
+		if de.Code == descope.ErrRateLimitExceeded.Code {
+			delay = rateLimitDelay(de)
+		} else if !slices.Contains(retryableErrorCodes, de.Code) {
+			break
+		}
+		tflog.Info(ctx, "Retrying after a transient backend error", map[string]any{"code": de.Code, "delay": delay.String()})
+		select {
+		case <-ctx.Done():
+			return res, ctx.Err()
+		case <-time.After(delay):
+		}
+		res, err = call()
+	}
+	return res, err
+}
+
+func RetryOnRateLimitNoResult(ctx context.Context, call func() error) error {
+	_, err := RetryOnRateLimit(ctx, func() (struct{}, error) { return struct{}{}, call() })
 	return err
 }
 
-// isRetryableError checks if an error is a transient Descope API error that
-// should be retried. Returns the Descope error and true for rate limit errors
-// and server errors (5xx status codes).
-func isRetryableError(err error) (*descope.Error, bool) {
-	de := descope.AsError(err)
-	if de == nil {
-		return nil, false
-	}
-	if de.Code == descope.ErrRateLimitExceeded.Code {
-		return de, true
-	}
-	if statusCode, ok := de.Info[descope.ErrorInfoKeys.HTTPResponseStatusCode].(int); ok {
-		if statusCode >= http.StatusInternalServerError && statusCode < 600 {
-			return de, true
+func rateLimitDelay(de *descope.Error) time.Duration {
+	if seconds, ok := de.Info[descope.ErrorInfoKeys.RateLimitExceededRetryAfter].(int); ok && seconds > 0 {
+		if seconds > 60 {
+			return time.Minute
 		}
+		return time.Duration(seconds) * time.Second
 	}
-	return nil, false
-}
-
-// retryWaitDuration returns the appropriate wait duration for a retryable error.
-// Rate limit errors use the Retry-After header if available, falling back to
-// defaultRetryWait. Server errors use exponential backoff starting at 2 seconds.
-func retryWaitDuration(de *descope.Error, attempt uint) time.Duration {
-	if de.Code == descope.ErrRateLimitExceeded.Code {
-		if retryAfter, ok := de.Info[descope.ErrorInfoKeys.RateLimitExceededRetryAfter].(int); ok && retryAfter > 0 {
-			wait := time.Duration(retryAfter) * time.Second
-			if wait > maxRetryWait {
-				return maxRetryWait
-			}
-			return wait
-		}
-		return defaultRetryWait
-	}
-	// Exponential backoff for server errors: 2s, 4s, 8s, ...
-	wait := transientRetryBaseWait << attempt
-	if wait > maxRetryWait {
-		return maxRetryWait
-	}
-	return wait
+	return 10 * time.Second
 }

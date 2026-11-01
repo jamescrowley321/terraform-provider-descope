@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/descope/terraform-provider-descope/internal/helpers"
+	"github.com/descope/terraform-provider-descope/internal/infra"
+	"github.com/descope/terraform-provider-descope/internal/models/project"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	rsschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/infra"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/helpers"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/project"
 )
 
 var (
@@ -29,8 +29,8 @@ type projectDataSource struct {
 }
 
 func (d *projectDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
-	if data, ok := req.ProviderData.(*infra.ProviderData); ok {
-		d.client = data.Client
+	if client, ok := req.ProviderData.(*infra.Client); ok {
+		d.client = client
 	}
 }
 
@@ -61,26 +61,23 @@ func (d *projectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	projectID := id.ValueString()
 
-	res, err := d.client.Read(ctx, projectID, "project", projectID)
+	res, err := d.client.Get(ctx, projectID, "/v1/mgmt/project", nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading project", err.Error())
 		return
 	}
 
 	// Mark context so ShouldSetAttributeValue allows populating null fields
-	ctx = helpers.ContextForDataSource(ctx)
+	ctx = helpers.MarkImportContext(ctx)
 
 	model := &project.ProjectModel{}
 	model.ID = types.StringValue(projectID)
 
 	handler := helpers.NewHandler(ctx, &resp.Diagnostics)
-	model.CollectReferences(handler)
-	model.SetValues(handler, res.Data)
+	model.SetValues(handler, res)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	model.CollectReferences(handler)
-	model.UpdateReferences(handler)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 	tflog.Info(ctx, "Project data source read")

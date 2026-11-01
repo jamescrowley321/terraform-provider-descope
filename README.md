@@ -1,273 +1,206 @@
 
-> **Community Fork** — This is an independently maintained fork of [descope/terraform-provider-descope](https://github.com/descope/terraform-provider-descope).
-> It is **not** an official Descope product. For the official provider, see the [upstream repository](https://github.com/descope/terraform-provider-descope).
-
 <div align="center">
-  <h3 align="center">Descope Terraform Provider (Community Fork)</h3>
+  <a href="https://github.com/jamescrowley321/terraform-provider-descope">
+    <img src=".github/images/descope-logo.png" alt="Descope Logo" width="160" height="160">
+  </a>
+
+  <h3 align="center">Descope Terraform Provider</h3>
 
   <p align="center">
-    A community-maintained Terraform provider for managing Descope projects with extended resource coverage
-  </p>
-
-  <p align="center">
-    <a href="https://securityscorecards.dev/viewer/?uri=github.com/jamescrowley321/terraform-provider-descope"><img src="https://api.securityscorecards.dev/projects/github.com/jamescrowley321/terraform-provider-descope/badge" alt="OpenSSF Scorecard"></a>
+    Community Terraform provider for Descope, based on the official upstream provider
   </p>
 </div>
 
 <br />
 
-## Why This Fork?
-
-The upstream Descope Terraform provider supports project-level configuration through `descope_project`, plus a handful of company-level resources. This fork extends coverage to the full Management API surface, adding 11 new resources and 4 data sources.
-
-### Resource Coverage
-
-| Resource | Type | Upstream | This Fork |
-|----------|------|:--------:|:---------:|
-| `descope_project` | Resource | Yes | Yes |
-| `descope_descoper` | Resource | Yes | Yes |
-| `descope_management_key` | Resource | Yes | Yes |
-| `descope_inbound_app` | Resource | Yes | Yes |
-| `descope_tenant` | Resource | - | **Yes** |
-| `descope_access_key` | Resource | - | **Yes** |
-| `descope_role` | Resource | - | **Yes** |
-| `descope_permission` | Resource | - | **Yes** |
-| `descope_sso` | Resource | - | **Yes** |
-| `descope_sso_application` | Resource | - | **Yes** |
-| `descope_third_party_application` | Resource | - | **Yes** |
-| `descope_outbound_application` | Resource | - | **Yes** |
-| `descope_fga_schema` | Resource | - | **Yes** |
-| `descope_list` | Resource | - | **Yes** |
-| `descope_password_settings` | Resource | - | **Yes** |
-| `data.descope_project` | Data Source | - | **Yes** |
-| `data.descope_password_settings` | Data Source | - | **Yes** |
-| `data.descope_project_export` | Data Source | - | **Yes** |
-| `data.descope_fga_check` | Data Source | - | **Yes** |
-
-See the [open issues](https://github.com/jamescrowley321/terraform-provider-descope/issues) for the full roadmap.
-
-<br/>
-
 ## About
 
-Use this Terraform provider to manage your [Descope](https://www.descope.com) project using Terraform configuration files.
+Use the Descope Terraform Provider to manage your [Descope](https://www.descope.com) project
+using Terraform configuration files.
 
-- Create and manage projects with settings, auth methods, connectors, and flows.
-- Manage tenants, access keys, roles, permissions, and SSO configuration as standalone resources.
-- Configure fine-grained authorization (FGA) schemas and IP/text allow/deny lists.
-- Create and manage SSO, third-party, outbound, and inbound applications.
-- Read project data, password settings, and FGA authorization checks via data sources.
-
-> **Note:** Users are intentionally excluded from this provider. Users are runtime entities created through authentication flows, not infrastructure — managing them via Terraform would cause perpetual state drift and is an anti-pattern. Use the [Descope SDK](https://docs.descope.com) or console for user management.
+* Modify project settings and authentication methods.
+* Create connectors, roles, permissions, applications and other entities.
+* Use custom themes and flows created in the Descope console.
+* Reference entities from one another so they're created in the right order.
 
 <br/>
 
 ## Getting Started
 
+This revision adopts upstream’s standalone resource schemas and makes breaking changes to the fork.
+Every project-scoped resource takes its own `project_id`. The old `sso_application`, `third_party_application`,
+and `outbound_application` resources are replaced by `oidc_app` / `saml_app`, `inbound_app`, and `outbound_app`.
+See the [M2M guide](docs/guides/m2m.md) for access keys, custom claims, and token configuration.
+
 ### Requirements
 
-- [Terraform CLI](https://developer.hashicorp.com/terraform/install)
-- A Descope account (free tier works for most resources; pro/enterprise required for SSO applications and project export)
-- A [management key](https://app.descope.com/settings/company) for your Descope company
+-   The [Terraform CLI](https://developer.hashicorp.com/terraform/install) installed.
+-   A pro or enterprise tier license for your Descope company.
+-   A valid management key for your Descope company. You can create one in the
+    [Company section](https://app.descope.com/settings/company) of the Descope console.
 
-### Installation
+### Usage
 
-Add the provider to your Terraform configuration:
+Declare the provider in your configuration and `terraform init` will automatically fetch and install the provider
+for you from the [Terraform Registry](https://registry.terraform.io):
 
 ```hcl
 terraform {
   required_providers {
     descope = {
-      source  = "jamescrowley321/descope"
-      version = "~> 1.0"
+      source = "jamescrowley321/descope"
     }
   }
 }
 ```
 
-Then run `terraform init` to install it.
-
-### Usage
-
-Configure the provider and declare resources. The management key and other provider settings can also be set via environment variables (`DESCOPE_MANAGEMENT_KEY`, `DESCOPE_PROJECT_ID`, `DESCOPE_BASE_URL`).
+Configure the Descope provider with the management key as explained above and declare
+a `descope_project` resource to create a new project for use with Terraform:
 
 ```hcl
 provider "descope" {
-  project_id     = "P..."
   management_key = "K..."
 }
+
+resource "descope_project" "my_project" {
+  name = "My Project"
+}
 ```
+
+Run `terraform plan` to ensure everything works, and then `terraform apply` if you want the project to actually
+be created.
+
+The `descope_project` resource manages the project itself and little else. Everything inside the project, from
+authentication methods to roles, connectors and flows, is a separate resource that points back at it with a
+`project_id` attribute. The examples below all assume the `my_project` resource declared above.
+
+### Existing Projects
+
+To start managing a project that already exists, use the [tfexport](tools/tfexport) tool to generate its
+configuration, along with `import` blocks that adopt its entities into your Terraform state.
 
 <br/>
 
 ## Examples
 
-### Tenants
+### Machine-to-machine authentication
 
-Create and manage tenants with self-provisioning domains and SSO enforcement:
+Use `descope_access_key` for service identities, `descope_jwt_template` with `type = "key"` for token claims,
+and `descope_session_settings.access_key_jwt_template` to select the template. JSON attributes use `jsonencode`.
+See the complete [M2M example](examples/m2m/main.tf) and [guide](docs/guides/m2m.md).
+
+The fork retains `descope_tenant`, tenant SSO (`descope_sso`), tenant-scoped roles (`descope_role.tenant_id`),
+and the project, password-settings, project-export, and FGA-check data sources. Project snapshots and `tfexport`
+cover project configuration; tenants and their SSO configurations are outside that export.
+
+### Settings
+
+Override the default values for specified project settings, in this case the session settings:
 
 ```hcl
-resource "descope_tenant" "production" {
-  name                      = "Acme Corp"
-  self_provisioning_domains = ["acme.com"]
-  enforce_sso               = true
+resource "descope_session_settings" "my_settings" {
+  project_id = descope_project.my_project.id
 
-  settings = {
-    session_settings_enabled      = true
-    refresh_token_expiration      = 30
-    refresh_token_expiration_unit = "days"
-  }
+  refresh_token_expiration = "3 weeks"
+  enable_inactivity = true
+  inactivity_time = "1 hour"
 }
 ```
 
-### Roles and Permissions
+The other settings resources work the same way, such as `descope_project_settings` for domains and security,
+`descope_invite_settings` for user invitations, and `descope_otp_settings`, `descope_password_settings` and
+the rest for the authentication methods.
 
-Manage authorization as standalone resources with explicit dependencies:
+### Authorization
+
+Configure roles and permissions for users in the project. Roles refer to permissions by name, so use the `name`
+attribute of the permission resources rather than hardcoding the names, and Terraform will know to create the
+permissions first:
 
 ```hcl
 resource "descope_permission" "build_apps" {
-  name        = "build-apps"
+  project_id = descope_project.my_project.id
+  name = "build-apps"
   description = "Allowed to build and sign applications"
 }
 
-resource "descope_permission" "deploy" {
-  name        = "deploy"
-  description = "Allowed to deploy to production"
+resource "descope_permission" "upload_builds" {
+  project_id = descope_project.my_project.id
+  name = "upload-builds"
+  description = "Allowed to upload new releases"
 }
 
-resource "descope_role" "developer" {
-  name             = "Developer"
-  description      = "Builds and deploys applications"
-  permission_names = [
+resource "descope_permission" "install_builds" {
+  project_id = descope_project.my_project.id
+  name = "install-builds"
+  description = "Allowed to install beta releases"
+}
+
+resource "descope_role" "app_developer" {
+  project_id = descope_project.my_project.id
+  name = "App Developer"
+  description = "Builds apps and uploads new beta builds"
+  permissions = [
     descope_permission.build_apps.name,
-    descope_permission.deploy.name,
+    descope_permission.upload_builds.name,
+    descope_permission.install_builds.name,
   ]
 }
+
+resource "descope_role" "app_tester" {
+  project_id = descope_project.my_project.id
+  name = "App Tester"
+  description = "Installs and tests beta releases"
+  permissions = [descope_permission.install_builds.name]
+}
 ```
 
-### Access Keys
+### Connectors and Flows
 
-Create machine-to-machine access keys with IP restrictions and custom claims:
+Setup a flow called `sign-up-or-in` by creating it in the Descope console in a development
+project and exporting it as a `.json` file. Any entities the flow relies on need to be in the
+plan as well, so in this example we also configure an HTTP connector with the expected name
+`User Check` that the flow expects to be able to make use of. The names in the flow data are
+matched against the entities in the project when the flow is imported, and nothing resolves them
+again afterwards, so the connector has to exist by then and `depends_on` is what guarantees it.
 
 ```hcl
-resource "descope_access_key" "ci_deploy" {
-  name          = "CI Deploy Key"
-  description   = "Used by GitHub Actions for deployments"
-  role_names    = ["Tenant Admin"]
-  permitted_ips = ["192.168.1.0/24"]
+resource "descope_flow" "sign_up_or_in" {
+  project_id = descope_project.my_project.id
+  flow_id = "sign-up-or-in"
+  data = file("flows/sign-up-or-in.json")
 
-  custom_claims = {
-    environment = "production"
+  depends_on = [descope_http_connector.user_check]
+}
+
+resource "descope_http_connector" "user_check" {
+  project_id = descope_project.my_project.id
+  name = "User Check"
+  description = "A connector for checking if a new user is allowed to sign up"
+  base_url = "https://example.com"
+
+  authentication = {
+    bearer_token = "<secret>"
   }
 }
 ```
 
-### SSO Configuration
-
-Configure OIDC SSO for a tenant:
-
-```hcl
-resource "descope_sso" "okta" {
-  tenant_id    = descope_tenant.production.id
-  display_name = "Okta SSO"
-
-  oidc = {
-    name          = "Okta"
-    client_id     = "0oa..."
-    client_secret = var.okta_client_secret
-    auth_url      = "https://company.okta.com/oauth2/v1/authorize"
-    token_url     = "https://company.okta.com/oauth2/v1/token"
-    user_data_url = "https://company.okta.com/oauth2/v1/userinfo"
-
-    attribute_mapping = {
-      login_id = "sub"
-      email    = "email"
-      name     = "name"
-    }
-  }
-}
-```
-
-### Fine-Grained Authorization
-
-Define an FGA schema and check authorization:
-
-```hcl
-resource "descope_fga_schema" "authz" {
-  schema = <<-EOT
-    model AuthZ 1.0
-
-    type user
-
-    type document
-      relation owner: user
-      relation viewer: user
-  EOT
-}
-
-data "descope_fga_check" "can_view" {
-  resource    = "document:readme"
-  relation    = "viewer"
-  target      = "user:alice"
-  depends_on  = [descope_fga_schema.authz]
-}
-```
-
-### IP/Text Allow and Deny Lists
-
-Manage lists for IP filtering or text-based rules:
-
-```hcl
-resource "descope_list" "blocked_ips" {
-  name        = "Blocked IPs"
-  description = "IPs blocked from authentication"
-  type        = "ips"
-  data        = ["192.0.2.1", "198.51.100.0/24"]
-}
-```
-
-### Password Settings
-
-Configure project-wide password policy:
-
-```hcl
-resource "descope_password_settings" "policy" {
-  enabled          = true
-  min_length       = 12
-  lowercase        = true
-  uppercase        = true
-  number           = true
-  non_alphanumeric = true
-  expiration       = true
-  expiration_weeks = 26
-  lock             = true
-  lock_attempts    = 5
-}
-```
-
-### Project Settings
-
-Create a project with custom session configuration and authorization:
-
-```hcl
-resource "descope_project" "my_project" {
-  name = "My Project"
-
-  project_settings = {
-    refresh_token_expiration = "3 weeks"
-    session_token_expiration = "1 hour"
-    refresh_token_rotation   = true
-  }
-}
-```
+There's a resource for every connector type, named after the connector itself, so an SMTP connector is
+a `descope_smtp_connector`, a Datadog connector is a `descope_datadog_connector`, and so on.
 
 <br/>
 
 ## Development
 
-See the [README](internal/README.md) file in the `internal` directory for architecture details.
+See the [CLAUDE.md](CLAUDE.md) file for the development commands, code generation rules, and conventions used in
+this repository.
 
 ### Setup
+
+Clone the repository and run `make dev` to prepare your local environment for development. This will ensure
+you have the requisite `go` compiler, build and install the Descope Terraform Provider binary to `$GOPATH/bin`,
+and create a `~/.terraformrc` override file to instruct `terraform` to use the local provider binary instead
+of loading it from the Terraform registry.
 
 ```bash
 git clone https://github.com/jamescrowley321/terraform-provider-descope
@@ -275,57 +208,40 @@ cd terraform-provider-descope
 make dev
 ```
 
-This builds the provider binary, installs it to `$GOPATH/bin`, and creates a `~/.terraformrc` with `dev_overrides` so Terraform uses your local build.
-
 ### Build and Test
 
-```bash
-make install            # Rebuild and install the provider
-make test               # Unit tests (no credentials needed)
-make testintegration    # Integration tests against live Descope API
-make testacc            # Acceptance + unit tests
-make lint               # Linting + secret detection
-make testcleanup        # Delete leftover testacc-* resources
-```
-
-Integration tests require a `.env` file with credentials (see `.env.example`):
+After making changes to source files, run `make install` to rebuild and install the provider. You can also run
+the acceptance tests to ensure the provider works as expected.
 
 ```bash
-source .env && make testintegration
+# runs all unit and acceptance tests
+make testacc
+
+# or, to run all tests and compute code coverage
+make testcoverage
+
+# rebuild and install the provider
+make install
 ```
 
-### Testing
-
-This project uses a multi-layered testing strategy with adversarial SDK verification. Integration tests don't just check Terraform state — they call the Descope API directly to verify resources actually exist with the correct field values. See [docs/testing.md](docs/testing.md) for the full breakdown of every validation gate.
-
 <br/>
 
-## Contributing
+## Upstream relationship
 
-Contributions are welcome, including AI-assisted submissions. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-<br/>
-
-## Relationship to Upstream
-
-This fork tracks the upstream [descope/terraform-provider-descope](https://github.com/descope/terraform-provider-descope) repository. Upstream changes are merged periodically to stay current. New resources developed here may be proposed back to the upstream project via pull requests.
-
-### Attribution
-
-This project is based on the work of [Descope](https://www.descope.com) and the original provider authors. The original source code is licensed under the [MIT License](LICENSE).
-
-<br/>
+This fork tracks [descope/terraform-provider-descope](https://github.com/descope/terraform-provider-descope).
+Shared resources and the CRUD framework follow upstream; tenant features and M2M regression fixes remain local
+until accepted upstream. Contributions to this fork go to this repository. Retirement remains a separate decision.
 
 ## Support
+
+#### Contributing
+
+If anything is missing or not working correctly please open an issue or pull request.
 
 #### Learn more
 
 To learn more please see the [Descope documentation](https://docs.descope.com).
 
-#### Issues
+#### Contact us
 
-If anything is missing or not working correctly please [open an issue](https://github.com/jamescrowley321/terraform-provider-descope/issues).
-
-#### Descope Community
-
-For general Descope questions (not specific to this fork) you can use the [Slack community](https://www.descope.com/community) or contact [Descope support](mailto:support@descope.com).
+If you need help you can hop on our [Slack community](https://www.descope.com/community) or send an email to [Descope support](mailto:support@descope.com).

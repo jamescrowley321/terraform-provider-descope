@@ -3,7 +3,8 @@ variable "name" {
 }
 
 resource "descope_project" "test" {
-  name = var.name
+  deletion_protection = false
+  name                = var.name
 }
 
 output "id" {

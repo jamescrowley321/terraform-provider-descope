@@ -5,13 +5,12 @@ import (
 	"fmt"
 
 	"github.com/descope/go-sdk/descope"
-	"github.com/descope/go-sdk/descope/sdk"
+	"github.com/descope/terraform-provider-descope/internal/infra"
+	"github.com/descope/terraform-provider-descope/internal/models/fga"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/infra"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/fga"
 )
 
 var (
@@ -24,12 +23,12 @@ func NewFGACheckDataSource() datasource.DataSource {
 }
 
 type fgaCheckDataSource struct {
-	management sdk.Management
+	client *infra.Client
 }
 
 func (d *fgaCheckDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
-	if data, ok := req.ProviderData.(*infra.ProviderData); ok {
-		d.management = data.Management
+	if client, ok := req.ProviderData.(*infra.Client); ok {
+		d.client = client
 	}
 }
 
@@ -41,6 +40,7 @@ func (d *fgaCheckDataSource) Schema(_ context.Context, _ datasource.SchemaReques
 	resp.Schema = dsschema.Schema{
 		Description: "Checks whether a given FGA relation is authorized. Returns whether the target has the specified relation to the resource.",
 		Attributes: map[string]dsschema.Attribute{
+			"project_id":    dsschema.StringAttribute{Required: true},
 			"id":            dsschema.StringAttribute{Computed: true},
 			"resource":      dsschema.StringAttribute{Required: true},
 			"resource_type": dsschema.StringAttribute{Required: true},
@@ -60,6 +60,11 @@ func (d *fgaCheckDataSource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
+	management, clientErr := d.client.Management(model.ProjectID.ValueString())
+	if clientErr != nil {
+		resp.Diagnostics.AddError("Error configuring project client", clientErr.Error())
+		return
+	}
 	relation := &descope.FGARelation{
 		Resource:     model.Resource.ValueString(),
 		ResourceType: model.ResourceType.ValueString(),
@@ -69,7 +74,7 @@ func (d *fgaCheckDataSource) Read(ctx context.Context, req datasource.ReadReques
 	}
 
 	checks, err := infra.RetryOnRateLimit(ctx, func() ([]*descope.FGACheck, error) {
-		return d.management.FGA().Check(ctx, []*descope.FGARelation{relation})
+		return management.FGA().Check(ctx, []*descope.FGARelation{relation})
 	})
 	if err != nil {
 		resp.Diagnostics.AddError("Error checking FGA relation", err.Error())

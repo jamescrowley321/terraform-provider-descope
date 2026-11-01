@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/schema"
-	"github.com/jamescrowley321/terraform-provider-descope/tools/terragen/utils"
+	"github.com/descope/terraform-provider-descope/tools/terragen/schema"
+	"github.com/descope/terraform-provider-descope/tools/terragen/utils"
 )
 
 const breakBlankLines = 3
@@ -92,7 +92,7 @@ func expectFieldNotes(path string, s *bufio.Scanner) {
 		case strings.HasPrefix(line, "- "):
 			state = "munch"
 		default:
-			log.Fatalf("unexpected line when parsing field in documentation file at path %s: `%s`", path, strings.ReplaceAll(line, "\n", "")) // nosec G706 -- build-time tool, not exposed to user input
+			log.Fatalf("unexpected line when parsing field in documentation file at path %s: `%s`", path, strings.ReplaceAll(line, "\n", ""))
 		}
 	}
 	log.Fatalf("unexpected end of file when when parsing field in documentation file at path %s", path)
@@ -145,7 +145,7 @@ func scanUntilBreak(path string, s *bufio.Scanner) []string {
 		lines = append(lines, line)
 	}
 	if err := s.Err(); err != nil {
-		log.Fatalf("failed to read line from documentation file at path %s: %s", path, strings.ReplaceAll(err.Error(), "\n", "")) // nosec G706 -- build-time tool, not exposed to user input
+		log.Fatalf("failed to read line from documentation file at path %s: %s", path, strings.ReplaceAll(err.Error(), "\n", ""))
 	}
 	return trimBlankLines(lines)
 }

@@ -5,22 +5,23 @@ import (
 	"strings"
 
 	"github.com/descope/go-sdk/descope"
-	"github.com/descope/go-sdk/descope/sdk"
+	"github.com/descope/terraform-provider-descope/internal/infra"
+	"github.com/descope/terraform-provider-descope/internal/models/convert"
+	"github.com/descope/terraform-provider-descope/internal/models/sso"
+	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/infra"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/convert"
-	"github.com/jamescrowley321/terraform-provider-descope/internal/models/sso"
 )
 
 var (
-	_ resource.Resource                = &ssoResource{}
-	_ resource.ResourceWithConfigure   = &ssoResource{}
-	_ resource.ResourceWithImportState = &ssoResource{}
+	_ resource.Resource                     = &ssoResource{}
+	_ resource.ResourceWithConfigure        = &ssoResource{}
+	_ resource.ResourceWithImportState      = &ssoResource{}
+	_ resource.ResourceWithConfigValidators = &ssoResource{}
 )
 
 func NewSSOResource() resource.Resource {
@@ -28,12 +29,12 @@ func NewSSOResource() resource.Resource {
 }
 
 type ssoResource struct {
-	management sdk.Management
+	client *infra.Client
 }
 
 func (r *ssoResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
-	if data, ok := req.ProviderData.(*infra.ProviderData); ok {
-		r.management = data.Management
+	if client, ok := req.ProviderData.(*infra.Client); ok {
+		r.client = client
 	}
 }
 
@@ -44,8 +45,12 @@ func (r *ssoResource) Metadata(_ context.Context, req resource.MetadataRequest, 
 func (r *ssoResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Manages SSO configuration for a Descope tenant. Supports OIDC and SAML.",
-		Attributes:  sso.Attributes,
+		Attributes:  sso.Fields,
 	}
+}
+
+func (r *ssoResource) ConfigValidators(context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{resourcevalidator.Conflicting(path.MatchRoot("oidc"), path.MatchRoot("saml"), path.MatchRoot("saml_metadata"))}
 }
 
 func (r *ssoResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -55,6 +60,11 @@ func (r *ssoResource) Create(ctx context.Context, req resource.CreateRequest, re
 	if resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
+	management, clientErr := r.client.Management(model.ProjectID.ValueString())
+	if clientErr != nil {
+		resp.Diagnostics.AddError("Error configuring project client", clientErr.Error())
+		return
+	}
 
 	tenantID := model.TenantID.ValueString()
 	ssoID := model.SSOID.ValueString()
@@ -62,7 +72,7 @@ func (r *ssoResource) Create(ctx context.Context, req resource.CreateRequest, re
 
 	// Create the SSO configuration slot
 	result, err := infra.RetryOnRateLimit(ctx, func() (*descope.SSOTenantSettingsResponse, error) {
-		return r.management.SSO().NewSettings(ctx, tenantID, ssoID, displayName)
+		return management.SSO().NewSettings(ctx, tenantID, ssoID, displayName)
 	})
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating SSO configuration", err.Error())
@@ -72,6 +82,15 @@ func (r *ssoResource) Create(ctx context.Context, req resource.CreateRequest, re
 	ssoID = result.SSOID
 	model.SSOID = types.StringValue(ssoID)
 	model.ID = types.StringValue(ssoCompositeID(tenantID, ssoID))
+	if model.SAML != nil {
+		model.SAML.SpEntityID = types.StringNull()
+		model.SAML.SpACSUrl = types.StringNull()
+	}
+	if model.SAMLMetadata != nil {
+		model.SAMLMetadata.SpEntityID = types.StringNull()
+		model.SAMLMetadata.SpACSUrl = types.StringNull()
+	}
+	defer func() { resp.Diagnostics.Append(resp.State.Set(ctx, &model)...) }()
 
 	// Configure the SSO type
 	r.configureSSOType(ctx, &model, tenantID, ssoID, &resp.Diagnostics)
@@ -88,7 +107,6 @@ func (r *ssoResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	tflog.Info(ctx, "SSO resource created")
 }
 
@@ -149,11 +167,16 @@ func (r *ssoResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 	if resp.Diagnostics.Append(req.State.Get(ctx, &model)...); resp.Diagnostics.HasError() {
 		return
 	}
+	management, clientErr := r.client.Management(model.ProjectID.ValueString())
+	if clientErr != nil {
+		resp.Diagnostics.AddError("Error configuring project client", clientErr.Error())
+		return
+	}
 
 	tenantID, ssoID := parseSSOCompositeID(model.ID.ValueString())
 
 	err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-		return r.management.SSO().DeleteSettings(ctx, tenantID, ssoID)
+		return management.SSO().DeleteSettings(ctx, tenantID, ssoID)
 	})
 	if err != nil {
 		if infra.IsNotFoundError(err) {
@@ -168,10 +191,24 @@ func (r *ssoResource) Delete(ctx context.Context, req resource.DeleteRequest, re
 
 func (r *ssoResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	tflog.Info(ctx, "Importing SSO resource")
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	parts := strings.Split(req.ID, "/")
+	if len(parts) != 3 || parts[0] == "" || parts[1] == "" || parts[2] == "" {
+		resp.Diagnostics.AddError("Invalid import identifier", "Expected project_id/tenant_id/sso_id")
+		return
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("project_id"), parts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("tenant_id"), parts[1])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("sso_id"), parts[2])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), ssoCompositeID(parts[1], parts[2]))...)
 }
 
 func (r *ssoResource) configureSSOType(ctx context.Context, model *sso.Model, tenantID, ssoID string, diags *diag.Diagnostics) {
+	management, err := r.client.Management(model.ProjectID.ValueString())
+	if err != nil {
+		diags.AddError("Error configuring project client", err.Error())
+		return
+	}
+
 	domains := convert.StringSetToSlice(ctx, model.Domains, diags)
 	if diags.HasError() {
 		return
@@ -182,24 +219,24 @@ func (r *ssoResource) configureSSOType(ctx context.Context, model *sso.Model, te
 		if diags.HasError() {
 			return
 		}
-		err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-			return r.management.SSO().ConfigureOIDCSettings(ctx, tenantID, settings, domains, ssoID)
+		err = infra.RetryOnRateLimitNoResult(ctx, func() error {
+			return management.SSO().ConfigureOIDCSettings(ctx, tenantID, settings, domains, ssoID)
 		})
 		if err != nil {
 			diags.AddError("Error configuring OIDC SSO", err.Error())
 		}
 	} else if model.SAML != nil {
 		settings, redirectURL := sso.ModelToSAMLSettings(model.SAML)
-		err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-			return r.management.SSO().ConfigureSAMLSettings(ctx, tenantID, settings, redirectURL, domains, ssoID)
+		err = infra.RetryOnRateLimitNoResult(ctx, func() error {
+			return management.SSO().ConfigureSAMLSettings(ctx, tenantID, settings, redirectURL, domains, ssoID)
 		})
 		if err != nil {
 			diags.AddError("Error configuring SAML SSO", err.Error())
 		}
 	} else if model.SAMLMetadata != nil {
 		settings, redirectURL := sso.ModelToSAMLMetadataSettings(model.SAMLMetadata)
-		err := infra.RetryOnRateLimitNoResult(ctx, func() error {
-			return r.management.SSO().ConfigureSAMLSettingsByMetadata(ctx, tenantID, settings, redirectURL, domains, ssoID)
+		err = infra.RetryOnRateLimitNoResult(ctx, func() error {
+			return management.SSO().ConfigureSAMLSettingsByMetadata(ctx, tenantID, settings, redirectURL, domains, ssoID)
 		})
 		if err != nil {
 			diags.AddError("Error configuring SAML SSO by metadata", err.Error())
@@ -210,8 +247,13 @@ func (r *ssoResource) configureSSOType(ctx context.Context, model *sso.Model, te
 // refreshModel loads SSO settings from the API and updates the model.
 // Returns false if the SSO configuration was not found.
 func (r *ssoResource) refreshModel(ctx context.Context, model *sso.Model, tenantID, ssoID string, diags *diag.Diagnostics) bool {
+	management, clientErr := r.client.Management(model.ProjectID.ValueString())
+	if clientErr != nil {
+		diags.AddError("Error configuring project client", clientErr.Error())
+		return false
+	}
 	result, err := infra.RetryOnRateLimit(ctx, func() (*descope.SSOTenantSettingsResponse, error) {
-		return r.management.SSO().LoadSettings(ctx, tenantID, ssoID)
+		return management.SSO().LoadSettings(ctx, tenantID, ssoID)
 	})
 	if err != nil {
 		if infra.IsNotFoundError(err) {
@@ -224,6 +266,11 @@ func (r *ssoResource) refreshModel(ctx context.Context, model *sso.Model, tenant
 	model.TenantID = types.StringValue(tenantID)
 	model.SSOID = types.StringValue(result.SSOID)
 	model.ID = types.StringValue(ssoCompositeID(tenantID, result.SSOID))
+	if result.Tenant != nil {
+		domains, domainDiags := types.SetValueFrom(ctx, types.StringType, append([]string{}, result.Tenant.Domains...))
+		diags.Append(domainDiags...)
+		model.Domains.SetValue = domains
+	}
 
 	// Determine if this is an import (no type blocks set yet)
 	isImport := model.OIDC == nil && model.SAML == nil && model.SAMLMetadata == nil

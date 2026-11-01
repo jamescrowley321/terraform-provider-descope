@@ -1,7 +1,8 @@
 variable "name" { type = string }
 
 resource "descope_project" "test" {
-  name = var.name
+  deletion_protection = false
+  name                = var.name
 }
 
 data "descope_project" "test" {
