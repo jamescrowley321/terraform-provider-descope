@@ -32,6 +32,8 @@ This repository uses the following security tools:
 | [gosec](https://github.com/securego/gosec) | Go-specific security analysis |
 | [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) | Go vulnerability database scanning |
 | [Dependabot](https://docs.github.com/en/code-security/dependabot) | Automated dependency updates |
+| [OSV-Scanner](https://google.github.io/osv-scanner/) | Open-source dependency vulnerability scanning |
+| [Dependency Review](https://github.com/actions/dependency-review-action) | Flags vulnerable dependencies introduced in pull requests |
 | [gitleaks](https://github.com/gitleaks/gitleaks) | Secret detection |
 | [GitHub Secret Scanning](https://docs.github.com/en/code-security/secret-scanning) | Repository-level secret detection |
 | [OpenSSF Scorecard](https://securityscorecards.dev/) | Supply chain security assessment |
