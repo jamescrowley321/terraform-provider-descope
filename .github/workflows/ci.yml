@@ -47,7 +47,7 @@ jobs:
           terraform_version: "1.10.4"
           terraform_wrapper: false
       - name: Install Descope CLI
-        uses: descope/descopecli/.github/actions/install@4e4f74c639e12ba56a68c0faaeacca6fe9345ff9 # v0.8.16
+        uses: descope/descopecli/.github/actions/install@cd878e92f692529dde524400d418e2b986ae42e4 # v0.8.17
         with:
           # action v0.8.16 defaults to nonexistent descopecli v0.9.0
           version: v0.8.16
@@ -81,7 +81,7 @@ jobs:
           terraform_version: "1.10.4"
           terraform_wrapper: false
       - name: Install Descope CLI
-        uses: descope/descopecli/.github/actions/install@4e4f74c639e12ba56a68c0faaeacca6fe9345ff9 # v0.8.16
+        uses: descope/descopecli/.github/actions/install@cd878e92f692529dde524400d418e2b986ae42e4 # v0.8.17
         with:
           # action v0.8.16 defaults to nonexistent descopecli v0.9.0
           version: v0.8.16
